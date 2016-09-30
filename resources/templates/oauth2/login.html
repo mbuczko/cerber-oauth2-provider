@@ -1,0 +1,26 @@
+<html>
+    <body>
+        <div class="login-container">
+            <form class="pure-form pure-form-aligned" method="post" action="/login">
+                <fieldset>
+                    {{ csrf|safe }}
+
+                    {% if failed? %} failed {% endif %}
+
+                    <div class="pure-control-group">
+                        <label for="username">User name</label>
+                        <input name="username" type="text" placeholder="Username" autofocus>
+                    </div>
+                    <div class="pure-control-group">
+                        <label for="password">Password</label>
+                        <input name="password" type="password" placeholder="Password">
+                    </div>
+
+                    <div class="pure-controls">
+                        <button type="submit" class="pure-button pure-button-primary">Submit</button>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </body>
+</html>

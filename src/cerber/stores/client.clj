@@ -1,0 +1,120 @@
+(ns cerber.stores.client
+  (:require [clojure.tools.logging :as log]
+            [mount.core :refer [defstate]]
+            [cerber
+             [config :refer [app-config]]
+             [db :as db]
+             [store :refer :all]]
+            [clojure.string :as str]
+            [failjure.core :as f]
+            [cerber.error :as error])
+  (:import [cerber.store MemoryStore RedisStore]))
+
+(defrecord Client [id secret homepage redirects scopes grants authorities])
+
+(defrecord SqlClientStore []
+  Store
+  (fetch [this [client-id]]
+    (first (db/find-client {:id client-id})))
+  (revoke! [this [client-id]]
+    (db/delete-client {:id client-id}))
+  (store! [this k client]
+    (when (= 1 (db/insert-client client)) client))
+  (modify! [this k client]
+    client)
+  (purge! [this]
+    (db/clear-clients)))
+
+(defmulti create-client-store identity)
+
+(defstate ^:dynamic *client-store*
+  :start (create-client-store (-> app-config :cerber :clients :store)))
+
+(defmethod create-client-store :in-memory [_]
+  (MemoryStore. "clients" (atom {})))
+
+(defmethod create-client-store :redis [_]
+  (RedisStore. "clients" (-> app-config :cerber :redis-spec)))
+
+(defmethod create-client-store :sql [_]
+  (SqlClientStore.))
+
+(defmacro with-client-store
+  "Changes default binding to default client store."
+  [store & body]
+  `(binding [*client-store* ~store] ~@body))
+
+(defn validate-uri
+  "Returns java.net.URL instance of given uri or failure info in case of error."
+  [uri]
+  (if (empty? uri)
+    (error/internal-error "redirect-uri cannot be empty")
+    (if (or (>= (.indexOf uri " ") 0)
+            (>= (.indexOf uri "..") 0))
+      (error/internal-error "Segments not allowed in redirect URI")
+      (try
+        (java.net.URL. uri)
+        (catch Exception e (error/internal-error (.getMessage e)))))))
+
+(defn validate-redirects
+  "Goes through all redirects and returns list of validation failures."
+  [redirects]
+  (filter f/failed? (map validate-uri redirects)))
+
+(defn revoke-client
+  "Revokes previously generated client."
+  [client-id]
+  (revoke! *client-store* [client-id]))
+
+(defn create-client
+  "Creates new client"
+  [homepage redirects scopes grants authorities]
+  (let [result (validate-redirects redirects)
+        client {:id (generate-secret)
+                :secret (generate-secret)
+                :homepage homepage
+                :scopes (array->str scopes)
+                :grants (array->str grants)
+                :redirects (array->str redirects)
+                :authorities (array->str authorities)}]
+
+    (if (empty? result)
+      (if (store! *client-store* [:id] client)
+        (map->Client (assoc client
+                            :scopes (or scopes [])
+                            :grants (or grants [])
+                            :redirects (or redirects [])
+                            :authorities (or authorities [])))
+        (error/internal-error "Cannot store client"))
+      (first result))))
+
+(defn find-client [client-id]
+  (if-let [found (fetch *client-store* [client-id])]
+    (let [{:keys [scopes grants redirects authorities]} found]
+      (map->Client
+       (assoc found
+              :scopes (str->array scopes)
+              :grants (str->array grants)
+              :redirects (str->array redirects)
+              :authorities (str->array authorities))))))
+
+(defn purge-clients
+  []
+  "Removes clients from store. Used for tests only."
+  (purge! *client-store*))
+
+(defn scope-valid?
+  "Checks whether given (optional) scope is valid."
+  [client scope]
+  (let [scopes (str->array scope)
+        valids (:scopes client)]
+    (or (empty? scopes)
+        (every? #(.contains valids %) scopes))))
+
+(defn grant-allowed? [client grant]
+  (let [grants (:grants client)]
+    (or (empty? grants)
+        (.contains grants grant))))
+
+(defn redirect-uri-valid? [client redirect-uri]
+  (.contains (:redirects client) redirect-uri))

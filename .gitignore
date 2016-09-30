@@ -1,0 +1,16 @@
+.cider_history
+.nrepl-port
+.nrepl-history
+.sass-cache
+.sass-tmp
+.ctagsignore
+.tags
+.tags_sorted_by_file
+.DS_Store
+TAGS
+target/
+logs/
+log/
+dist/
+*.pid
+*.paw

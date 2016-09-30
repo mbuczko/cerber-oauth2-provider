@@ -1,0 +1,20 @@
+<html>
+    <body>
+        <div class="auth-container">
+            <form class="pure-form pure-form-aligned" method="post" action="{{ action }}">
+                <fieldset>
+                    {{ csrf|safe }}
+
+                    <p>
+                        Should authorize?
+                        client: {{ client }}
+                    </p>
+
+                    <div class="pure-controls">
+                        <button type="submit" class="pure-button pure-button-primary">Authorize</button>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </body>
+</html>

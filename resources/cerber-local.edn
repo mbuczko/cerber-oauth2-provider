@@ -1,0 +1,8 @@
+{:server {:host "localhost" :port 8090}
+ :cerber {:redis-spec {:spec {:host "localhost" :port 6379}}
+          :authcodes  {:store :redis :valid-for 180}
+          :sessions   {:store :redis :valid-for 180}
+          :tokens     {:store :redis :valid-for 180}
+          :users      {:store :in-memory}
+          :clients    {:store :in-memory}
+          :auto-approver-fn cerber.provider/default-auto-approver-fn}}
