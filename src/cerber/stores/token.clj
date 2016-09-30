@@ -14,36 +14,31 @@
 (defn default-valid-for []
   (-> app-config :cerber :tokens :valid-for))
 
-(defrecord Token [client-id user-id scope secret created-at expires-at])
+(defrecord Token [client-id user-id scope secret refreshing created-at expires-at])
 
 (defrecord SqlTokenStore []
   Store
-  (fetch [this [key tag]]
-    (when-let [token (first (let [[client-id user-id] (.split key ":"), refresh? (= tag "refresh")]
-                              (if user-id
-                                (db/find-token-by-details {:client-id client-id :user-id user-id} :is-refresh refresh?)
-                                (db/find-token-by-secret  {:secret key :is-refresh refresh?}))))]
-      (let [{:keys [client_id user_id secret scope login is_refresh created_at expires_at]} token]
-        {:client-id client_id
-         :user-id user_id
-         :secret secret
-         :login login
-         :scope scope
-         :is-refresh is_refresh
-         :expires-at expires_at
-         :created-at created_at})))
-  (revoke! [this [key tag]]
-    (let [[client-id user-id] (.split key ":"), refresh? (= tag "refresh")]
-      (if user-id
-        (db/delete-token-by-details {:client-id client-id :user-id user-id} :is-refresh refresh?)
-        (db/delete-token-by-secret  {:secret key :is-refresh refresh?}))))
+  (fetch [this [client-id tag arg]]
+    (when-let [{:keys [client_id user_id secret scope login refreshing created_at expires_at]}
+               (first (condp = tag
+                        "access"  (db/find-access-token {:client-id client-id :secret arg})
+                        "refresh" (db/find-refresh-token-by-secret {:client-id client-id :secret arg})
+                        "grant"   (db/find-refresh-token-by-login {:client-id client-id :login arg})))]
+
+      {:client-id client_id
+       :user-id user_id
+       :secret secret
+       :login login
+       :scope scope
+       :refreshing refreshing
+       :expires-at expires_at
+       :created-at created_at}))
+  (revoke! [this [client-id tag arg]]
+    (when-not (= "grant" tag)
+      (db/delete-token {:client-id client-id :secret arg})))
   (store! [this k token]
-    (when (or
-           (= (count k) 3) ;; artificial index for nosql dbs
-           (= 1 (db/insert-token token)))
-      token))
-  (modify! [this k token]
-    token)
+    (when-not (= "grant" (:tag token))
+      (when (= 1 (db/insert-token token)) token)))
   (purge! [this]
     (db/clear-tokens)))
 
@@ -67,51 +62,59 @@
   `(binding [*token-store* ~store] ~@body))
 
 (defn revoke-token
-  "Revokes previously generated token based on its secret."
+  "Revokes previously generated token based on its secret. "
   [token]
-  (let [token-tag (when (:is-refresh token) "refresh")]
-    (revoke! *token-store* [(:secret token) token-tag])
-    (revoke! *token-store* [(str (:client-id token) ":" (:user-id token)) token-tag])
-    nil))
+  (let [{:keys [client-id login secret refreshing]} token]
+    (revoke! *token-store* [client-id "access" (or refreshing secret)])
+
+    ;; when refresh token is removed, corresponding
+    ;; access-token and grant alias should be removed as well
+
+    (when refreshing
+      (revoke! *token-store* [client-id "refresh" secret])
+      (revoke! *token-store* [client-id "grant" login]))))
 
 (defn create-token
   "Creates new token"
   [client user scope & [opts]]
-  (let [{:keys [ttl refresh?]} opts
-        token-tag (when refresh? "refresh")
-        expires   (when (not refresh?)
-                    (now-plus-seconds (or ttl (default-valid-for))))
+  (let [{:keys [ttl refreshing]} opts
+        expires (when (not refreshing)
+                  (now-plus-seconds (or ttl (default-valid-for))))
         token (-> {:client-id (:id client)
                    :user-id (:id user)
                    :login (:login user)
                    :secret (generate-secret)
-                   :is-refresh refresh?
                    :scope scope
-                   :tag token-tag
+                   :refreshing refreshing
                    :expires-at expires
-                   :created-at (java.util.Date.)})]
+                   :created-at (java.util.Date.)
+                   :tag (if refreshing "refresh" "access")})]
 
-    (f/attempt-all [stored (or (store! *token-store* [:secret :tag] token)
-                               (error/internal-error "Cannot create token"))
-                    index  (or (store! *token-store* [:client-id :user-id :tag] token)
-                               (error/internal-error "Cannot create token index record"))]
-                   (map->Token stored))))
+    ;; refresh tokens are "aliased" as "grants" in no-sql databases. they're reachable
+    ;; by user's login and allow to avoid multiple refresh-tokens per client-user pair.
+
+    (when refreshing
+      (store! *token-store* [:client-id :tag :login] (assoc token :tag "grant")))
+
+    (if-let [result (store! *token-store* [:client-id :tag :secret] token)]
+      (map->Token result)
+      (error/internal-error "Cannot create token"))))
 
 (defn find-by-key [key]
   (if-let [result (fetch *token-store* key)]
     (map->Token result)))
 
 (defn find-access-token
-  ([client-id user-id]
-   (find-by-key [(str client-id ":" user-id)]))
-  ([secret]
-   (find-by-key [secret])))
+  [client-id secret]
+  (find-by-key [client-id "access" secret]))
 
 (defn find-refresh-token
-  ([client-id user-id]
-   (find-by-key [(str client-id ":" user-id) "refresh"]))
-  ([secret]
-   (find-by-key [secret "refresh"])))
+  [client-id secret]
+  (find-by-key [client-id "refresh" secret]))
+
+(defn find-grant-token
+  [client-id login]
+  (find-by-key [client-id "grant" login]))
 
 (defn purge-tokens
   []
@@ -125,8 +128,9 @@
 
     (if (f/failed? access-token)
       access-token
-      (let [refresh-token (or (find-refresh-token (:id client) (:id user))
-                              (create-token client user scope {:refresh? true}))]
+      (let [refresh-token (or (find-grant-token (:id client) (:login user))
+                              (create-token client user scope {:refreshing secret}))]
+
         (-> {:access_token secret
              :token_type "Bearer"
              :created_at created-at

@@ -11,7 +11,7 @@ create table tokens (
   secret varchar(32) not null,
   scope varchar(255),
   login varchar(32) not null,
-  is_refresh bit not null default false,
+  refreshing varchar(32),
   created_at timestamp not null default now(),
   expires_at timestamp,
   UNIQUE KEY tokens_unique (secret)

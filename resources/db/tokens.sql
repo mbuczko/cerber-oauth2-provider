@@ -1,22 +1,22 @@
--- :name find-token-by-secret :? :*
--- :doc Returns token for given secret
-select * from tokens where secret=:secret and is_refresh=:is-refresh
+-- :name find-access-token :? :*
+-- :doc Returns access token
+select * from tokens where client_id=:client-id and secret=:secret and refreshing is null
 
--- :name find-token-by-details :? :*
--- :doc Returns token for given user and client ids
-select * from tokens where user_id=:user-id and client_id=:client-id and is_refresh=:is-refresh
+-- :name find-refresh-token-by-secret :? :*
+-- :doc Returns refresh token
+select * from tokens where client_id=:client-id and secret=:secret and refreshing is not null
+
+-- :name find-refresh-token-by-login :? :*
+-- :doc Returns refresh token
+select * from tokens where client_id=:client-id and login=:login and refreshing is not null
 
 -- :name insert-token :! :1
 -- :doc Inserts new token
-insert into tokens (client_id, user_id, secret, scope, login, is_refresh, created_at, expires_at) values (:client-id, :user-id, :secret, :scope, :login, :is-refresh, :created-at, :expires-at)
+insert into tokens (client_id, user_id, secret, scope, login, refreshing, created_at, expires_at) values (:client-id, :user-id, :secret, :scope, :login, :refreshing, :created-at, :expires-at)
 
--- :name delete-token-by-secret :! :1
--- :doc Deletes token for particular secret
-delete from tokens where secret=:secret
-
--- :name delete-token-by-details :! :1
--- :doc Deletes token for given user and client ids
-delete from tokens where user_id=:user-id and client_id=:client-id
+-- :name delete-token :! :1
+-- :doc Deletes access token
+delete from tokens where client_id=:client-id and secret=:secret
 
 -- :name clear-tokens :! :1
 -- :doc Purges tokens table

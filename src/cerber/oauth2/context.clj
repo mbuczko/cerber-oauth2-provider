@@ -54,8 +54,7 @@
 
 (defn refresh-token-valid? [req]
   (f/attempt-all [refresh-token (or (get-in req [:params :refresh_token]) error/invalid-request)
-                  token (or (token/find-refresh-token refresh-token) error/invalid-token)
-                  valid? (or (= (:client-id token) (:id (::client req))) error/invalid-token)]
+                  token (or (token/find-refresh-token (:id (::client req)) refresh-token) error/invalid-token)]
                  (assoc req ::refresh-token token)))
 
 (defn client-valid? [req]

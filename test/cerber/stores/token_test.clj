@@ -25,7 +25,7 @@
          (with-token-store (create-token-store ?store)
            (purge-tokens)
            (let [token (create-token client-foo user-nioh token-scope)
-                 found (find-access-token (:secret token))]
+                 found (find-access-token (:id client-foo) (:secret token))]
              found => (instance-of Token)
              found => (has-secret :secret)
              found => (contains {:client-id (:id client-foo)
@@ -43,9 +43,9 @@
            (purge-tokens)
            (let [token  (create-token client-bar user-nioh token-scope)
                  secret (:secret token)]
-             (find-access-token secret) => (instance-of Token)
+             (find-access-token (:id client-bar) secret) => (instance-of Token)
              (revoke-token token)
-             (find-access-token secret) => nil))))
+             (find-access-token (:id client-bar) secret) => nil))))
 
  ?store :in-memory :sql :redis)
 
@@ -56,13 +56,13 @@
          (with-token-store (create-token-store ?store)
            (purge-tokens)
            (let [access-token (generate-access-token client-foo user-nioh token-scope)
-                 refresh-token (find-refresh-token (:refresh_token access-token))]
+                 refresh-token (find-refresh-token (:id client-foo) (:refresh_token access-token))]
 
              (let [new-token (refresh-access-token refresh-token)]
                (= (:access_token new-token) (:access_token access-token)) => false
                (= (:refresh_token new-token) (:refresh_token access-token)) => false
-               (find-access-token (:access_token access-token)) => truthy
-               (find-refresh-token (:secret refresh-token)) => falsey)))))
+               (find-access-token (:id client-foo) (:access_token access-token)) => nil
+               (find-refresh-token (:id client-foo) (:secret refresh-token)) => nil)))))
 
  ?store :in-memory :sql :redis)
 
