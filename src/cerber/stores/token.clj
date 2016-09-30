@@ -19,10 +19,10 @@
 (defrecord SqlTokenStore []
   Store
   (fetch [this [key tag]]
-    (if-let [token (first (let [[client-id user-id] (.split key ":"), refresh? (= tag "refresh")]
-                            (if user-id
-                              (db/find-token-by-details {:client-id client-id :user-id user-id} :is-refresh refresh?)
-                              (db/find-token-by-secret  {:secret key :is-refresh refresh?}))))]
+    (when-let [token (first (let [[client-id user-id] (.split key ":"), refresh? (= tag "refresh")]
+                              (if user-id
+                                (db/find-token-by-details {:client-id client-id :user-id user-id} :is-refresh refresh?)
+                                (db/find-token-by-secret  {:secret key :is-refresh refresh?}))))]
       (let [{:keys [client_id user_id secret scope login is_refresh created_at expires_at]} token]
         {:client-id client_id
          :user-id user_id
@@ -126,18 +126,17 @@
 
     (if (f/failed? access-token)
       access-token
-      (let [refresh-token (or
-                           (find-refresh-token (:id client) (:id user))
-                           (create-token client user scope {:refresh? true}))]
+      (let [refresh-token (or (find-refresh-token (:id client) (:id user))
+                              (create-token client user scope {:refresh? true}))]
         (-> {:access_token secret
              :token_type "Bearer"
-             :created_at created-at}
+             :created_at created-at
+             :expires_in (/ (- (.getTime expires-at)
+                               (.getTime created-at)) 1000)}
             (cond-> scope
               (assoc :scope scope))
             (cond-> (not (f/failed? refresh-token))
-              (assoc :refresh_token (:secret refresh-token)
-                     :expires_in (/ (- (.getTime expires-at)
-                                       (.getTime created-at)) 1000))))))))
+              (assoc :refresh_token (:secret refresh-token))))))))
 
 (defn refresh-access-token
   [refresh-token]
