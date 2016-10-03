@@ -25,7 +25,7 @@
          :content (json/parse-string content true)
          :expires-at expires_at
          :created-at created_at})))
-  (revoke! [this [sid]]
+  (revoke-one! [this [sid]]
     (db/delete-session {:sid sid}))
   (store! [this k session]
     (let [content (json/generate-string (:content session))
@@ -72,7 +72,7 @@
 (defn revoke-session
   "Revokes previously generated session."
   [session]
-  (revoke! *session-store* [(:sid session)]) nil)
+  (revoke-one! *session-store* [(:sid session)]) nil)
 
 (defn update-session [session]
   (modify! *session-store* [:sid] (extend-by session nil)))

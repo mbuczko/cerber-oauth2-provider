@@ -44,13 +44,13 @@
     (> (compare (java.util.Date.) expires-at) 0)))
 
 (defprotocol Store
-  (fetch-one [this k] "Finds single item based on exact key")
-  (fetch-all [this k] "Finds items based on a pattern key")
-  (revoke!   [this k] "Invalidates or remove the item based on a key")
-  (store!    [this k item] "Stores and returns new item with key taken from item map at k")
-  (modify!   [this k item] "Modifies item stored at key k")
-  (touch!    [this k item] "Extends life time of given item")
-  (purge!    [this] "Purges store"))
+  (fetch-one   [this k] "Finds single item based on exact key")
+  (fetch-all   [this k] "Finds items based on a pattern key")
+  (revoke-one! [this k] "Removes item based on exact key")
+  (store!      [this k item] "Stores and returns new item with key taken from item map at k")
+  (modify!     [this k item] "Modifies item stored at key k")
+  (touch!      [this k item] "Extends life time of given item")
+  (purge!      [this] "Purges store"))
 
 (defrecord MemoryStore [namespace store]
   Store
@@ -60,7 +60,7 @@
     (let [patternized (mapv #(if (= %1 "*") ".*" %1) k)
           matcher (re-pattern (ns-key namespace patternized))]
       (vals (filter (fn [[s v]] (re-find matcher s)) @store))))
-  (revoke! [this k]
+  (revoke-one! [this k]
     (swap! store dissoc (ns-key namespace k)))
   (store! [this k item]
     (let [nskey (ns-key namespace (select-values item k))]
@@ -87,7 +87,7 @@
                        (fn scan-fn [cursor] (car/wcar server-conn (car/scan cursor :match nskey))))]
         (filter (complement nil?)
                 (car/wcar server-conn (car/mget server-conn (str/join " " result)))))))
-  (revoke! [this k]
+  (revoke-one! [this k]
     (car/wcar server-conn (car/del (ns-key namespace k))))
   (store! [this k item]
     (let [nskey (ns-key namespace (select-values item k))

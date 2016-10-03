@@ -16,7 +16,7 @@
   Store
   (fetch-one [this [client-id]]
     (first (db/find-client {:id client-id})))
-  (revoke! [this [client-id]]
+  (revoke-one! [this [client-id]]
     (db/delete-client {:id client-id}))
   (store! [this k client]
     (when (= 1 (db/insert-client client)) client))
@@ -64,7 +64,7 @@
 (defn revoke-client
   "Revokes previously generated client."
   [client-id]
-  (revoke! *client-store* [client-id]))
+  (revoke-one! *client-store* [client-id]))
 
 (defn create-client
   "Creates new client"

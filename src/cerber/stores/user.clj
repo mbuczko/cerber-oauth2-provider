@@ -14,7 +14,7 @@
   Store
   (fetch-one [this [login]]
     (first (db/find-user {:login login})))
-  (revoke! [this [login]]
+  (revoke-one! [this [login]]
     (db/delete-user {:login login}))
   (store! [this k user]
     (when (= 1 (db/insert-user user)) user))
@@ -69,7 +69,7 @@
 (defn revoke-user
   "Removes user from store"
   [login]
-  (revoke! *user-store* [login]))
+  (revoke-one! *user-store* [login]))
 
 (defn purge-users
   []

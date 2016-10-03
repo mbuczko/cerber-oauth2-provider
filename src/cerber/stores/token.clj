@@ -34,7 +34,7 @@
        :expires-at expires_at
        :created-at created_at}))
 
-  (revoke! [this [client-id tag arg]]
+  (revoke-one! [this [client-id tag arg]]
     (when-not (= "grant" tag)
       (db/delete-token {:client-id client-id :secret arg})))
   (store! [this k token]
@@ -70,11 +70,11 @@
     ;; when refresh token is removed, corresponding
     ;; access-token and grant alias should be removed as well
 
-    (revoke! *token-store* [client-id "access" (or refreshing secret)])
+    (revoke-one! *token-store* [client-id "access" (or refreshing secret)])
 
     (when refreshing
-      (revoke! *token-store* [client-id "refresh" secret])
-      (revoke! *token-store* [client-id "grant" login]))))
+      (revoke-one! *token-store* [client-id "refresh" secret])
+      (revoke-one! *token-store* [client-id "grant" login]))))
 
 (defn create-token
   "Creates new token"

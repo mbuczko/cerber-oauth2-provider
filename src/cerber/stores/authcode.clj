@@ -27,7 +27,7 @@
          :redirect-uri redirect_uri
          :expires-at expires_at
          :created-at created_at})))
-  (revoke! [this [code]]
+  (revoke-one! [this [code]]
     (db/delete-authcode {:code code}))
   (store! [this k authcode]
     (when (= 1 (db/insert-authcode authcode)) authcode))
@@ -56,7 +56,7 @@
 (defn revoke-authcode
   "Revokes previously generated authcode."
   [authcode]
-  (revoke! *authcode-store* [(:code authcode)]) nil)
+  (revoke-one! *authcode-store* [(:code authcode)]) nil)
 
 (defn create-authcode
   "Creates new auth code"
