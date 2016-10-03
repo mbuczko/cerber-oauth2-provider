@@ -23,7 +23,7 @@
                (first (condp = tag
                         "access"  (db/find-access-token {:client-id client-id :secret arg})
                         "refresh" (db/find-refresh-token-by-secret {:client-id client-id :secret arg})
-                        "grant"   (db/find-refresh-token-by-login {:client-id client-id :login arg})))]
+                        "login"   (db/find-refresh-token-by-login {:client-id client-id :login arg})))]
 
       {:client-id client_id
        :user-id user_id
@@ -35,10 +35,10 @@
        :created-at created_at}))
 
   (revoke-one! [this [client-id tag arg]]
-    (when-not (= "grant" tag)
+    (when-not (= "login" tag)
       (db/delete-token {:client-id client-id :secret arg})))
   (store! [this k token]
-    (when-not (= "grant" (:tag token))
+    (when-not (= "login" (:tag token))
       (when (= 1 (db/insert-token token)) token)))
   (purge! [this]
     (db/clear-tokens)))
@@ -67,18 +67,19 @@
   (revoke-all! *token-store* key))
 
 (defn revoke-token
-  "Revokes previously generated token based on its secret. "
+  "Revokes existing token. Refresh tokens are removed along with all
+  access tokens bound to the same client-user pair."
   [token]
   (let [{:keys [client-id login secret refreshing]} token]
 
-    ;; when refresh token is removed, corresponding
-    ;; access-token and grant alias should be removed as well
+    ;; when refresh token is removed,
+    ;; all corresponding tokens should be removed as well
 
     (revoke-one! *token-store* [client-id "access" (or refreshing secret)])
 
     (when refreshing
       (revoke-one! *token-store* [client-id "refresh" secret])
-      (revoke-one! *token-store* [client-id "grant" login]))))
+      (revoke-one! *token-store* [client-id "login" login]))))
 
 (defn create-token
   "Creates new token"
@@ -96,11 +97,11 @@
                    :created-at (java.util.Date.)
                    :tag (if refreshing "refresh" "access")})]
 
-    ;; refresh tokens are "aliased" as "grants" in no-sql databases. they're reachable
+    ;; refresh tokens are "aliased" as "login" in no-sql databases. they're reachable
     ;; by user's login and allow to avoid multiple refresh-tokens per client-user pair.
 
     (when refreshing
-      (store! *token-store* [:client-id :tag :login] (assoc token :tag "grant")))
+      (store! *token-store* [:client-id :tag :login] (assoc token :tag "login")))
 
     (if-let [result (store! *token-store* [:client-id :tag :secret] token)]
       (map->Token result)
@@ -122,9 +123,9 @@
   [client-id secret]
   (find-by-key [client-id "refresh" secret]))
 
-(defn find-grant-token
+(defn find-granted-token
   [client-id login]
-  (find-by-key [client-id "grant" login]))
+  (find-by-key [client-id "login" login]))
 
 (defn purge-tokens
   []
@@ -138,7 +139,7 @@
 
     (if (f/failed? access-token)
       access-token
-      (let [refresh-token (or (find-grant-token (:id client) (:login user))
+      (let [refresh-token (or (find-granted-token (:id client) (:login user))
                               (create-token client user scope {:refreshing secret}))]
 
         (-> {:access_token secret
