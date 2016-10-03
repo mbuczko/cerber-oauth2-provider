@@ -14,30 +14,29 @@
 
 (defrecord Token [client-id user-id scope secret refreshing created-at expires-at])
 
-(defn sql->map [{:keys [client_id user_id secret scope login refreshing created_at expires_at]}]
-  {:client-id client_id
-   :user-id user_id
-   :secret secret
-   :login login
-   :scope scope
-   :refreshing refreshing
-   :expires-at expires_at
-   :created-at created_at})
+(defn sql->map [result]
+  (when-let [{:keys [client_id user_id secret scope login refreshing created_at expires_at]} result]
+    {:client-id client_id
+     :user-id user_id
+     :secret secret
+     :login login
+     :scope scope
+     :refreshing refreshing
+     :expires-at expires_at
+     :created-at created_at}))
 
 (defrecord SqlTokenStore []
   Store
   (fetch-one [this [client-id tag secret]]
-    (when (= tag "access")
-      (when-let [token (first (db/find-access-token {:client-id client-id :secret secret}))]
-        (sql->map token))))
+    (sql->map (first (and (= tag "access")
+                          (db/find-access-token {:client-id client-id :secret secret})))))
   (fetch-all [this [client-id tag secret login]]
-    (when (= tag "refresh")
-      (let [tokens (if secret
-                     (db/find-refresh-token-by-secret {:client-id client-id :secret secret})
-                     (if client-id
-                       (db/find-refresh-token-by-client {:client-id client-id :login login})
-                       (db/find-refresh-token-by-login  {:login login})))]
-        (map sql->map tokens))))
+    (map sql->map (and (= tag "refresh")
+                       (if secret
+                         (db/find-refresh-token-by-secret {:client-id client-id :secret secret})
+                         (if client-id
+                           (db/find-refresh-token-by-client {:client-id client-id :login login})
+                           (db/find-refresh-token-by-login  {:login login}))))))
   (revoke-one! [this [client-id tag arg]]
     (db/delete-token {:client-id client-id :secret arg}))
   (store! [this k token]
