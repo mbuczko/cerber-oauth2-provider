@@ -45,8 +45,9 @@
 
 (defprotocol Store
   (fetch-one   [this k] "Finds single item based on exact key")
-  (fetch-all   [this k] "Finds items based on a pattern key")
+  (fetch-all   [this k] "Finds all items matching pattern key")
   (revoke-one! [this k] "Removes item based on exact key")
+  (revoke-all! [this k] "Removes all items matching pattern key")
   (store!      [this k item] "Stores and returns new item with key taken from item map at k")
   (modify!     [this k item] "Modifies item stored at key k")
   (touch!      [this k item] "Extends life time of given item")
@@ -62,6 +63,11 @@
       (vals (filter (fn [[s v]] (re-find matcher s)) @store))))
   (revoke-one! [this k]
     (swap! store dissoc (ns-key namespace k)))
+  (revoke-all! [this k]
+    (let [patternized (mapv #(if (= %1 "*") ".*" %1) k)
+          matcher (re-pattern (ns-key namespace patternized))]
+      (doseq [[s v] @store]
+        (when (re-find matcher s) (swap! store dissoc s)))))
   (store! [this k item]
     (let [nskey (ns-key namespace (select-values item k))]
       (when-not (get @store nskey) ;; poor-man uniqueness check
@@ -75,20 +81,25 @@
   (purge! [this]
     (swap! store empty)))
 
+(defn- scan-by-key [spec key]
+  (car/reduce-scan
+   (fn rf [acc in] (into acc in))
+   []
+   (fn scan-fn [cursor] (car/wcar spec (car/scan cursor :match key)))))
+
 (defrecord RedisStore [namespace server-conn]
   Store
   (fetch-one [this k]
     (car/wcar server-conn (car/get (ns-key namespace k))))
   (fetch-all [this k]
-    (let [nskey (ns-key namespace k)]
-      (if-let [result (car/reduce-scan
-                       (fn rf [acc in] (into acc in))
-                       []
-                       (fn scan-fn [cursor] (car/wcar server-conn (car/scan cursor :match nskey))))]
-        (filter (complement nil?)
-                (car/wcar server-conn (car/mget server-conn (str/join " " result)))))))
+    (if-let [result (scan-by-key server-conn (ns-key namespace k))]
+      (filter (complement nil?)
+              (car/wcar server-conn (apply (partial car/mget server-conn) result)))))
   (revoke-one! [this k]
     (car/wcar server-conn (car/del (ns-key namespace k))))
+  (revoke-all! [this k]
+    (if-let [result (scan-by-key server-conn (ns-key namespace k))]
+      (car/wcar server-conn (doseq [s result] (car/del s)))))
   (store! [this k item]
     (let [nskey (ns-key namespace (select-values item k))
           milis (expires->ttl (:expires-at item))

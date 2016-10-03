@@ -62,6 +62,10 @@
   [store & body]
   `(binding [*token-store* ~store] ~@body))
 
+(defn revoke-by-pattern
+  [key]
+  (revoke-all! *token-store* key))
+
 (defn revoke-token
   "Revokes previously generated token based on its secret. "
   [token]
