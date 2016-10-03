@@ -8,6 +8,8 @@
             [failjure.core :as f])
   (:import org.apache.commons.codec.binary.Base64))
 
+(def refresh-token-pattern #"[A-Z0-9]{32}")
+
 (defn basic-authentication-credentials
   "Decodes basic authentication credentials.
    If it exists it returns a vector of username and password. Returns nil otherwise."
@@ -53,9 +55,13 @@
                  (assoc req ::authcode authcode)))
 
 (defn refresh-token-valid? [req]
-  (f/attempt-all [refresh-token (or (get-in req [:params :refresh_token]) error/invalid-request)
-                  token (or (token/find-refresh-token (:id (::client req)) refresh-token nil) error/invalid-token)]
-                 (assoc req ::refresh-token token)))
+  (let [client-id (:id (::client req))]
+    (f/attempt-all [refresh-token (or (get-in req [:params :refresh_token]) error/invalid-request)
+                    match? (or (re-matches refresh-token-pattern refresh-token) error/invalid-token)
+                    rtoken (or (token/find-refresh-token client-id refresh-token nil) error/invalid-token)
+                    valid? (or (and (= client-id (:client-id rtoken))
+                                    (= refresh-token (:secret rtoken))) error/invalid-token)]
+                   (assoc req ::refresh-token rtoken))))
 
 (defn client-valid? [req]
   (f/attempt-all [client-id (or (get-in req [:params :client_id]) error/invalid-request)

@@ -1,11 +1,10 @@
 (ns cerber.stores.session
-  (:require [clojure.tools.logging :as log]
-            [mount.core :refer [defstate]]
-            [cerber
-             [db :as db]
+  (:require [cerber
              [config :refer [app-config]]
+             [db :as db]
              [store :refer :all]]
-            [cheshire.core :as json])
+            [mount.core :refer [defstate]]
+            [taoensso.nippy :as nippy])
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defn default-valid-for []
@@ -22,17 +21,17 @@
     (if-let [session (first (db/find-session {:sid sid}))]
       (let [{:keys [sid content created_at expires_at]} session]
         {:sid sid
-         :content (json/parse-string content true)
+         :content (nippy/thaw content)
          :expires-at expires_at
          :created-at created_at})))
   (revoke-one! [this [sid]]
     (db/delete-session {:sid sid}))
   (store! [this k session]
-    (let [content (json/generate-string (:content session))
+    (let [content (nippy/freeze (:content session))
           result  (db/insert-session (assoc session :content content))]
       (when (= 1 result) session)))
   (modify! [this k session]
-    (let [result (db/update-session (assoc session :content (json/generate-string (:content session))))]
+    (let [result (db/update-session (assoc session :content (nippy/freeze (:content session))))]
       (when (= 1 result) session)))
   (touch! [this k session]
     (let [result (db/update-session-expiration session)]

@@ -62,13 +62,13 @@
     (get @store (ns-key namespace k)))
   (fetch-all [this k]
     (let [matcher (re-pattern (ns-key namespace k ".*"))]
-      (vals (filter (fn [[s v]] (re-find matcher s)) @store))))
+      (vals (filter (fn [[s v]] (re-matches matcher s)) @store))))
   (revoke-one! [this k]
     (swap! store dissoc (ns-key namespace k)))
   (revoke-all! [this k]
     (let [matcher (re-pattern (ns-key namespace k ".*"))]
       (doseq [[s v] @store]
-        (when (re-find matcher s) (swap! store dissoc s)))))
+        (when (re-matches matcher s) (swap! store dissoc s)))))
   (store! [this k item]
     (let [nskey (ns-key namespace (select-values item k))]
       (when-not (get @store nskey) ;; poor-man uniqueness check

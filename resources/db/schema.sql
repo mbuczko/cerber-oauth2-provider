@@ -32,7 +32,7 @@ create table users (
 
 create table sessions (
   sid varchar(36) primary key,
-  content varchar(2048),
+  content binary(2048),
   created_at timestamp not null default now(),
   expires_at timestamp
 );

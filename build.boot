@@ -17,7 +17,6 @@
                  [conman "0.6.0"]
                  [mount "0.1.10"]
                  [compojure "1.5.0"]
-                 [cheshire "5.6.1"]
                  [crypto-random "1.2.0"]
                  [slingshot "0.12.2"]
                  [http-kit "2.2.0"]

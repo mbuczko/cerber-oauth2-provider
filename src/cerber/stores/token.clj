@@ -14,29 +14,28 @@
 
 (defrecord Token [client-id user-id scope secret refreshing created-at expires-at])
 
+(defn sql->map [{:keys [client_id user_id secret scope login refreshing created_at expires_at]}]
+  {:client-id client_id
+   :user-id user_id
+   :secret secret
+   :login login
+   :scope scope
+   :refreshing refreshing
+   :expires-at expires_at
+   :created-at created_at})
+
 (defrecord SqlTokenStore []
   Store
   (fetch-one [this [client-id tag secret]]
-    (when-let [{:keys [client_id user_id secret scope login refreshing created_at expires_at]}
-               (if (= tag "access")
-                 (first (db/find-access-token {:client-id client-id :secret secret})))]
-
-      {:client-id client_id
-       :user-id user_id
-       :secret secret
-       :login login
-       :scope scope
-       :refreshing refreshing
-       :expires-at expires_at
-       :created-at created_at}))
-
+    (when (= tag "access")
+      (sql->map (first (db/find-access-token {:client-id client-id :secret secret})))))
   (fetch-all [this [client-id tag secret login]]
     (when (= tag "refresh")
-      (if secret
-        (db/find-refresh-token-by-secret {:client-id client-id :secret secret})
-        (if client-id
-          (db/find-refresh-token-by-client {:client-id client-id :login login})
-          (db/find-refresh-token-by-login  {:login login})))))
+      (map sql->map (if secret
+                      (db/find-refresh-token-by-secret {:client-id client-id :secret secret})
+                      (if client-id
+                        (db/find-refresh-token-by-client {:client-id client-id :login login})
+                        (db/find-refresh-token-by-login  {:login login}))))))
   (revoke-one! [this [client-id tag arg]]
     (db/delete-token {:client-id client-id :secret arg}))
   (store! [this k token]
@@ -79,7 +78,8 @@
 
     (revoke-one! *token-store* [client-id "access" (or refreshing secret)])
     (when refreshing
-      (revoke-one! *token-store* [client-id "refresh" secret login]))))
+      (revoke-one! *token-store* [client-id "refresh" secret login]))
+    nil))
 
 (defn create-token
   "Creates new token"
