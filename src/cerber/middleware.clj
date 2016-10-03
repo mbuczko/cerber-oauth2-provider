@@ -1,15 +1,20 @@
 (ns cerber.middleware
   (:require [cerber.stores.session
              :refer
-             [find-session revoke-session create-session update-session]]
-            [ring.middleware.session.store :refer [SessionStore]]
-            [clojure.tools.logging :as log]))
+             [create-session
+              extend-session
+              find-session
+              revoke-session
+              update-session]]
+            [clojure.tools.logging :as log]
+            [ring.middleware.session.store :refer [SessionStore]]))
 
 (deftype CustomStore []
   SessionStore
   (read-session [_ key]
     (log/info "read-session" key)
-    (:content (find-session key {:extend-by nil})))
+    (when-let [session (find-session key)]
+      (:content (extend-session session))))
   (write-session [_ key data]
     (log/info "write-session" key data)
     (:sid

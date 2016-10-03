@@ -10,9 +10,6 @@
 (defn default-valid-for []
   (-> app-config :cerber :sessions :valid-for))
 
-(defn extend-by [session ttl]
-  (assoc session :expires-at (now-plus-seconds (or ttl (default-valid-for)))))
-
 (defrecord Session [sid content created-at expires-at])
 
 (defrecord SqlSessionStore []
@@ -58,14 +55,18 @@
   [store & body]
   `(binding [*session-store* ~store] ~@body))
 
+(defn extend-by [session ttl]
+  (assoc session :expires-at (now-plus-seconds
+                              (or ttl (default-valid-for)))))
+
 (defn create-session
   "Creates new session"
-  [content]
-  (let [session {:sid (.toString (java.util.UUID/randomUUID))
+  [content & [opts]]
+  (let [{:keys [ttl]} opts
+        session {:sid (.toString (java.util.UUID/randomUUID))
                  :content content
-                 :expires-at (now-plus-seconds (default-valid-for))
                  :created-at (java.util.Date.)}]
-    (when (store! *session-store* [:sid] session)
+    (when (store! *session-store* [:sid] (extend-by session ttl))
       (map->Session session))))
 
 (defn revoke-session
@@ -76,18 +77,14 @@
 (defn update-session [session]
   (modify! *session-store* [:sid] (extend-by session nil)))
 
-(defn extend-session [session ttl]
-  (touch! *session-store* [:sid] (extend-by session ttl)))
+(defn extend-session [session]
+  (touch! *session-store* [:sid] (extend-by session nil)))
 
-(defn find-session [sid & [opt]]
+(defn find-session [sid]
   (when-let [found (fetch-one *session-store* [sid])]
     (if (expired? found)
       (revoke-session found)
-      (map->Session
-       (if-let [extend-by (:extend-by opt)]
-         (extend-session found extend-by)
-         found)))))
-
+      (map->Session found))))
 
 (defn purge-sessions
   []

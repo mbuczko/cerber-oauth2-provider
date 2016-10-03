@@ -28,14 +28,16 @@
   Store
   (fetch-one [this [client-id tag secret]]
     (when (= tag "access")
-      (sql->map (first (db/find-access-token {:client-id client-id :secret secret})))))
+      (when-let [token (first (db/find-access-token {:client-id client-id :secret secret}))]
+        (sql->map token))))
   (fetch-all [this [client-id tag secret login]]
     (when (= tag "refresh")
-      (map sql->map (if secret
-                      (db/find-refresh-token-by-secret {:client-id client-id :secret secret})
-                      (if client-id
-                        (db/find-refresh-token-by-client {:client-id client-id :login login})
-                        (db/find-refresh-token-by-login  {:login login}))))))
+      (let [tokens (if secret
+                     (db/find-refresh-token-by-secret {:client-id client-id :secret secret})
+                     (if client-id
+                       (db/find-refresh-token-by-client {:client-id client-id :login login})
+                       (db/find-refresh-token-by-login  {:login login})))]
+        (map sql->map tokens))))
   (revoke-one! [this [client-id tag arg]]
     (db/delete-token {:client-id client-id :secret arg}))
   (store! [this k token]
@@ -103,11 +105,11 @@
       (error/internal-error "Cannot create token"))))
 
 (defn find-by-key [key]
-  (if-let [result (fetch-one *token-store* key)]
+  (when-let [result (fetch-one *token-store* key)]
     (map->Token result)))
 
 (defn find-by-pattern [key]
-  (let [tokens (fetch-all *token-store* key)]
+  (when-let [tokens (fetch-all *token-store* key)]
     (map (fn [t] (map->Token t)) tokens)))
 
 (defn find-access-token

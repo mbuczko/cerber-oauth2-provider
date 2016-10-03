@@ -45,14 +45,14 @@
 (tabular
  (with-state-changes [(before :contents (.start redis))
                       (after  :contents (.stop redis))]
-   (fact "Session fetched from store has ttl updated."
+   (fact "Extended session has expires-at updated."
          (against-background (default-valid-for) => 2)
          (with-session-store (create-session-store ?store)
            (purge-sessions)
 
            (let [initial (create-session {:sample "value"})
                  expires (:expires-at initial)
-                 session (find-session (:sid initial) {:extend-by 120})]
+                 session (extend-session initial)]
              (compare (:expires-at session) expires) => 1))))
 
  ?store :in-memory :sql :redis)

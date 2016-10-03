@@ -56,13 +56,13 @@
          (with-token-store (create-token-store ?store)
            (purge-tokens)
            (let [access-token (generate-access-token client-foo user-nioh token-scope)
-                 refresh-token (find-refresh-token (:id client-foo) (:refresh_token access-token))]
+                 refresh-token (find-refresh-token (:id client-foo) (:refresh_token access-token) nil)]
 
              (let [new-token (refresh-access-token refresh-token)]
                (= (:access_token new-token) (:access_token access-token)) => false
                (= (:refresh_token new-token) (:refresh_token access-token)) => false
                (find-access-token (:id client-foo) (:access_token access-token)) => nil
-               (find-refresh-token (:id client-foo) (:secret refresh-token)) => nil)))))
+               (find-refresh-token (:id client-foo) (:secret refresh-token) nil) => nil)))))
 
  ?store :in-memory :sql :redis)
 
