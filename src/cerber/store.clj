@@ -7,8 +7,11 @@
 (def select-values
   (comp vals select-keys))
 
-(defn ns-key [namespace composite]
-  (str namespace "/" (str/join ":" (remove str/blank? composite))))
+(defn ns-key
+  ([namespace composite nil-to]
+   (ns-key namespace (mapv #(or %1 nil-to) composite)))
+  ([namespace composite]
+   (str namespace "/" (str/join ":" composite))))
 
 (defn generate-secret
   "Generates a unique secret"
@@ -58,14 +61,12 @@
   (fetch-one [this k]
     (get @store (ns-key namespace k)))
   (fetch-all [this k]
-    (let [patternized (mapv #(if (= %1 "*") ".*" %1) k)
-          matcher (re-pattern (ns-key namespace patternized))]
+    (let [matcher (re-pattern (ns-key namespace k ".*"))]
       (vals (filter (fn [[s v]] (re-find matcher s)) @store))))
   (revoke-one! [this k]
     (swap! store dissoc (ns-key namespace k)))
   (revoke-all! [this k]
-    (let [patternized (mapv #(if (= %1 "*") ".*" %1) k)
-          matcher (re-pattern (ns-key namespace patternized))]
+    (let [matcher (re-pattern (ns-key namespace k ".*"))]
       (doseq [[s v] @store]
         (when (re-find matcher s) (swap! store dissoc s)))))
   (store! [this k item]
@@ -92,13 +93,13 @@
   (fetch-one [this k]
     (car/wcar server-conn (car/get (ns-key namespace k))))
   (fetch-all [this k]
-    (if-let [result (scan-by-key server-conn (ns-key namespace k))]
+    (if-let [result (scan-by-key server-conn (ns-key namespace k "*"))]
       (filter (complement nil?)
               (car/wcar server-conn (apply (partial car/mget server-conn) result)))))
   (revoke-one! [this k]
     (car/wcar server-conn (car/del (ns-key namespace k))))
   (revoke-all! [this k]
-    (if-let [result (scan-by-key server-conn (ns-key namespace k))]
+    (if-let [result (scan-by-key server-conn (ns-key namespace k "*"))]
       (car/wcar server-conn (doseq [s result] (car/del s)))))
   (store! [this k item]
     (let [nskey (ns-key namespace (select-values item k))

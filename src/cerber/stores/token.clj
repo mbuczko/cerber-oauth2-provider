@@ -5,10 +5,8 @@
              [config :refer [app-config]]
              [store :refer :all]]
             [failjure.core :as f]
-            [cerber.stores.client :as client]
             [cerber.stores.user :as user]
-            [cerber.error :as error]
-            [clojure.tools.logging :as log])
+            [cerber.error :as error])
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defn default-valid-for []
@@ -18,12 +16,10 @@
 
 (defrecord SqlTokenStore []
   Store
-  (fetch-one [this [client-id tag arg]]
+  (fetch-one [this [client-id tag secret]]
     (when-let [{:keys [client_id user_id secret scope login refreshing created_at expires_at]}
-               (first (condp = tag
-                        "access"  (db/find-access-token {:client-id client-id :secret arg})
-                        "refresh" (db/find-refresh-token-by-secret {:client-id client-id :secret arg})
-                        "login"   (db/find-refresh-token-by-login {:client-id client-id :login arg})))]
+               (if (= tag "access")
+                 (first (db/find-access-token {:client-id client-id :secret secret})))]
 
       {:client-id client_id
        :user-id user_id
@@ -34,12 +30,17 @@
        :expires-at expires_at
        :created-at created_at}))
 
+  (fetch-all [this [client-id tag secret login]]
+    (when (= tag "refresh")
+      (if secret
+        (db/find-refresh-token-by-secret {:client-id client-id :secret secret})
+        (if client-id
+          (db/find-refresh-token-by-client {:client-id client-id :login login})
+          (db/find-refresh-token-by-login  {:login login})))))
   (revoke-one! [this [client-id tag arg]]
-    (when-not (= "login" tag)
-      (db/delete-token {:client-id client-id :secret arg})))
+    (db/delete-token {:client-id client-id :secret arg}))
   (store! [this k token]
-    (when-not (= "login" (:tag token))
-      (when (= 1 (db/insert-token token)) token)))
+    (when (= 1 (db/insert-token token)) token))
   (purge! [this]
     (db/clear-tokens)))
 
@@ -64,7 +65,8 @@
 
 (defn revoke-by-pattern
   [key]
-  (revoke-all! *token-store* key))
+  (revoke-all! *token-store* key)
+  nil)
 
 (defn revoke-token
   "Revokes existing token. Refresh tokens are removed along with all
@@ -72,14 +74,12 @@
   [token]
   (let [{:keys [client-id login secret refreshing]} token]
 
-    ;; when refresh token is removed,
-    ;; all corresponding tokens should be removed as well
+    ;; when refresh token is removed, corresponding
+    ;; access tokens should be removed as well
 
     (revoke-one! *token-store* [client-id "access" (or refreshing secret)])
-
     (when refreshing
-      (revoke-one! *token-store* [client-id "refresh" secret])
-      (revoke-one! *token-store* [client-id "login" login]))))
+      (revoke-one! *token-store* [client-id "refresh" secret login]))))
 
 (defn create-token
   "Creates new token"
@@ -97,13 +97,8 @@
                    :created-at (java.util.Date.)
                    :tag (if refreshing "refresh" "access")})]
 
-    ;; refresh tokens are "aliased" as "login" in no-sql databases. they're reachable
-    ;; by user's login and allow to avoid multiple refresh-tokens per client-user pair.
-
-    (when refreshing
-      (store! *token-store* [:client-id :tag :login] (assoc token :tag "login")))
-
-    (if-let [result (store! *token-store* [:client-id :tag :secret] token)]
+    (if-let [result (store! *token-store* (-> [:client-id :tag :secret]
+                                              (cond-> refreshing (conj :login))) token)]
       (map->Token result)
       (error/internal-error "Cannot create token"))))
 
@@ -120,12 +115,8 @@
   (find-by-key [client-id "access" secret]))
 
 (defn find-refresh-token
-  [client-id secret]
-  (find-by-key [client-id "refresh" secret]))
-
-(defn find-granted-token
-  [client-id login]
-  (find-by-key [client-id "login" login]))
+  [client-id secret login]
+  (first (find-by-pattern [client-id "refresh" secret login])))
 
 (defn purge-tokens
   []
@@ -139,7 +130,7 @@
 
     (if (f/failed? access-token)
       access-token
-      (let [refresh-token (or (find-granted-token (:id client) (:login user))
+      (let [refresh-token (or (find-refresh-token (:id client) nil (:login user))
                               (create-token client user scope {:refreshing secret}))]
 
         (-> {:access_token secret
@@ -156,6 +147,6 @@
   [refresh-token]
   (let [{:keys [client-id user-id login scope]} refresh-token]
     (revoke-token refresh-token)
-    (generate-access-token (client/map->Client {:id client-id})
-                           (user/map->User {:id user-id :login login})
+    (generate-access-token {:id client-id}
+                           {:id user-id :login login}
                            scope)))

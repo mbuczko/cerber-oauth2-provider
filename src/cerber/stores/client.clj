@@ -7,7 +7,8 @@
              [store :refer :all]]
             [clojure.string :as str]
             [failjure.core :as f]
-            [cerber.error :as error])
+            [cerber.error :as error]
+            [cerber.stores.token :as token])
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defrecord Client [id secret homepage redirects scopes grants authorities])
@@ -62,9 +63,10 @@
   (filter f/failed? (map validate-uri redirects)))
 
 (defn revoke-client
-  "Revokes previously generated client."
+  "Revokes previously generated client and all tokens generated to this client so far."
   [client-id]
-  (revoke-one! *client-store* [client-id]))
+  (revoke-one! *client-store* [client-id])
+  (token/revoke-by-pattern [client-id "*"]))
 
 (defn create-client
   "Creates new client"

@@ -6,9 +6,13 @@ select * from tokens where client_id=:client-id and secret=:secret and refreshin
 -- :doc Returns refresh token
 select * from tokens where client_id=:client-id and secret=:secret and refreshing is not null
 
--- :name find-refresh-token-by-login :? :*
+-- :name find-refresh-token-by-client :? :*
 -- :doc Returns refresh token
 select * from tokens where client_id=:client-id and login=:login and refreshing is not null
+
+-- :name find-refresh-token-by-login :? :*
+-- :doc Returns refresh token
+select * from tokens where login=:login and refreshing is not null
 
 -- :name insert-token :! :1
 -- :doc Inserts new token
