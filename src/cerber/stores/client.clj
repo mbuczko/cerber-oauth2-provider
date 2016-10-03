@@ -14,7 +14,7 @@
 
 (defrecord SqlClientStore []
   Store
-  (fetch [this [client-id]]
+  (fetch-one [this [client-id]]
     (first (db/find-client {:id client-id})))
   (revoke! [this [client-id]]
     (db/delete-client {:id client-id}))
@@ -89,7 +89,7 @@
       (first result))))
 
 (defn find-client [client-id]
-  (if-let [found (fetch *client-store* [client-id])]
+  (if-let [found (fetch-one *client-store* [client-id])]
     (let [{:keys [scopes grants redirects authorities]} found]
       (map->Client
        (assoc found

@@ -17,7 +17,7 @@
 
 (defrecord SqlAuthCodeStore []
   Store
-  (fetch [this [code]]
+  (fetch-one [this [code]]
     (if-let [authcode (first (db/find-authcode {:code code}))]
       (let [{:keys [client_id user_id code scope redirect_uri created_at expires_at]} authcode]
         {:client-id client_id
@@ -74,7 +74,7 @@
       (error/internal-error "Cannot store authcode"))))
 
 (defn find-authcode [code]
-  (if-let [authcode (fetch *authcode-store* [code])]
+  (if-let [authcode (fetch-one *authcode-store* [code])]
     (if (expired? authcode)
       (revoke-authcode authcode)
       (map->AuthCode authcode))))

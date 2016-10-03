@@ -18,7 +18,7 @@
 
 (defrecord SqlTokenStore []
   Store
-  (fetch [this [client-id tag arg]]
+  (fetch-one [this [client-id tag arg]]
     (when-let [{:keys [client_id user_id secret scope login refreshing created_at expires_at]}
                (first (condp = tag
                         "access"  (db/find-access-token {:client-id client-id :secret arg})
@@ -33,6 +33,7 @@
        :refreshing refreshing
        :expires-at expires_at
        :created-at created_at}))
+
   (revoke! [this [client-id tag arg]]
     (when-not (= "grant" tag)
       (db/delete-token {:client-id client-id :secret arg})))
@@ -65,10 +66,11 @@
   "Revokes previously generated token based on its secret. "
   [token]
   (let [{:keys [client-id login secret refreshing]} token]
-    (revoke! *token-store* [client-id "access" (or refreshing secret)])
 
     ;; when refresh token is removed, corresponding
     ;; access-token and grant alias should be removed as well
+
+    (revoke! *token-store* [client-id "access" (or refreshing secret)])
 
     (when refreshing
       (revoke! *token-store* [client-id "refresh" secret])
@@ -101,8 +103,12 @@
       (error/internal-error "Cannot create token"))))
 
 (defn find-by-key [key]
-  (if-let [result (fetch *token-store* key)]
+  (if-let [result (fetch-one *token-store* key)]
     (map->Token result)))
+
+(defn find-by-pattern [key]
+  (let [tokens (fetch-all *token-store* key)]
+    (map (fn [t] (map->Token t)) tokens)))
 
 (defn find-access-token
   [client-id secret]

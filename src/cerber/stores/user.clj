@@ -12,7 +12,7 @@
 
 (defrecord SqlUserStore []
   Store
-  (fetch [this [login]]
+  (fetch-one [this [login]]
     (first (db/find-user {:login login})))
   (revoke! [this [login]]
     (db/delete-user {:login login}))
@@ -63,7 +63,7 @@
        (map->User user)))))
 
 (defn find-user [login]
-  (if-let [found (and login (fetch *user-store* [login]))]
+  (if-let [found (and login (fetch-one *user-store* [login]))]
     (map->User found)))
 
 (defn revoke-user

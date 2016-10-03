@@ -18,7 +18,7 @@
 
 (defrecord SqlSessionStore []
   Store
-  (fetch [this [sid]]
+  (fetch-one [this [sid]]
     (if-let [session (first (db/find-session {:sid sid}))]
       (let [{:keys [sid content created_at expires_at]} session]
         {:sid sid
@@ -81,7 +81,7 @@
   (touch! *session-store* [:sid] (extend-by session ttl)))
 
 (defn find-session [sid & [opt]]
-  (when-let [found (fetch *session-store* [sid])]
+  (when-let [found (fetch-one *session-store* [sid])]
     (if (expired? found)
       (revoke-session found)
       (map->Session
