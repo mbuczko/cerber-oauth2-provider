@@ -41,10 +41,10 @@ API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to
 
 used to create new OAuth client, where:
 - homepage is a non-validated info string (typically an URL to client's homepage)
-- redirects is an vector of valid redirect-uris. Note that for security reasons, redirect-uri provided with token request should match one of entries listed in ```redirects```
+- redirects is a validated vector of approved redirect-uris. Note that for security reasons, redirect-uri provided with token request should match one of entries listed in ```redirects```
 - scopes is an optional vector of OAuth scopes that client may request an access to
 - authorities is an optional vector of authorities that client may operate with
-- approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default (client needs user's approval)
+- approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.
 
 Example:
 
@@ -64,24 +64,24 @@ client instance and it might be harmful to let attacker know what's your client'
 
 ```(find-client [client-id])```
 
-Looks up for client with given client identifier.
+Looks up for client with given identifier.
 
 ```(delete-client [client])```
 
-Removes client from store. Note that together with client all its access- and refresh-tokens get removed as well.
+Removes client from store. Note that together with client all its access- and refresh-tokens are revoked as well.
 
 ### tokens
 
 ```(find-tokens-by-client [client])```
 
-Returns list of all (non-expirable) refresh-tokens generated for given client.
+Returns list of non-expirable refresh-tokens generated for given client.
 
 ```(find-tokens-by-user [user])```
 
-Returns list of all (non-expirable) refresh-tokens generated for clients operating on behalf of given user.
+Returns list of non-expirable refresh-tokens generated for clients operating on behalf of given user.
 
 ```(revoke-tokens [client])```
 
 ```(revoke-tokens [client login])```
 
-Revokes all access- and refresh-tokens bound with given client (and possibly with particular user).
+Revokes all access- and refresh-tokens bound with given client (and optional user's login).
