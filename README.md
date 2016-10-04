@@ -24,16 +24,32 @@ Store is an abstract of storage keeping information vital for Cerber. There are 
 * authcodes store - codes to be exchanged for tokens
 
 Store abstract has currenlty following implementations:
-* in-memory - ideal for development mode and tests
-* redis - recommended for production mode
-* sql - any JDBC compliant SQL database (eg. MySQL or PostgreSQL)
+* ```in-memory``` - ideal for development mode and tests
+* ```redis``` - recommended for production mode
+* ```sql``` - any JDBC compliant SQL database (eg. MySQL or PostgreSQL)
 
-To keep maximal flexibility, each store can use different store implementation. Following configuration is recommended for production use:
-
-* SQL store for users
-* SQL store for clients
-* redis store for sessions, tokens and authcodes
+To keep maximal flexibility, each store can use different store implementation. It's recommended to use in-memory stores for development process and persistent ones for production.
+Typical configuration might use ```sql``` for users and clients and ```redis``` for sessions/tokens/authcodes.
 
 ## API
+
+API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to manipulate with clients and tokens at higher level.
+
+### clients
+
+```create-client [homepage redirects scopes grants authorities approved?]```
+
+used to create new OAuth client, where:
+- homepage is a non-validated info string (typically an URL to client's homepage)
+- redirects is an vector of valid redirect-uris. Note that according to spec, redirect-uri provided with token request should match one of entries listed in ```redirects```
+- scopes is an optional vector of OAuth scopes that client may request an access to.
+- authorities is an optional vector of authorities that client may operate with.
+- approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default (client needs user's approval).
+
+Example:
+
+    (create-client "http://defunkt.pl" ["http://defunkt.pl/callback"] ["photos:read" "photos:list"] ["moderator"] true)
+
+### tokens
 
 (tbd)
