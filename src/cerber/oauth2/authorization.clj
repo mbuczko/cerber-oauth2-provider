@@ -9,9 +9,11 @@
             [failjure.core :as f]
             [mount.core :refer [defstate]]))
 
-(def default-auto-approver-fn
-  "Auto-approver function. Unapproves all request by default."
-  (constantly false))
+(defn default-auto-approver-fn
+  "Auto-approver function. Unapproves all non-approved clients by default."
+  [req]
+  (when-let [client (::ctx/client req)]
+    (:approved client)))
 
 (defn default-authenticator-fn
   "Default user-authenticator function. Returns user if request is authorized or falsey otherwise."

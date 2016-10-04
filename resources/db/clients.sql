@@ -4,7 +4,7 @@ select * from clients where id=:id
 
 -- :name insert-client :! :1
 -- :doc Inserts new client
-insert into clients (id, secret, homepage, redirects, scopes, grants, authorities) values (:id, :secret, :homepage, :redirects, :scopes, :grants, :authorities)
+insert into clients (id, secret, homepage, redirects, scopes, grants, authorities, approved) values (:id, :secret, :homepage, :redirects, :scopes, :grants, :authorities, :approved)
 
 -- :name delete-client :! :1
 -- :doc Deletes client with given identifier

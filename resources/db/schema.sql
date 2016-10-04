@@ -53,6 +53,7 @@ create table clients (
   id varchar(32) primary key,
   secret varchar(32) not null,
   homepage varchar(255),
+  approved bit not null default false,
   scopes varchar(1024),
   grants varchar(255),
   redirects varchar(512) not null,

@@ -70,11 +70,12 @@
 
 (defn create-client
   "Creates new client"
-  [homepage redirects scopes grants authorities]
+  [homepage redirects scopes grants authorities approved?]
   (let [result (validate-redirects redirects)
         client {:id (generate-secret)
                 :secret (generate-secret)
                 :homepage homepage
+                :approved approved?
                 :scopes (array->str scopes)
                 :grants (array->str grants)
                 :redirects (array->str redirects)
