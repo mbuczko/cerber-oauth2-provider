@@ -81,6 +81,7 @@ Returns list of all (non-expirable) refresh-tokens generated for given client.
 Returns list of all (non-expirable) refresh-tokens generated for clients operating on behalf of given user.
 
 ```(revoke-tokens [client])```
+
 ```(revoke-tokens [client login])```
 
 Revokes all access- and refresh-tokens bound with given client (and possibly with particular user).
