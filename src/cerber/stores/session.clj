@@ -12,15 +12,17 @@
 
 (defrecord Session [sid content created-at expires-at])
 
+(defn ->map [result]
+  (when-let [{:keys [sid content created_at expires_at]} result]
+    {:sid sid
+     :content (nippy/thaw content)
+     :expires-at expires_at
+     :created-at created_at}))
+
 (defrecord SqlSessionStore []
   Store
   (fetch-one [this [sid]]
-    (if-let [session (first (db/find-session {:sid sid}))]
-      (let [{:keys [sid content created_at expires_at]} session]
-        {:sid sid
-         :content (nippy/thaw content)
-         :expires-at expires_at
-         :created-at created_at})))
+    (->map (first (db/find-session {:sid sid}))))
   (revoke-one! [this [sid]]
     (db/delete-session {:sid sid}))
   (store! [this k session]

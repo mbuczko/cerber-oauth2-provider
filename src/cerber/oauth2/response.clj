@@ -35,10 +35,7 @@
 (defn access-token-response [{:keys [::ctx/client ::ctx/scope ::ctx/user ::ctx/authcode]}]
   (when authcode
     (authcode/revoke-authcode authcode))
-
-  (f/attempt-all [access-token (token/generate-access-token client
-                                                            (or user (authcode/->User authcode))
-                                                            (or scope (:scope authcode)))]
+  (f/attempt-all [access-token (token/generate-access-token client user (or scope (:scope authcode)))]
                  {:status 200
                   :body access-token}))
 

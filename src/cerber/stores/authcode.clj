@@ -13,20 +13,22 @@
 (defn default-valid-for []
   (-> app-config :cerber :authcodes :valid-for))
 
-(defrecord AuthCode [client-id user-id code scope redirect-uri expires-at created-at])
+(defrecord AuthCode [client-id login code scope redirect-uri expires-at created-at])
+
+(defn ->map [result]
+  (when-let [{:keys [client_id login code scope redirect_uri created_at expires_at]} result]
+    {:client-id client_id
+     :login login
+     :code code
+     :scope scope
+     :redirect-uri redirect_uri
+     :expires-at expires_at
+     :created-at created_at}))
 
 (defrecord SqlAuthCodeStore []
   Store
   (fetch-one [this [code]]
-    (if-let [authcode (first (db/find-authcode {:code code}))]
-      (let [{:keys [client_id user_id code scope redirect_uri created_at expires_at]} authcode]
-        {:client-id client_id
-         :user-id user_id
-         :code code
-         :scope scope
-         :redirect-uri redirect_uri
-         :expires-at expires_at
-         :created-at created_at})))
+    (->map (first (db/find-authcode {:code code}))))
   (revoke-one! [this [code]]
     (db/delete-authcode {:code code}))
   (store! [this k authcode]
@@ -62,7 +64,6 @@
   "Creates new auth code"
   [client user scope redirect-uri]
   (let [authcode {:client-id (:id client)
-                  :user-id (:id user)
                   :login (:login user)
                   :scope scope
                   :code (generate-secret)
@@ -83,9 +84,3 @@
   []
   "Removes auth code from store. Used for tests only."
   (purge! *authcode-store*))
-
-(defn ->User
-  "Returns User record filled in with all the user info that authcode holds."
-  [authcode]
-  (user/map->User {:id (:user-id authcode)
-                   :login (:login authcode)}))

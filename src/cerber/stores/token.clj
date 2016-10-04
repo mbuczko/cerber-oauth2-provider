@@ -6,31 +6,30 @@
              [store :refer :all]]
             [failjure.core :as f]
             [cerber.stores.user :as user]
-            [cerber.error :as error]
-            [clojure.tools.logging :as log])
+            [cerber.error :as error])
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defn default-valid-for []
   (-> app-config :cerber :tokens :valid-for))
 
-(defrecord Token [client-id user-id scope secret created-at expires-at])
+(defrecord Token [client-id user-id login scope secret created-at expires-at])
 
-(defn sql->map [result]
-  (when-let [{:keys [client_id user_id secret scope login created_at expires_at]} result]
+(defn ->map [result]
+  (when-let [{:keys [client_id user_id login scope secret created_at expires_at]} result]
     {:client-id client_id
      :user-id user_id
-     :secret secret
      :login login
      :scope scope
-     :expires-at expires_at
-     :created-at created_at}))
+     :secret secret
+     :created-at created_at
+     :expires-at expires_at}))
 
 (defrecord SqlTokenStore []
   Store
   (fetch-one [this [client-id tag secret login]]
-    (sql->map (first (db/find-token {:client-id client-id :login login :secret secret :tag tag}))))
+    (->map (first (db/find-tokens-by-secret {:client-id client-id :secret secret :tag tag}))))
   (fetch-all [this [client-id tag secret login]]
-    (map sql->map (if secret
+    (map ->map (if secret
                     (db/find-tokens-by-secret {:client-id client-id :secret secret :tag tag})
                     (if client-id
                       (db/find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
@@ -38,9 +37,9 @@
   (revoke-one! [this [client-id tag secret login]]
     (db/delete-token-by-secret {:client-id client-id :secret secret}))
   (revoke-all! [this [client-id tag secret login]]
-    (map sql->map (if login
-                    (db/delete-tokens-by-login  {:client-id client-id :login login})
-                    (db/delete-tokens-by-client {:client-id client-id}))))
+    (map ->Token (if login
+                   (db/delete-tokens-by-login  {:client-id client-id :login login})
+                   (db/delete-tokens-by-client {:client-id client-id}))))
   (store! [this k token]
     (when (= 1 (db/insert-token token)) token))
   (purge! [this]
@@ -82,10 +81,18 @@
       (map->Token result)
       (error/internal-error "Cannot create token"))))
 
-(defn revoke-by-pattern
-  [key]
-  (revoke-all! *token-store* key)
-  nil)
+;; revocation
+
+(defn revoke-by-pattern [key] (revoke-all! *token-store* key) nil)
+(defn revoke-by-key [key] (revoke-one! *token-store* key) nil)
+
+(defn revoke-access-token
+  [token]
+  (when-let [client-id (:client-id token)]
+    (when-let [user-id (:user-id token)]
+      (revoke-by-key [client-id "access" user-id]))))
+
+;; retrieval
 
 (defn find-by-pattern
   [key]
@@ -109,6 +116,8 @@
   []
   "Removes token from store. Used for tests only."
   (purge! *token-store*))
+
+;; generation
 
 (defn generate-access-token
   [client user scope]

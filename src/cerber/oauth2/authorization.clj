@@ -63,7 +63,7 @@
                             (ctx/client-authenticated?)
                             (ctx/authcode-valid?)
                             (ctx/redirect-valid?)
-                            (ctx/scope-allowed?))]
+                            (ctx/user-valid?))]
     (if (f/failed? result)
       result
       (response/access-token-response result))))

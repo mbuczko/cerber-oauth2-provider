@@ -1,7 +1,3 @@
--- :name find-token :? :*
--- :doc Returns access token
-select * from tokens where client_id=:client-id and login=:login and secret=:secret and tag=:tag
-
 -- :name find-tokens-by-secret :? :*
 -- :doc Returns tokens found by secret
 select * from tokens where client_id=:client-id and secret=:secret and tag=:tag

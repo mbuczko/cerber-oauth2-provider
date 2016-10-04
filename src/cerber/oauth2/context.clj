@@ -1,5 +1,7 @@
 (ns cerber.oauth2.context
-  (:require [cerber.error :as error]
+  (:require [cerber
+             [error :as error]
+             [store :refer [expired?]]]
             [cerber.stores
              [authcode :as authcode]
              [client :as client]
@@ -9,6 +11,7 @@
   (:import org.apache.commons.codec.binary.Base64))
 
 (def refresh-token-pattern #"[A-Z0-9]{32}")
+(def state-pattern #"\p{Alnum}+")
 
 (defn basic-authentication-credentials
   "Decodes basic authentication credentials.
@@ -19,18 +22,17 @@
       (when-let [credentials (String. (Base64/decodeBase64 basic-token))]
         (.split credentials ":")))))
 
-(defn scope-allowed? [req]
-  (let [scope (get-in req [:params :scope])] ;; can be optional
-    (if (client/scope-valid? (::client req) scope)
-      (assoc req ::scope scope)
-      error/invalid-scope)))
-
 (defn state-allowed? [req]
-  (let [state (get-in req [:params :state])] ;; can be optional
-    (if (or (nil? state)
-            (re-matches #"\p{Alnum}+" state))
-      (assoc req ::state state)
-      error/invalid-state)))
+  (let [state (get-in req [:params :state])]
+    (f/attempt-all [valid? (or (nil? state)
+                               (re-matches state-pattern state)
+                               error/invalid-state)]
+                   (assoc req ::state state))))
+
+(defn scope-allowed? [req]
+  (let [scope (get-in req [:params :scope])]
+    (f/attempt-all [valid? (or (client/scope-valid? (::client req) scope) error/invalid-scope)]
+                   (assoc req ::scope scope))))
 
 (defn grant-allowed? [req mandatory-grant]
   (f/attempt-all [grant (or (get-in req [:params :grant_type]) error/invalid-request)
@@ -51,7 +53,8 @@
 (defn authcode-valid? [req]
   (f/attempt-all [code (or (get-in req [:params :code]) error/invalid-request)
                   authcode (or (authcode/find-authcode code) error/invalid-authcode)
-                  valid? (or (= (:client-id authcode) (:id (::client req))) error/invalid-authcode)]
+                  valid? (or (and (= (:client-id authcode) (:id (::client req)))
+                                  (not (expired? authcode))) error/invalid-authcode)]
                  (assoc req ::authcode authcode)))
 
 (defn refresh-token-valid? [req]
@@ -62,6 +65,12 @@
                     valid? (or (and (= client-id (:client-id rtoken))
                                     (= refresh-token (:secret rtoken))) error/invalid-token)]
                    (assoc req ::refresh-token rtoken))))
+
+(defn user-valid? [req]
+  (let [login (:login (::authcode req))]
+    (f/attempt-all [user (or (user/find-user login) error/invalid-authcode)
+                    valid? (or (:enabled user) error/unauthorized)]
+                   (assoc req ::user user))))
 
 (defn client-valid? [req]
   (f/attempt-all [client-id (or (get-in req [:params :client_id]) error/invalid-request)
@@ -83,7 +92,8 @@
   (f/attempt-all [username (or (get-in req [:params :username]) error/invalid-request)
                   password (or (get-in req [:params :password]) error/invalid-request)
                   user   (or (user/find-user username) error/unauthorized)
-                  valid? (or (user/valid-password? password (:password user)) error/unauthorized)]
+                  valid? (or (and (user/valid-password? password (:password user))
+                                  (:enabled user)) error/unauthorized)]
                  (assoc req ::user user)))
 
 (defn request-auto-approved? [req auto-approver-fn]

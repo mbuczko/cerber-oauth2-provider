@@ -10,10 +10,15 @@
 
 (defrecord User [id login email name password authoritites enabled created-at])
 
+(defn ->map [{:keys [created_at modified_at] :as result}]
+  (-> result
+      (assoc  :created-at created_at :modified-at modified_at)
+      (dissoc :created_at :modified_at)))
+
 (defrecord SqlUserStore []
   Store
   (fetch-one [this [login]]
-    (first (db/find-user {:login login})))
+    (->map (first (db/find-user {:login login}))))
   (revoke-one! [this [login]]
     (db/delete-user {:login login}))
   (store! [this k user]
@@ -52,15 +57,16 @@
   ([user password]
    (create-user user password nil))
   ([user password authorities]
-   (let [user (merge {:id (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" "")
-                      :name nil
-                      :email nil
-                      :enabled true
-                      :password (bcrypt password)
-                      :authorities authorities
-                      :created-at (java.util.Date.)} (dissoc user :password :created-at))]
-     (when (store! *user-store* [:login] user)
-       (map->User user)))))
+   (let [merged (merge {:id (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" "")
+                        :name nil
+                        :email nil
+                        :enabled true
+                        :password (bcrypt password)
+                        :authorities authorities
+                        :created-at (java.util.Date.)} (dissoc user :password :created-at))]
+
+     (when (store! *user-store* [:login] merged)
+       (map->User merged)))))
 
 (defn find-user [login]
   (if-let [found (and login (fetch-one *user-store* [login]))]
