@@ -120,23 +120,25 @@
 ;; generation
 
 (defn generate-access-token
-  [client user scope]
+  [client user scope & [opts]]
   (let [access-token (create-token client user scope)
-        {:keys [secret created-at expires-at login]} access-token]
+        {:keys [secret created-at expires-at login]} access-token
+        {:keys [type refresh?] :or {type "Bearer"}} opts]
 
     (if (f/failed? access-token)
       access-token
       (let [refresh-token (or (find-refresh-token (:id client) nil (:login user))
-                              (create-token client user scope {:tag :refresh}))]
+                              (and refresh?
+                                   (create-token client user scope {:tag :refresh})))]
 
         (-> {:access_token secret
-             :token_type "Bearer"
+             :token_type type
              :created_at created-at
              :expires_in (/ (- (.getTime expires-at)
                                (.getTime created-at)) 1000)}
             (cond-> scope
               (assoc :scope scope))
-            (cond-> (not (f/failed? refresh-token))
+            (cond-> (and refresh-token (not (f/failed? refresh-token)))
               (assoc :refresh_token (:secret refresh-token))))))))
 
 (defn refresh-access-token
