@@ -1,7 +1,7 @@
-(ns cerber.oauth2.provider-test
+(ns cerber.oauth2.authorization-test
   (:require [midje.sweet :refer :all]
             [cerber.oauth2.common :refer :all]
-            [cerber.oauth2.provider :refer [authorize!]]
+            [cerber.oauth2.authorization :refer [authorize!]]
             [cerber.stores.client :refer [create-client create-client-store with-client-store]]))
 
 (tabular

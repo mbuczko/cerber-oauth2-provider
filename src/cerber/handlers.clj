@@ -1,5 +1,5 @@
 (ns cerber.handlers
-  (:require  [cerber.oauth2.provider :as provider]
+  (:require  [cerber.oauth2.authorization :as auth]
              [cerber
               [error :as error]
               [form :as form]
@@ -27,19 +27,19 @@
       (wrap-session {:store (session-store)})))
 
 (defn authorization-handler [req]
-  (-> provider/authorize!
+  (-> auth/authorize!
       (wrap-oauth-errors)
       (wrap-session {:store (session-store)})
       (wrap-restful-format :formats [:json-kw])))
 
 (defn authorization-approve-handler [req]
-  (-> provider/approve!
+  (-> auth/approve!
       (wrap-oauth-errors)
       (wrap-anti-forgery)
       (wrap-session {:store (session-store)})
       (wrap-restful-format :formats [:json-kw])))
 
 (defn token-handler [req]
-  (-> provider/issue-token!
+  (-> auth/issue-token!
       (wrap-oauth-errors)
       (wrap-restful-format :formats [:json-kw])))

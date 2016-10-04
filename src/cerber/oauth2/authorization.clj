@@ -1,4 +1,4 @@
-(ns cerber.oauth2.provider
+(ns cerber.oauth2.authorization
   (:require [cerber
              [config :refer [app-config]]
              [error :as error]]

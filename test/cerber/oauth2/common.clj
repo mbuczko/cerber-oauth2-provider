@@ -2,7 +2,7 @@
   (:require [mount.core :as mount]
             [cerber.stores.client :refer [create-client]]
             [cerber.server]
-            [cerber.oauth2.provider]
+            [cerber.oauth2.authorization]
             [clojure.tools.logging :as log])
   (:import redis.embedded.RedisServer))
 

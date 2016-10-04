@@ -10,4 +10,4 @@
           :tokens     {:store :redis :valid-for 180}
           :clients    {:store :in-memory}
           :users      {:store :in-memory}
-          :auto-approver-fn cerber.provider/default-auto-approver-fn}}
+          :auto-approver-fn cerber.oauth2.authorization/default-auto-approver-fn}}
