@@ -28,8 +28,8 @@ Store abstract has currenlty following implementations:
 * ```redis``` - recommended for production mode
 * ```sql``` - any JDBC compliant SQL database (eg. MySQL or PostgreSQL)
 
-To keep maximal flexibility, each store can use different store implementation. It's recommended to use in-memory stores for development process and persistent ones for production.
-Typical configuration might use ```sql``` for users and clients and ```redis``` for sessions/tokens/authcodes.
+To keep maximal flexibility, each store can use different store implementation. It's definitely recommended to use ```in-memory``` stores for development process and persistent ones for production.
+Typical configuration might use ```sql``` for users and clients and ```redis``` for sessions / tokens / authcodes.
 
 ## API
 
@@ -37,19 +37,50 @@ API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to
 
 ### clients
 
-```create-client [homepage redirects scopes grants authorities approved?]```
+```(create-client [homepage redirects scopes grants authorities approved?])```
 
 used to create new OAuth client, where:
 - homepage is a non-validated info string (typically an URL to client's homepage)
-- redirects is an vector of valid redirect-uris. Note that according to spec, redirect-uri provided with token request should match one of entries listed in ```redirects```
-- scopes is an optional vector of OAuth scopes that client may request an access to.
-- authorities is an optional vector of authorities that client may operate with.
-- approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default (client needs user's approval).
+- redirects is an vector of valid redirect-uris. Note that for security reasons, redirect-uri provided with token request should match one of entries listed in ```redirects```
+- scopes is an optional vector of OAuth scopes that client may request an access to
+- authorities is an optional vector of authorities that client may operate with
+- approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default (client needs user's approval)
 
 Example:
 
-    (create-client "http://defunkt.pl" ["http://defunkt.pl/callback"] ["photos:read" "photos:list"] ["moderator"] true)
+```clojure
+    (require '[cerber.oauth2.core :as c])
+
+    (c/create-client "http://defunkt.pl"
+                     ["http://defunkt.pl/callback"]
+                     ["photos:read" "photos:list"]
+                     ["moderator"]
+                     true)
+```
+
+Each generated client has its own random client-id and a secret which both are used in OAuth flow.
+Important thing is to keep the secret codes _really_ secret! Both client-id and secret authorize
+client instance and it might be harmful to let attacker know what's your client's secret code is.
+
+```(find-client [client-id])```
+
+Looks up for client with given client identifier.
+
+```(delete-client [client])```
+
+Removes client from store. Note that together with client all its access- and refresh-tokens get removed as well.
 
 ### tokens
 
-(tbd)
+```(find-tokens-by-client [client])```
+
+Returns list of all (non-expirable) refresh-tokens generated for given client.
+
+```(find-tokens-by-user [user])```
+
+Returns list of all (non-expirable) refresh-tokens generated for clients operating on behalf of given user.
+
+```(revoke-tokens [client])```
+```(revoke-tokens [client login])```
+
+Revokes all access- and refresh-tokens bound with given client (and possibly with particular user).
