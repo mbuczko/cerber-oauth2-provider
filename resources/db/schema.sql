@@ -6,12 +6,12 @@ drop table authcodes if exists;
 
 create table tokens (
   id int auto_increment primary key,
+  tag varchar(10),
   client_id varchar(32) not null,
   user_id varchar(50),
   secret varchar(32) not null,
   scope varchar(255),
   login varchar(32) not null,
-  refreshing varchar(32),
   created_at timestamp not null default now(),
   expires_at timestamp,
   UNIQUE KEY tokens_unique (secret)
