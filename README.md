@@ -77,8 +77,24 @@ Having all the bits and pieces adjusted, throw configuration file into your clas
 (m/start-with-args {:env "local" :basename "cerber"})
 ```
 
+## Usage
 
+Cerber OAuth2 provider defines 5 handlers that should be bound to specific routes. It's not done automagically. Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
 
+Anyway, this is how binding would look like with compojure:
+
+``` clojure
+(require '[cerber.handlers :as handlers]')
+
+(defroutes routes
+  (GET  "/authorize" [] handlers/authorization-handler)
+  (POST "/authorize" [] handlers/authorization-approve-handler)
+  (POST "/token"     [] handlers/token-handler)
+  (GET  "/login"     [] handlers/login-form-handler)
+  (POST "/login"     [] handlers/login-submit-handler))
+```
+
+To recall, anytime /login or /authorize paths change it should be reflected in ```endpoints```  part of configuration.
 
 ## API
 
