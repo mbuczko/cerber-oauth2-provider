@@ -1,5 +1,6 @@
 (ns cerber.error
-  (:require [failjure.core :as f]))
+  (:require [failjure.core :as f]
+            [cerber.config :refer [app-config]]))
 
 (defrecord HttpError [error message code])
 
@@ -39,7 +40,7 @@
   (map->HttpError {:error "unauthorized" :message "Authorization failed" :code 401}))
 
 (def forbidden
-  (map->HttpError {:error "forbidden" :message "No permission to the resource" :code 401}))
+  (map->HttpError {:error "forbidden" :message "No permission to the resource" :code 403}))
 
 (def unsupported-response-type
   (map->HttpError {:error "unsupported_response_type" :message "Unsupported response type" :code 400}))
@@ -54,7 +55,13 @@
   (map->HttpError {:error "server_error" :message message :code 500}))
 
 (defn error->json [http-error state]
-  {:status (or (:code http-error) 500)
-   :body (-> {:error (or (:error http-error) "server_error")
-              :error_description (:message http-error)}
-             (cond-> state (assoc :state state)))})
+  (let [{:keys [code error message]} http-error]
+    (if (or (= code 401) (= code 403))
+      {:status code
+       :headers {"WWW-Authenticate" (str "Bearer realm=\"" (get-in app-config [:cerber :realm])
+                                         "\",error=\"" error
+                                         "\",error_description=" message "\"")}}
+      {:status (or code 500)
+       :body (-> {:error (or error "server_error")
+                  :error_description message}
+                 (cond-> state (assoc :state state)))})))
