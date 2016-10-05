@@ -95,31 +95,48 @@
 ;; retrieval
 
 (defn find-by-pattern
+  "Finds token by vectorized pattern key.
+  Each nil element of key will be replaced with wildcard specific for underlaying store implementation."
+
   [key]
   (when-let [tokens (fetch-all *token-store* key)]
     (map (fn [t] (map->Token t)) tokens)))
 
 (defn find-by-key
+  "Finds token by vectorized exact key.
+  Each element of key is used to compose query depending on underlaying store implementation."
+
   [key]
   (when-let [result (fetch-one *token-store* key)]
     (map->Token result)))
 
 (defn find-access-token
+  "Finds access token issued for given client-user pair with particular auto-generated secret code."
+
   [client-id secret login]
   (find-by-key [client-id "access" secret login]))
 
 (defn find-refresh-token
+  "Finds refresh token issued for given client-user pair with particular auto-generated secret code."
+
   [client-id secret login]
   (first (find-by-pattern [client-id "refresh" secret login])))
 
 (defn purge-tokens
-  []
   "Removes token from store. Used for tests only."
+  []
   (purge! *token-store*))
 
 ;; generation
 
 (defn generate-access-token
+  "Generates access-token for given client-user pair within provided scope.
+  Additional options (type, refresh?) may adjust token type (Bearer by default)
+  and decide whether to generate refresh-token as well or not (no refresh-tokens by default).
+
+  Asking again for refresh-token generation (through :refresh? true option) reuses prevously
+  generated refresh-token for given client/user pair."
+
   [client user scope & [opts]]
   (let [access-token (create-token client user scope)
         {:keys [secret created-at expires-at login]} access-token
@@ -142,6 +159,9 @@
               (assoc :refresh_token (:secret refresh-token))))))))
 
 (defn refresh-access-token
+  "Refreshes access and refresh-tokens using provided refresh-token.
+  Already existing access- and refresh-tokens generated for given client-user pair get removed."
+
   [refresh-token]
   (let [{:keys [client-id user-id login scope]} refresh-token]
     (revoke-by-pattern [client-id nil nil login])

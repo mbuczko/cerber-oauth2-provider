@@ -54,7 +54,12 @@
 (defn internal-error [message]
   (map->HttpError {:error "server_error" :message message :code 500}))
 
-(defn error->json [http-error state]
+(defn error->json
+  "Tranforms error into http response.
+  In case of 401 (unauthorized) and 403 (forbidden) error codes, additional WWW-Authenticate
+  header is returned as described in https://tools.ietf.org/html/rfc6750#section-3"
+
+  [http-error state]
   (let [{:keys [code error message]} http-error]
     (if (or (= code 401) (= code 403))
       {:status code

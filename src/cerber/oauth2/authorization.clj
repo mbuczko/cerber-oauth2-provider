@@ -10,13 +10,17 @@
             [mount.core :refer [defstate]]))
 
 (defn default-auto-approver-fn
-  "Auto-approver function. Unapproves all non-approved clients by default."
+  "Auto-approver function.
+  Denies all non-approved clients by default."
+
   [req]
   (when-let [client (::ctx/client req)]
     (:approved client)))
 
 (defn default-authenticator-fn
-  "Default user-authenticator function. Returns user if request is authorized or falsey otherwise."
+  "Default user-authenticator function.
+  Returns user if request is authorized or falsey otherwise."
+
   [req]
   (let [login (get-in req [:session :login])
         user (user/find-user login)]
@@ -29,6 +33,8 @@
 
 (defmulti authorization-request-handler (comp :response_type :params))
 (defmulti token-request-handler (comp :grant_type :params))
+
+;; authorization request handler for Authorization Code grant type
 
 (defmethod authorization-request-handler "code"
   [req]
@@ -43,6 +49,8 @@
       result
       (response/redirect-with-code result))))
 
+;; authorization request handler for Implict grant type
+
 (defmethod authorization-request-handler "token"
   [req]
   (let [result (f/attempt-> req
@@ -55,9 +63,13 @@
       result
       (response/redirect-with-token result))))
 
+;; default response handler for unknown grant types
+
 (defmethod authorization-request-handler :default
   [req]
   error/unsupported-response-type)
+
+;; token request handler for Authorization Code grant type
 
 (defmethod token-request-handler "authorization_code"
   [req]
@@ -70,6 +82,8 @@
       result
       (response/access-token-response result))))
 
+;; token request handler for Resource Owner Password Credentials grant
+
 (defmethod token-request-handler "password"
   [req]
   (let [result (f/attempt-> req
@@ -80,6 +94,8 @@
       result
       (response/access-token-response result))))
 
+;; token request handler for Client Credentials grant
+
 (defmethod token-request-handler "client_credentials"
   [req]
   (let [result (f/attempt-> req
@@ -88,6 +104,8 @@
     (if (f/failed? result)
       result
       (response/access-token-response result))))
+
+;; refresh-token request handler
 
 (defmethod token-request-handler "refresh_token"
   [req]
@@ -98,6 +116,8 @@
     (if (f/failed? result)
       result
       (response/refresh-token-response result))))
+
+;; default response handler for unknown token requests
 
 (defmethod token-request-handler :default
   [req]
