@@ -31,6 +31,41 @@ Store abstract has currenlty following implementations:
 To keep maximal flexibility, each store can use different store implementation. It's definitely recommended to use ```in-memory``` stores for development process and persistent ones for production.
 Typical configuration might use ```sql``` for users and clients and ```redis``` for sessions / tokens / authcodes.
 
+Now, when it comes to configuration...
+
+## Configuration
+
+Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everything it needs to operate. Instead of creating stores by hand it's pretty enough to adjust simple edn-based configuration file
+specific for each environment (local / test / prod):
+
+``` clojure
+{:server {:host "localhost" :port 8090}
+ :cerber {:redis-spec {:spec {:host "localhost" :port 6379}}
+          :jdbc-pool  {:init-size  1
+                       :min-idle   1
+                       :max-idle   4
+                       :max-active 32
+                       :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/schema.sql'"}
+          :endpoints  {:authentication "/login"
+                       :authorization  "/authorize"}
+          :authcodes  {:store :sql :valid-for 180}
+          :sessions   {:store :sql :valid-for 180}
+          :tokens     {:store :sql :valid-for 180}
+          :users      {:store :sql}
+          :clients    {:store :sql}
+          :realm      "http://defunkt.pl"
+          :landing-url "/"}}
+```
+
+Words of explanation:
+
+```redis-spec``` is a redis connection specification (look at [carmine](https://github.com/ptaoussanis/carmine) for more info). It's optional if you don't plan to use redis.
+```jdbc-pool``` is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info). It's optional if you don't plan to use sql-based storages.
+```endpoint``` if you ever plan to change default OAuth routes you need to adjust authentication/authorization endpoints here as they are used by OAuth flow.
+```realm``` is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
+
+authcodes/sessions/tokens/users and clients are stores configuration. As described previously possible options are ```in-memory```, ```sql``` and ```redis```. Additionally authcodes, sessions and tokens NEED to have life-time (in seconds) configured.
+
 ## API
 
 API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to manipulate with clients and tokens at higher level.

@@ -14,17 +14,24 @@
    (str namespace "/" (str/join ":" composite))))
 
 (defn generate-secret
-  "Generates a unique secret"
+  "Generates a unique secret code."
   []
   (random/base32 20))
 
-(defn now-plus-seconds [seconds]
+(defn now-plus-seconds
+  "Generates current datetime shifted forward by seconds."
+
+  [seconds]
   (when seconds
     (java.util.Date/from (-> (java.time.LocalDateTime/now)
                              (.plusSeconds seconds)
                              (.atZone (java.time.ZoneId/systemDefault))
                              (.toInstant)))))
-(defn expires->ttl [expires-at]
+
+(defn expires->ttl
+  "Returns number of miliseconds between current and expires-at datetimes."
+
+  [expires-at]
   (when expires-at
     (- (.getTime expires-at)
        (.getTime (java.util.Date.)))))
@@ -32,6 +39,7 @@
 (defn str->array
   "Decomposes space separated string into array.
   Returns empty array if string was either null or empty."
+
   [str]
   (or (and str
            (> (.length str) 0)
@@ -39,6 +47,7 @@
 
 (defn array->str
   "Serializes array elements into string by joining them with space."
+
   [arr]
   (str/join " " arr))
 
