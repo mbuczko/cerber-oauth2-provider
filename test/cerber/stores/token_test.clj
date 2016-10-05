@@ -71,13 +71,7 @@
 
  ?store :in-memory :sql :redis)
 
-(tabular
- (fact "Tokens with ttl shorter or longer than valid-for are marked respectively as expired or valid ones."
-       (against-background (default-valid-for) => ?offset)
-       (with-token-store (create-token-store :in-memory)
-         (expired?
-          (create-token client user token-scope)) => ?expired))
-
- ?offset ?expired
- -10     true
- 10      false)
+(fact "Tokens with expires-at date in the past are considered as expired ones."
+      (with-token-store (create-token-store :in-memory)
+        (expired?
+         (create-token client user token-scope {:ttl -10})) => true))

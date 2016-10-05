@@ -1,0 +1,12 @@
+<html>
+    <body>
+        <form method="POST" action="{{action}}">
+            <fieldset>
+                {{ csrf|safe }}
+                <input name="username" type="text" placeholder="Username" autofocus>
+                <input name="password" type="password" placeholder="Password">
+                <button type="submit" class="pure-button pure-button-primary">Submit</button>
+            </fieldset>
+        </form>
+    </body>
+</html>

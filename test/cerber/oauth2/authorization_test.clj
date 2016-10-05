@@ -1,31 +1,38 @@
 (ns cerber.oauth2.authorization-test
-  (:require [midje.sweet :refer :all]
+  (:require [cerber
+             [config :refer [app-config]]
+             [handlers :as handlers]]
+            [cerber.stores
+             [client :as c]
+             [user :as u]]
+            [compojure.core :refer [defroutes GET POST]]
+            [midje.sweet :refer :all]
             [cerber.oauth2.common :refer :all]
-            [cerber.oauth2.authorization :refer [authorize!]]
-            [cerber.stores.client :refer [create-client create-client-store with-client-store]]))
+            [peridot.core :refer :all]
+            [ring.middleware.defaults :refer [api-defaults wrap-defaults]]))
 
-(tabular
- (fact "Authorization fails when invalid response type is requested."
-       (let [req {:request-method :get
-                  :params {:response_type ?type}}]
-         (:error (authorize! req)) => ?result))
- ?type   ?result
- "dummy" "unsupported_response_type"
- "code" "invalid_request")
+(defonce client (c/create-client "http://foo.com" ["http://foo.com/callback"] ["photo:read"]  nil ["moderator"] false))
 
-(fact "Authorization fails when requested by unknown client."
-      (with-client-store (create-client-store :in-memory)
-        (let [client (create-client "http://localhost" ["http://localhost"] ["photo"] nil nil false)
-              req {:request-method :get
-                   :params {:response_type "code"}}]
-          (:error (authorize! (assoc-in req [:params :client_id] (:id client)))) => "invalid_request"
-          (:error (authorize! (assoc-in req [:params :client_id] "foo"))) => "invalid_client")))
+(defroutes oauth-routes
+  ;; (GET  "/authorize" [] handlers/authorization-handler)
+  ;; (POST "/authorize" [] handlers/authorization-approve-handler)
+  ;; (POST "/token"     [] handlers/token-handler)
+  (GET  "/login"     [] handlers/login-form-handler)
+  (POST "/login"     [] handlers/login-submit-handler))
 
-(fact "Authorization fails when requested with unknown scope."
-      (with-client-store (create-client-store :in-memory)
-        (let [client (create-client "http://localhost" ["http://localhost"] ["photo"] nil nil false)
-              req {:request-method :get
-                   :params {:response_type "code"
-                            :client_id (:id client)}}]
-          (:error (authorize! (assoc-in req [:params :scope] "foo"))) => "invalid_scope"
-          (:error (authorize! (assoc-in req [:params :scope] "photo"))) => "invalid_request")))
+(fact "enabled user with valid password is redirected to langing page when successfully logged in"
+
+      ;; given
+      (u/create-user {:login "nioh"} "alamakota")
+
+      ;; when
+      (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
+                      (header "Accept" "text/html")
+                      (request "/login") ;; get csrf
+                      (request-secured "/login"
+                                       :request-method :post
+                                       :params {:username "nioh"
+                                                :password "alamakota"}))]
+        ;; then
+        (get-in state [:response :status]) => 302
+        (get-in state [:response :headers "Location"]) => (get-in app-config [:cerber :landing-url])))

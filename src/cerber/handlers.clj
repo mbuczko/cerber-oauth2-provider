@@ -9,6 +9,8 @@
               [format :refer [wrap-restful-format]]
               [session :refer [wrap-session]]]))
 
+(def custom-store (session-store))
+
 (defn wrap-oauth-errors [handler]
   (fn [req]
     (let [response (handler req)]
@@ -19,24 +21,24 @@
 (defn login-form-handler [req]
   (-> form/render-login-form
       (wrap-anti-forgery)
-      (wrap-session {:store (session-store)})))
+      (wrap-session {:store custom-store})))
 
 (defn login-submit-handler [req]
   (-> form/handle-login-submit
       (wrap-anti-forgery)
-      (wrap-session {:store (session-store)})))
+      (wrap-session {:store custom-store})))
 
 (defn authorization-handler [req]
   (-> auth/authorize!
       (wrap-oauth-errors)
-      (wrap-session {:store (session-store)})
+      (wrap-session {:store custom-store})
       (wrap-restful-format :formats [:json-kw])))
 
 (defn authorization-approve-handler [req]
   (-> auth/approve!
       (wrap-oauth-errors)
       (wrap-anti-forgery)
-      (wrap-session {:store (session-store)})
+      (wrap-session {:store custom-store})
       (wrap-restful-format :formats [:json-kw])))
 
 (defn token-handler [req]
