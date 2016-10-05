@@ -6,7 +6,6 @@
                  [org.clojure/tools.logging "0.3.1"]
                  [com.taoensso/carmine "2.14.0"]
                  [org.mindrot/jbcrypt "0.3m"]
-                 [ch.qos.logback/logback-classic "1.1.7"]
                  [mbuczko/boot-flyway "0.1.0-SNAPSHOT"]
                  [ring/ring-defaults "0.3.0-beta1"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]

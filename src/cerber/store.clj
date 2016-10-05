@@ -133,4 +133,4 @@
       (car/wcar server-conn (car/flushdb))
       (catch java.io.EOFException e
         (if-let [msg (.getMessage e)]
-          (log/error msg))))))
+          (println msg))))))
