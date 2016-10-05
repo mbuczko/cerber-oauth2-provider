@@ -59,17 +59,17 @@ specific for each environment (local / test / prod):
 
 Words of explanation:
 
-```redis-spec``` is a redis connection specification (look at [carmine](https://github.com/ptaoussanis/carmine) for more info). It's optional if you don't plan to use redis.
+```redis-spec``` (optional) is a redis connection specification (look at [carmine](https://github.com/ptaoussanis/carmine) for more info)
 
-```jdbc-pool``` is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info). It's optional if you don't plan to use sql-based storages.
+```jdbc-pool``` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info)
 
-```endpoint``` if you ever plan to change default OAuth routes you need to adjust authentication/authorization endpoints here as they are used by OAuth flow.
+```endpoints``` (optional) if you ever plan to change default OAuth routes you need to adjust authentication/authorization endpoints here as they are used by OAuth flow
 
-```realm``` is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
+```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
 
-authcodes / sessions / tokens / users and clients are stores configuration. As described previously possible options are ```in-memory```, ```sql``` and ```redis```. Additionally authcodes, sessions and tokens NEED to have life-time (in seconds) configured.
+authcodes / sessions / tokens / users and clients are required stores configurations. Note that authcodes, sessions and tokens NEED to have life-time (in seconds) configured.
 
-Having all the bits and pieces adjusted, put the configuration file into your classpath (usually _resources_ folder) with descriptive name in a format ```name-environment.edn``` (eg. cerber-local.edn) and run _mount_ machinery:
+Having all the bits and pieces adjusted, throw configuration file into your classpath (usually _resources_ folder) with descriptive name in a format ```name-environment.edn``` (eg. cerber-local.edn) and run _mount_ machinery:
 
 ``` clojure
 (require '[mount.core :as m])
