@@ -41,7 +41,7 @@ API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to
 
 used to create new OAuth client, where:
 - homepage is a non-validated info string (typically an URL to client's homepage)
-- redirects is a validated vector of approved redirect-uris. Note that for security reasons, redirect-uri provided with token request should match one of entries listed in ```redirects```
+- redirects is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
 - scopes is an optional vector of OAuth scopes that client may request an access to
 - authorities is an optional vector of authorities that client may operate with
 - approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.

@@ -35,23 +35,23 @@
                    (assoc req ::scope scope))))
 
 (defn grant-allowed? [req mandatory-grant]
-  (f/attempt-all [grant (or (get-in req [:params :grant_type]) error/invalid-request)
+  (f/attempt-all [grant (get-in req [:params :grant_type] error/invalid-request)
                   valid? (or (= grant mandatory-grant) error/invalid-grant)
                   allowed? (or (client/grant-allowed? (::client req) mandatory-grant) error/invalid-grant)]
                  (assoc req ::grant grant)))
 
 (defn redirect-allowed? [req]
-  (f/attempt-all [redirect-uri (or (get-in req [:params :redirect_uri]) error/invalid-request)
+  (f/attempt-all [redirect-uri (get-in req [:params :redirect_uri] error/invalid-request)
                   allowed? (or (client/redirect-uri-valid? (::client req) redirect-uri) error/invalid-redirect-uri)]
                  (assoc req ::redirect-uri (.replaceAll redirect-uri "/\\z" ""))))
 
 (defn redirect-valid? [req]
-  (f/attempt-all [redirect-uri (or (get-in req [:params :redirect_uri]) error/invalid-request)
+  (f/attempt-all [redirect-uri (get-in req [:params :redirect_uri] error/invalid-request)
                   valid? (or (= redirect-uri (:redirect-uri (::authcode req))) error/invalid-authcode)]
                  (assoc req ::redirect-uri (.replaceAll redirect-uri "/\\z" ""))))
 
 (defn authcode-valid? [req]
-  (f/attempt-all [code (or (get-in req [:params :code]) error/invalid-request)
+  (f/attempt-all [code (get-in req [:params :code] error/invalid-request)
                   authcode (or (authcode/find-authcode code) error/invalid-authcode)
                   valid? (or (and (= (:client-id authcode) (:id (::client req)))
                                   (not (expired? authcode))) error/invalid-authcode)]
@@ -59,7 +59,7 @@
 
 (defn refresh-token-valid? [req]
   (let [client-id (:id (::client req))]
-    (f/attempt-all [refresh-token (or (get-in req [:params :refresh_token]) error/invalid-request)
+    (f/attempt-all [refresh-token (get-in req [:params :refresh_token] error/invalid-request)
                     match? (or (re-matches refresh-token-pattern refresh-token) error/invalid-token)
                     rtoken (or (token/find-refresh-token client-id refresh-token nil) error/invalid-token)
                     valid? (or (and (= client-id (:client-id rtoken))
@@ -73,7 +73,7 @@
                    (assoc req ::user user))))
 
 (defn client-valid? [req]
-  (f/attempt-all [client-id (or (get-in req [:params :client_id]) error/invalid-request)
+  (f/attempt-all [client-id (get-in req [:params :client_id] error/invalid-request)
                   client (or (client/find-client client-id) error/invalid-client)]
                  (assoc req ::client client)))
 
@@ -89,8 +89,8 @@
     error/unauthorized))
 
 (defn user-password-valid? [req]
-  (f/attempt-all [username (or (get-in req [:params :username]) error/invalid-request)
-                  password (or (get-in req [:params :password]) error/invalid-request)
+  (f/attempt-all [username (get-in req [:params :username] error/invalid-request)
+                  password (get-in req [:params :password] error/invalid-request)
                   user   (or (user/find-user username) error/unauthorized)
                   valid? (or (and (user/valid-password? password (:password user))
                                   (:enabled user)) error/unauthorized)]
