@@ -60,8 +60,11 @@ specific for each environment (local / test / prod):
 Words of explanation:
 
 ```redis-spec``` is a redis connection specification (look at [carmine](https://github.com/ptaoussanis/carmine) for more info). It's optional if you don't plan to use redis.
+
 ```jdbc-pool``` is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info). It's optional if you don't plan to use sql-based storages.
+
 ```endpoint``` if you ever plan to change default OAuth routes you need to adjust authentication/authorization endpoints here as they are used by OAuth flow.
+
 ```realm``` is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
 
 authcodes/sessions/tokens/users and clients are stores configuration. As described previously possible options are ```in-memory```, ```sql``` and ```redis```. Additionally authcodes, sessions and tokens NEED to have life-time (in seconds) configured.
