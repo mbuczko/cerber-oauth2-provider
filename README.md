@@ -67,7 +67,18 @@ Words of explanation:
 
 ```realm``` is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
 
-authcodes/sessions/tokens/users and clients are stores configuration. As described previously possible options are ```in-memory```, ```sql``` and ```redis```. Additionally authcodes, sessions and tokens NEED to have life-time (in seconds) configured.
+authcodes / sessions / tokens / users and clients are stores configuration. As described previously possible options are ```in-memory```, ```sql``` and ```redis```. Additionally authcodes, sessions and tokens NEED to have life-time (in seconds) configured.
+
+Having all the bits and pieces adjusted, put the configuration file into your classpath (usually _resources_ folder) with descriptive name in a format ```name-environment.edn``` (eg. cerber-local.edn) and run _mount_ machinery:
+
+``` clojure
+(require '[mount.core :as m])
+
+(m/start-with-args {:env "local" :basename "cerber"})
+```
+
+
+
 
 ## API
 
