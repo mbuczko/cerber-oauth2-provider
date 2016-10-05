@@ -15,15 +15,16 @@ To make all of this happen, Cerber sits on a shoulders of Stores.
 
 ## Stores
 
-Store is an abstract of storage keeping information vital for Cerber. There are 4 stores implemented:
+Store is an abstraction of storage keeping information vital for Cerber. There are 4 stores introduced:
 
 * users - keeps users details (along with encoded password)
 * clients - keeps OAuth clients data (identifiers, secrets, allowed redirect URIs and so on)
-* session store - keeps http session data transmitted back and forth via [ring session](https://github.com/ring-clojure/ring/wiki/Sessions)
-* tokens store -  generated access- and refresh tokens
-* authcodes store - codes to be exchanged for tokens
+* sessions - keeps http session data transmitted back and forth via [ring session](https://github.com/ring-clojure/ring/wiki/Sessions)
+* tokens -  generated access- and refresh tokens
+* authcodes - codes to be exchanged for tokens
 
-Store abstract has currenlty following implementations:
+All stores may use one of following implementations:
+
 * ```in-memory``` - ideal for development mode and tests
 * ```redis``` - recommended for production mode
 * ```sql``` - any JDBC compliant SQL database (eg. MySQL or PostgreSQL)
@@ -81,10 +82,10 @@ Having all the bits and pieces adjusted, throw configuration file into your clas
 
 Cerber OAuth2 provider defines 5 handlers that should be bound to specific routes. It's not done automagically. Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
 
-Anyway, this is how binding would look like with compojure:
+Anyway, this is how bindings would look like with compojure:
 
 ``` clojure
-(require '[cerber.handlers :as handlers]')
+(require '[cerber.handlers :as handlers])
 
 (defroutes routes
   (GET  "/authorize" [] handlers/authorization-handler)
