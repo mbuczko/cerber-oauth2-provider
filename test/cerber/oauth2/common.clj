@@ -1,9 +1,6 @@
 (ns cerber.oauth2.common
-  (:require [mount.core :as mount]
-            [cerber.stores.client :refer [create-client]]
-            [cerber.server]
-            [cerber.oauth2.authorization]
-            [clojure.tools.logging :as log])
+  (:require [cerber.server]
+            [mount.core :as mount])
   (:import redis.embedded.RedisServer))
 
 ;; in-memory redis instance
@@ -13,7 +10,8 @@
                     (mount/except [#'cerber.server/http-server])
                     mount/start))
 
-;; some additional checkers
+;; some additional midje checkers
+
 (defn has-secret [field]
   (fn [actual]
     (not-empty (get actual field))))
@@ -21,10 +19,3 @@
 (defn instance-of [clazz]
   (fn [actual]
     (instance? clazz actual)))
-
-;; default users and clients
-(def client-foo (create-client "http://foo.com" ["http://foo.com/callback"] nil nil nil))
-(def client-bar (create-client "http://bar.com" ["http://bar.com/callback"] nil nil nil))
-
-(def user-nioh {:login "nioh"})
-(def user-niah {:login "niah"})

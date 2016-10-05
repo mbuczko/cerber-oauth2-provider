@@ -26,7 +26,7 @@
 
 (defrecord SqlTokenStore []
   Store
-  (fetch-one [this [client-id tag secret login]]
+  (fetch-one [this [client-id tag secret]]
     (->map (first (db/find-tokens-by-secret {:client-id client-id :secret secret :tag tag}))))
   (fetch-all [this [client-id tag secret login]]
     (map ->map (if secret
@@ -34,7 +34,7 @@
                     (if client-id
                       (db/find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
                       (db/find-tokens-by-login {:login login :tag tag})))))
-  (revoke-one! [this [client-id tag secret login]]
+  (revoke-one! [this [client-id tag secret]]
     (db/delete-token-by-secret {:client-id client-id :secret secret}))
   (revoke-all! [this [client-id tag secret login]]
     (map ->Token (if login
@@ -89,8 +89,8 @@
 (defn revoke-access-token
   [token]
   (when-let [client-id (:client-id token)]
-    (when-let [user-id (:user-id token)]
-      (revoke-by-key [client-id "access" user-id]))))
+    (when-let [login (:login token)]
+      (revoke-by-key [client-id "access" (:secret token) login]))))
 
 ;; retrieval
 

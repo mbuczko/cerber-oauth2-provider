@@ -5,9 +5,8 @@
                        :max-idle   4
                        :max-active 32
                        :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/schema.sql'"}
-          :authcodes  {:store :redis :valid-for 180}
-          :sessions   {:store :redis :valid-for 180}
-          :tokens     {:store :redis :valid-for 180}
+          :authcodes  {:store :in-memory :valid-for 180}
+          :sessions   {:store :in-memory :valid-for 180}
+          :tokens     {:store :in-memory :valid-for 180}
           :clients    {:store :in-memory}
-          :users      {:store :in-memory}
-          :auto-approver-fn cerber.oauth2.authorization/default-auto-approver-fn}}
+          :users      {:store :in-memory}}}

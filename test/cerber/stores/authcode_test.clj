@@ -1,16 +1,21 @@
 (ns cerber.stores.authcode-test
-  (:require [midje.sweet :refer :all]
+  (:require [cerber.stores
+             [authcode :refer :all]
+             [client :as c]
+             [user :as u]]
             [cerber.oauth2.common :refer :all]
-            [cerber.stores.authcode :refer :all])
-  (:import  [cerber.stores.authcode AuthCode]))
+            [midje.sweet :refer :all])
+  (:import cerber.stores.authcode.AuthCode))
+
+(defonce client (c/create-client "http://foo.com" ["http://foo.com/callback"] ["photo:read"]  nil ["moderator"] false))
+(defonce user (u/create-user {:login "nioh"} "alamakota"))
 
 (def scope "photo:read")
-
 (def redirect "http://localhost:8080/callback")
 
 (fact "Newly created authcode is returned with secret code filled in."
       (with-authcode-store (create-authcode-store :in-memory)
-        (let [authcode (create-authcode client-foo user-nioh scope redirect)]
+        (let [authcode (create-authcode client user scope redirect)]
           authcode => (instance-of AuthCode)
           authcode => (has-secret :code))))
 
@@ -20,7 +25,7 @@
    (fact "Authcode found in a store is returned with secret code filled in."
          (with-authcode-store (create-authcode-store ?store)
            (purge-authcodes)
-           (let [authcode (create-authcode client-foo user-nioh scope redirect)
+           (let [authcode (create-authcode client user scope redirect)
                  found (find-authcode (:code authcode))]
 
              found => (instance-of AuthCode)
@@ -34,7 +39,7 @@
    (fact "Revoked authcode is not returned from store."
          (with-authcode-store (create-authcode-store ?store)
            (purge-authcodes)
-           (let [authcode (create-authcode client-bar user-nioh scope redirect)]
+           (let [authcode (create-authcode client user scope redirect)]
              (find-authcode (:code authcode)) => (instance-of AuthCode)
              (revoke-authcode authcode)
              (find-authcode (:code authcode)) => nil))))
@@ -48,7 +53,7 @@
          (against-background (default-valid-for) => -1)
          (with-authcode-store (create-authcode-store ?store)
            (purge-authcodes)
-           (let [authcode (create-authcode client-bar user-nioh scope redirect)]
+           (let [authcode (create-authcode client user scope redirect)]
              (find-authcode (:code authcode))) => nil)))
 
  ?store :in-memory :sql :redis)

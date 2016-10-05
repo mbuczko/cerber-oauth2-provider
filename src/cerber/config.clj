@@ -1,22 +1,22 @@
 (ns cerber.config
-  (:require [clojure.tools.logging :as log]
-            [helpful-loader.edn :as edn-loader]
+  (:require [helpful-loader.edn :as edn-loader]
             [mount.core :refer [defstate] :as mount]))
 
 (defn load-config
   "Loads configuration file depending on environment"
-  [basename env]
+  [base-name env]
 
-  (log/info "Loading\033[1;31m" env "\033[0mconfig...")
+  (println "Loading\033[1;31m" env "\033[0mconfig...")
   (merge-with conj
               {:is-prod? (= env "prod")
                :is-test? (= env "test")
                :is-dev?  (or (= env "dev")
                              (= env "local"))}
-              (edn-loader/load-one-or-nil (str basename ".edn"))
-              (edn-loader/load-one-or-nil (str basename "-" env ".edn"))))
+              (edn-loader/load-one-or-nil (str base-name ".edn"))
+              (edn-loader/load-one-or-nil (str base-name "-" env ".edn"))))
+
+(defn init-cerber [{:keys [base-name env]}]
+  (load-config (or base-name "cerber") (or env "local")))
 
 (defstate app-config
-  :start (let [{:keys [basename env]} (mount/args)]
-           (load-config (or basename "cerber")
-                        (or env "local"))))
+  :start (init-cerber (mount/args)))

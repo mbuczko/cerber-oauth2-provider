@@ -64,7 +64,7 @@ Words of explanation:
 
 ```jdbc-pool``` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info)
 
-```endpoints``` (optional) if you ever plan to change default OAuth routes you need to adjust authentication/authorization endpoints here as they are used by OAuth flow
+```endpoints``` (optional) any change in default OAuth authentication/authorization URLs need to be reflected here
 
 ```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
 

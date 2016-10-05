@@ -10,10 +10,11 @@
 
 (defrecord User [id login email name password authoritites enabled created-at])
 
-(defn ->map [{:keys [created_at modified_at] :as result}]
-  (-> result
-      (assoc  :created-at created_at :modified-at modified_at)
-      (dissoc :created_at :modified_at)))
+(defn ->map [result]
+  (when-let [{:keys [created_at modified_at]} result]
+    (-> result
+        (assoc  :created-at created_at :modified-at modified_at)
+        (dissoc :created_at :modified_at))))
 
 (defrecord SqlUserStore []
   Store

@@ -14,14 +14,14 @@
 
 (fact "New client is returned as Client record with secret filled in."
       (with-client-store (create-client-store :in-memory)
-        (let [client (create-client homepage redirects scopes grants authorities)]
+        (let [client (create-client homepage redirects scopes grants authorities false)]
           client => (instance-of Client)
           client => (has-secret :secret))))
 
 (tabular
  (fact "Redirect URIs must be a valid URLs with no forbidden characters."
        (with-client-store (create-client-store :in-memory)
-         (create-client homepage ?redirects scopes grants authorities) => ?expected))
+         (create-client homepage ?redirects scopes grants authorities false) => ?expected))
 
  ?redirects                       ?expected
  ["http://dupa.z.trupa"]          truthy
@@ -36,7 +36,7 @@
    (fact "Newly created client is returned when stored correctly in a store."
          (with-client-store (create-client-store ?store)
            (purge-clients)
-           (let [client (create-client homepage redirects scopes grants authorities)
+           (let [client (create-client homepage redirects scopes grants authorities false)
                  found  (find-client (:id client))]
              found => (instance-of Client)
              found => (has-secret :secret)))))
@@ -50,7 +50,7 @@
          (with-client-store (create-client-store ?store)
            (purge-clients)
 
-           (let [client (create-client homepage redirects scopes grants authorities)
+           (let [client (create-client homepage redirects scopes grants authorities false)
                  id (:id client)]
              (find-client id) => (instance-of Client)
              (revoke-client id)

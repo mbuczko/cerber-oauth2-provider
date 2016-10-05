@@ -13,16 +13,4 @@
           :users      {:store :sql}
           :clients    {:store :sql}
           :realm      "http://defunkt.pl"
-          :landing-url "/"
-          :repository {:clients [{:homepage "http://localhost"
-                                  :redirects ["http://localhost:8090/callback"]
-                                  :scopes ["photo:read"]
-                                  :grants nil
-                                  :authorities nil}
-                                 {:homepage "http://defunkt.pl"
-                                  :redirects ["http://localhost:8090/callback"]
-                                  :scopes ["photo:read"]
-                                  :grants ["moderator"]
-                                  :authorities nil
-                                  :approved true}]
-                       :users    [{:login "dupa", :password "alamakota"}]}}}
+          :landing-url "/"}}
