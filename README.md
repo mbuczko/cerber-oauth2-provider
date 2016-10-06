@@ -95,9 +95,9 @@ Any errors returned by this implementation should be formed according to specifi
 
 ``` json
 {
-  error: "error code",
-  error_description: "human error description"
-  state: "optional state"
+  "error": "error code",
+  "error"_description: "human error description"
+  "state": "optional state"
 }
 ```
 
