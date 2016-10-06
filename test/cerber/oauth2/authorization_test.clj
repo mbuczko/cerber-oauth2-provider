@@ -24,7 +24,7 @@
 
 (defonce client (c/create-client "http://foo.com" [redirect-uri] [scope]  nil ["moderator"] false))
 
-(fact "enabled user with valid password is redirected to langing page when successfully logged in"
+(fact "Enabled user with valid password is redirected to langing page when successfully logged in."
       (u/purge-users)
 
       ;; given
@@ -42,7 +42,7 @@
         (get-in state [:response :status]) => 302
         (get-in state [:response :headers "Location"]) => (get-in app-config [:cerber :landing-url])))
 
-(fact "Wrong credentials redirect again to login page with failure info displayed."
+(fact "Enabled user with wrong credentials is redirected back to login page with failure info provided."
       (u/purge-users)
 
       ;; given
@@ -61,7 +61,7 @@
         (get-in state [:response :status]) => 200
         (get-in state [:response :body]) => (contains "failed")))
 
-(fact "Inactive user is not able to log in"
+(fact "Inactive user is not able to log in."
       (u/purge-users)
 
       ;; given
@@ -123,6 +123,35 @@
           status => 200
           (slurp body) => (contains "access_token"))))
 
+(fact "Client may receive its token in Implict Grant scenario."
+      (u/purge-users)
+
+      ;; given
+      (u/create-user {:login "nioh" :enabled true} "alamakota")
+
+      ;; when
+      (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
+                      (header "Accept" "text/html")
+                      (request (str "/authorize?response_type=token"
+                                    "&client_id=" (:id client)
+                                    "&scope=" scope
+                                    "&state=" state
+                                    "&redirect_uri=" redirect-uri))
+
+                      ;; login window
+                      (follow-redirect)
+                      (request-secured "/login"
+                                       :request-method :post
+                                       :params {:username "nioh"
+                                                :password "alamakota"})
+
+                      ;; response with token
+                      (follow-redirect))]
+
+        ;; then
+        (get-in state [:response :status]) => 302
+        (get-in state [:response :headers "Location"]) => (contains "access_token")))
+
 (fact "Client may receive its token in Resource Owner Password Credentials Grant scenario."
       (u/purge-users)
 
@@ -139,6 +168,7 @@
                                         :password "alamakota"
                                         :grant_type "password"}))]
 
+        ;; then
         (let [{:keys [status body]} (:response state)]
           status => 200
           (slurp body) => (contains "access_token"))))
