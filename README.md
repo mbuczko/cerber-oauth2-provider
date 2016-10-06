@@ -86,6 +86,21 @@ storage should be used for development only. It simply does not scale (at least 
 
 _(todo)_ introduce JWT tokens
 
+## Implementation
+
+All _NOT RECOMMENDED_ points from specification have been purposely omitted for security reasons. Bearer tokens and client credentials should be passed in HTTP
+headers. All other ways (like query param or form fields) are ignored and will result in HTTP 401 (Unauthorized) or HTTP 403 (Forbidden) errors.
+
+Any errors returned by this implementation should be formed according to specification:
+
+``` json
+{
+  error: "error code",
+  error_description: "human error description"
+  state: "optional state"
+}
+```
+
 ## Usage
 
 Cerber OAuth2 provider defines 5 [ring handlers](https://github.com/ring-clojure/ring/wiki/Concepts) that should be bound to specific routes. It's not done automagically. Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
