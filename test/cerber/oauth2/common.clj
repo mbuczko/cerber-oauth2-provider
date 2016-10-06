@@ -34,7 +34,7 @@
      (re-find #"code=([^\&]+)" loc))))
 
 (defn base64-auth [client]
-  (String. (b64/encode (.getBytes (str (:client-id client) ":" (:client-secret client)))) "UTF-8"))
+  (String. (b64/encode (.getBytes (str (:id client) ":" (:secret client)))) "UTF-8"))
 
 (defn request-secured [state & opts]
   (let [token (extract-csrf state)]

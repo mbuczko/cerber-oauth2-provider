@@ -3,6 +3,8 @@
         <form method="POST" action="{{action}}">
             <fieldset>
                 {{ csrf|safe }}
+                {% if failed? %} failed {% endif %}
+
                 <input name="username" type="text" placeholder="Username" autofocus>
                 <input name="password" type="password" placeholder="Password">
                 <button type="submit" class="pure-button pure-button-primary">Submit</button>
