@@ -167,4 +167,5 @@
     (revoke-by-pattern [client-id nil nil login])
     (generate-access-token {:id client-id}
                            {:id user-id :login login}
-                           scope)))
+                           scope
+                           {:refresh? true})))

@@ -5,7 +5,8 @@
              [handlers :as handlers]]
             [cerber.stores
              [client :as c]
-             [user :as u]]
+             [user :as u]
+             [session :as s]]
             [compojure.core :refer [defroutes GET POST]]
             [midje.sweet :refer :all]
             [peridot.core :refer :all]
@@ -22,7 +23,7 @@
   (GET  "/login"     [] handlers/login-form-handler)
   (POST "/login"     [] handlers/login-submit-handler))
 
-(defonce client (c/create-client "http://foo.com" [redirect-uri] [scope]  nil ["moderator"] false))
+(def client (c/create-client "http://foo.com" [redirect-uri] [scope]  nil ["moderator"] false))
 
 (fact "Enabled user with valid password is redirected to langing page when successfully logged in."
       (u/purge-users)
@@ -82,6 +83,7 @@
 
 (fact "Client may receive its token in Authorization Code Grant scenario."
       (u/purge-users)
+      (s/purge-sessions)
 
       ;; given
       (u/create-user {:login "nioh" :enabled true} "alamakota")
@@ -127,6 +129,7 @@
 
 (fact "Client may receive its token in Implict Grant scenario."
       (u/purge-users)
+      (s/purge-sessions)
 
       ;; given
       (u/create-user {:login "nioh" :enabled true} "alamakota")
