@@ -5,7 +5,7 @@
              [client :as c]
              [user :as u]]
             [cerber.common :refer :all]
-            [cerber.stores.token :refer :all]
+            [cerber.stores.token :refer :all])
   (:import  [cerber.stores.token Token]))
 
 (defonce client (c/create-client "http://foo.com" ["http://foo.com/callback"] ["photo:read"]  nil ["moderator"] false))
