@@ -1,5 +1,5 @@
 (ns cerber.stores.session-test
-  (:require [cerber.oauth2.common :refer :all]
+  (:require [cerber.common :refer :all]
             [cerber.stores.session :refer :all]
             [midje.sweet :refer :all])
   (:import cerber.stores.session.Session))

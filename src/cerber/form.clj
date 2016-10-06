@@ -23,7 +23,7 @@
 
 (defn render-login-form [req]
   (let [session (:session req)]
-    (-> (render-form "oauth2/login.html" {:csrf (anti-forgery-field)
+    (-> (render-form "forms/login.html" {:csrf (anti-forgery-field)
                                           :action (default-authentication-endpoint)
                                           :failed? (boolean (:failed? req))})
 
@@ -31,7 +31,7 @@
         (assoc :session (dissoc session :login)))))
 
 (defn render-approval-form [client req]
-  (render-form "oauth2/authorize.html" {:csrf (anti-forgery-field)
+  (render-form "forms/authorize.html" {:csrf (anti-forgery-field)
                                         :client client
                                         :action (str
                                                  (default-authorization-endpoint)

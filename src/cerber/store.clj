@@ -1,6 +1,5 @@
 (ns cerber.store
   (:require [taoensso.carmine :as car]
-            [clojure.tools.logging :as log]
             [clojure.string :as str]
             [crypto.random :as random]))
 

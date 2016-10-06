@@ -1,6 +1,5 @@
 (ns cerber.stores.client
-  (:require [clojure.tools.logging :as log]
-            [mount.core :refer [defstate]]
+  (:require [mount.core :refer [defstate]]
             [cerber
              [config :refer [app-config]]
              [db :as db]

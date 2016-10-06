@@ -1,4 +1,4 @@
-(ns cerber.oauth2.common
+(ns cerber.common
   (:require [cerber.server]
             [peridot.core :refer [request]]
             [clojure.data.codec.base64 :as b64]

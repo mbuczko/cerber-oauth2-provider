@@ -1,6 +1,5 @@
 (ns cerber.stores.authcode
-  (:require [clojure.tools.logging :as log]
-            [mount.core :refer [defstate]]
+  (:require [mount.core :refer [defstate]]
             [cerber
              [db :as db]
              [config :refer [app-config]]

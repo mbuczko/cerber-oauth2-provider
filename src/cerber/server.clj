@@ -1,6 +1,5 @@
 (ns cerber.server
-  (:require [clojure.tools.logging :as log]
-            [compojure.core :refer [defroutes GET POST]]
+  (:require [compojure.core :refer [defroutes GET POST]]
             [mount.core :as mount :refer [defstate]]
             [cerber
              [config :refer [app-config]]

@@ -4,9 +4,8 @@
             [cerber.stores
              [client :as c]
              [user :as u]]
-            [cerber.oauth2.common :refer :all]
+            [cerber.common :refer :all]
             [cerber.stores.token :refer :all]
-            [clojure.tools.logging :as log])
   (:import  [cerber.stores.token Token]))
 
 (defonce client (c/create-client "http://foo.com" ["http://foo.com/callback"] ["photo:read"]  nil ["moderator"] false))

@@ -1,6 +1,6 @@
 (ns cerber.oauth2.error-test
   (:require [midje.sweet :refer :all]
-            [cerber.oauth2.common :refer :all]
+            [cerber.common :refer :all]
             [cerber.oauth2.authorization :refer [authorize!]]
             [cerber.stores.client :refer [create-client create-client-store with-client-store]]))
 

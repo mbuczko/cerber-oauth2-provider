@@ -1,5 +1,6 @@
 (ns cerber.oauth2.authorization-test
   (:require [cerber
+             [common :refer :all]
              [config :refer [app-config]]
              [handlers :as handlers]]
             [cerber.stores
@@ -7,7 +8,6 @@
              [user :as u]]
             [compojure.core :refer [defroutes GET POST]]
             [midje.sweet :refer :all]
-            [cerber.oauth2.common :refer :all]
             [peridot.core :refer :all]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]))
 

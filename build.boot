@@ -3,7 +3,6 @@
  :resource-paths #{"resources"}
  :directories    #{"config"}
  :dependencies '[[org.clojure/clojure "1.8.0" :scope "provided"]
-                 [org.clojure/tools.logging "0.3.1"]
                  [com.taoensso/carmine "2.14.0"]
                  [org.mindrot/jbcrypt "0.3m"]
                  [mbuczko/boot-flyway "0.1.0-SNAPSHOT"]

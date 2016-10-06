@@ -3,7 +3,7 @@
              [authcode :refer :all]
              [client :as c]
              [user :as u]]
-            [cerber.oauth2.common :refer :all]
+            [cerber.common :refer :all]
             [midje.sweet :refer :all])
   (:import cerber.stores.authcode.AuthCode))
 
