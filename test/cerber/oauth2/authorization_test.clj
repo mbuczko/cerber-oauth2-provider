@@ -122,6 +122,7 @@
         (let [{:keys [status body]} (:response state), token (slurp body)]
           status => 200
           token => (contains "access_token")
+          token => (contains "expires_in")
           token => (contains "refresh_token"))))
 
 (fact "Client may receive its token in Implict Grant scenario."
@@ -150,11 +151,13 @@
                       (follow-redirect))]
 
         ;; then
-        (get-in state [:response :status]) => 302
-        (get-in state [:response :headers "Location"]) => (contains "access_token")
-        (get-in state [:response :headers "Location"]) =not=> (contains "refresh_token")))
+        (let [{:keys [status headers]} (:response state), location (get headers "Location")]
+          status => 302
+          location => (contains "access_token")
+          location => (contains "expires_in")
+          location =not=> (contains "refresh_token"))))
 
-(fact "Client may receive its token in Resource Owner Password Credentials Grant scenario."
+(fact "Client may receive its token in Resource Owner Password Credentials Grant scenario for enabled user."
       (u/purge-users)
 
       ;; given
@@ -174,7 +177,27 @@
         (let [{:keys [status body]} (:response state), token (slurp body)]
           status => 200
           token => (contains "access_token")
+          token => (contains "expires_in")
           token => (contains "refresh_token"))))
+
+(fact "Client cannot receive token in Resource Owner Password Credentials Grant scenario for disabled user."
+      (u/purge-users)
+
+      ;; given
+      (u/create-user {:login "nioh" :enabled false} "alamakota")
+
+      ;; when
+      (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
+                      (header "Accept" "application/json")
+                      (header "Authorization" (str "Basic " (base64-auth client)))
+                      (request "/token"
+                               :request-method :post
+                               :params {:username "nioh"
+                                        :password "alamakota"
+                                        :grant_type "password"}))]
+
+        ;; then
+        (get-in state [:response :status]) => 401))
 
 (fact "Client may receive its token in Client Credentials Grant."
       (u/purge-users)
@@ -191,4 +214,5 @@
         (let [{:keys [status body]} (:response state), token (slurp body)]
           status => 200
           token => (contains "access_token")
+          token => (contains "expires_in")
           token =not=> (contains "refresh_token"))))

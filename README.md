@@ -46,6 +46,7 @@ specific for each environment (local / test / prod):
                        :min-idle   1
                        :max-idle   4
                        :max-active 32
+                       :driver-class "org.h2.Driver"
                        :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/schema.sql'"}
           :endpoints  {:authentication "/login"
                        :authorization  "/authorize"}
@@ -75,7 +76,7 @@ Having all the bits and pieces adjusted, throw configuration file into your clas
 ``` clojure
 (require '[mount.core :as m])
 
-(m/start-with-args {:env "local" :basename "cerber"})
+(m/start-with-args {:env "local" :base-name "cerber"})
 ```
 
 ## Architecture

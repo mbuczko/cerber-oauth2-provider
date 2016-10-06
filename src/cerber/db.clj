@@ -4,7 +4,8 @@
             [conman.core :as conman]))
 
 (defn init-connection [config]
-  (if config
+  (when config
+    (Class/forName (:driver-class config))
     (conman/connect! config)))
 
 (defn close-connection [db]
