@@ -57,7 +57,7 @@
                                        :params {:username "nioh"
                                                 :password ""}))]
 
-        ;; login page should be returned
+        ;; then
         (get-in state [:response :status]) => 200
         (get-in state [:response :body]) => (contains "failed")))
 
@@ -80,7 +80,7 @@
         (get-in state [:response :status]) => 200
         (get-in state [:response :body]) => (contains "failed")))
 
-(fact "user may obtain his token (wired with specific oauth client) in grant_type=authorization code scenario"
+(fact "Client may receive its token in Authorization Code Grant scenario."
       (u/purge-users)
 
       ;; given
@@ -120,6 +120,25 @@
 
         ;; then
         (let [{:keys [status body]} (:response state)]
+          status => 200
+          (slurp body) => (contains "access_token"))))
 
+(fact "Client may receive its token in Resource Owner Password Credentials Grant scenario."
+      (u/purge-users)
+
+      ;; given
+      (u/create-user {:login "nioh" :enabled true} "alamakota")
+
+      ;; when
+      (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
+                      (header "Accept" "application/json")
+                      (header "Authorization" (str "Basic " (base64-auth client)))
+                      (request "/token"
+                               :request-method :post
+                               :params {:username "nioh"
+                                        :password "alamakota"
+                                        :grant_type "password"}))]
+
+        (let [{:keys [status body]} (:response state)]
           status => 200
           (slurp body) => (contains "access_token"))))
