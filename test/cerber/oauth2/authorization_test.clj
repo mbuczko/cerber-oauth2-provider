@@ -172,3 +172,19 @@
         (let [{:keys [status body]} (:response state)]
           status => 200
           (slurp body) => (contains "access_token"))))
+
+(fact "Client may receive its token in Client Credentials Grant."
+      (u/purge-users)
+
+      ;; when
+      (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
+                      (header "Accept" "application/json")
+                      (header "Authorization" (str "Basic " (base64-auth client)))
+                      (request "/token"
+                               :request-method :post
+                               :params {:grant_type "client_credentials"}))]
+
+        ;; then
+        (let [{:keys [status body]} (:response state)]
+          status => 200
+          (slurp body) => (contains "access_token"))))
