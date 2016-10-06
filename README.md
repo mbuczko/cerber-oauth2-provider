@@ -78,6 +78,14 @@ Having all the bits and pieces adjusted, throw configuration file into your clas
 (m/start-with-args {:env "local" :basename "cerber"})
 ```
 
+## Architecture
+
+This implementation assumes Authorization Server and Resource Server having same source of knowledge about issued tokens and sessions.
+Servers might be horizontally scaled but still need to be connected to the same underlaying database (redis or sql-based). This is also why in-memory
+storage should be used for development only. It simply does not scale (at least not with current implementation).
+
+_(todo)_ introduce JWT tokens
+
 ## Usage
 
 Cerber OAuth2 provider defines 5 [ring handlers](https://github.com/ring-clojure/ring/wiki/Concepts) that should be bound to specific routes. It's not done automagically. Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
