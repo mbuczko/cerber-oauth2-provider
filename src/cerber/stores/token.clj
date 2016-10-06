@@ -144,8 +144,8 @@
 
     (if (f/failed? access-token)
       access-token
-      (let [refresh-token (or (find-refresh-token (:id client) nil (:login user))
-                              (and refresh?
+      (let [refresh-token (and refresh?
+                               (or (find-refresh-token (:id client) nil (:login user))
                                    (create-token client user scope {:tag :refresh})))]
 
         (-> {:access_token secret

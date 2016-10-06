@@ -119,9 +119,10 @@
                                                  :redirect_uri redirect-uri}))))]
 
         ;; then
-        (let [{:keys [status body]} (:response state)]
+        (let [{:keys [status body]} (:response state), token (slurp body)]
           status => 200
-          (slurp body) => (contains "access_token"))))
+          token => (contains "access_token")
+          token => (contains "refresh_token"))))
 
 (fact "Client may receive its token in Implict Grant scenario."
       (u/purge-users)
@@ -150,7 +151,8 @@
 
         ;; then
         (get-in state [:response :status]) => 302
-        (get-in state [:response :headers "Location"]) => (contains "access_token")))
+        (get-in state [:response :headers "Location"]) => (contains "access_token")
+        (get-in state [:response :headers "Location"]) =not=> (contains "refresh_token")))
 
 (fact "Client may receive its token in Resource Owner Password Credentials Grant scenario."
       (u/purge-users)
@@ -169,9 +171,10 @@
                                         :grant_type "password"}))]
 
         ;; then
-        (let [{:keys [status body]} (:response state)]
+        (let [{:keys [status body]} (:response state), token (slurp body)]
           status => 200
-          (slurp body) => (contains "access_token"))))
+          token => (contains "access_token")
+          token => (contains "refresh_token"))))
 
 (fact "Client may receive its token in Client Credentials Grant."
       (u/purge-users)
@@ -185,6 +188,7 @@
                                :params {:grant_type "client_credentials"}))]
 
         ;; then
-        (let [{:keys [status body]} (:response state)]
+        (let [{:keys [status body]} (:response state), token (slurp body)]
           status => 200
-          (slurp body) => (contains "access_token"))))
+          token => (contains "access_token")
+          token =not=> (contains "refresh_token"))))
