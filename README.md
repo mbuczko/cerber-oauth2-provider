@@ -71,7 +71,10 @@ Words of explanation:
 
 authcodes / sessions / tokens / users and clients are required stores configurations. Note that authcodes, sessions and tokens NEED to have life-time (in seconds) configured.
 
-Having all the bits and pieces adjusted, throw configuration file into your classpath (usually _resources_ folder) with descriptive name in a format ```name-environment.edn``` (eg. cerber-local.edn) and run _mount_ machinery:
+Having all the bits and pieces adjusted, throw configuration file into your classpath (usually _resources_ folder) with descriptive name as ```name.edn``` (eg. cerber.edn) or ```name-environment.edn``` (eg. cerber-local.edn).
+Configurations are hierarchical which means that both files will be read and merged together (with precedence of -environment.edn entries).
+
+Now, when all that boring stuff is done, time to run _mount_ machinery:
 
 ``` clojure
 (require '[mount.core :as m])

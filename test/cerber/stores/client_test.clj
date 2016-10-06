@@ -36,8 +36,12 @@
    (fact "Newly created client is returned when stored correctly in a store."
          (with-client-store (create-client-store ?store)
            (purge-clients)
+
+           ;; given
            (let [client (create-client homepage redirects scopes grants authorities false)
                  found  (find-client (:id client))]
+
+             ;; then
              found => (instance-of Client)
              found => (has-secret :secret)))))
 
@@ -50,10 +54,17 @@
          (with-client-store (create-client-store ?store)
            (purge-clients)
 
+           ;; given
            (let [client (create-client homepage redirects scopes grants authorities false)
                  id (:id client)]
+
+             ;; and
              (find-client id) => (instance-of Client)
+
+             ;; when
              (revoke-client id)
+
+             ;; then
              (find-client id) => nil))))
 
  ?store :in-memory :sql :redis)

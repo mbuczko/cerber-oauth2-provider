@@ -15,7 +15,10 @@
 
 (fact "Newly created token is returned with user/client ids and secret filled in."
       (with-token-store (create-token-store :in-memory)
+        ;; given
         (let [token (create-token client user token-scope)]
+
+          ;; then
           token => (instance-of Token)
           token => (has-secret :secret)
           token => (contains {:client-id (:id client)
@@ -29,8 +32,12 @@
    (fact "Token found in a store is returned with user/client ids and secret filled in."
          (with-token-store (create-token-store ?store)
            (purge-tokens)
+
+           ;; given
            (let [token (create-token client user token-scope)
                  found (find-access-token (:id client) (:secret token) "nioh")]
+
+             ;; then
              found => (instance-of Token)
              found => (has-secret :secret)
              found => (contains {:client-id (:id client)
@@ -45,8 +52,12 @@
    (fact "Revoked token is not returned from store."
          (with-token-store (create-token-store ?store)
            (purge-tokens)
-           (let [token  (create-token client user token-scope)
+
+           ;; given
+           (let [token (create-token client user token-scope)
                  secret (:secret token)]
+
+             ;; then
              (find-access-token (:id client) secret "nioh") => (instance-of Token)
              (revoke-access-token token)
              (find-access-token (:id client) secret "nioh") => nil))))
@@ -59,14 +70,20 @@
    (fact "Refreshing re-generates access/refresh tokens and revokes old ones from store."
          (with-token-store (create-token-store ?store)
            (purge-tokens)
-           (let [access-token (generate-access-token client user token-scope {:refresh? true})
-                 refresh-token (find-refresh-token (:id client) (:refresh_token access-token) nil)]
 
+           ;; given
+           (let [client-id (:id client)
+                 access-token (generate-access-token client user token-scope {:refresh? true})
+                 refresh-token (find-refresh-token client-id (:refresh_token access-token) nil)]
+
+             ;; when
              (let [new-token (refresh-access-token refresh-token)]
+
+               ;; then
                (= (:access_token new-token) (:access_token access-token)) => false
                (= (:refresh_token new-token) (:refresh_token access-token)) => false
-               (find-access-token (:id client) (:access_token access-token) "foo") => nil
-               (find-refresh-token (:id client) (:secret refresh-token) nil) => nil)))))
+               (find-access-token client-id (:access_token access-token) "foo") => nil
+               (find-refresh-token client-id (:secret refresh-token) nil) => nil)))))
 
  ?store :in-memory :sql :redis)
 

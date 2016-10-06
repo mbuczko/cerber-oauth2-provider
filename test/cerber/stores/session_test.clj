@@ -6,8 +6,12 @@
 
 (fact "Newly created session is returned with session content and random id filled in."
       (with-session-store (create-session-store :in-memory)
+
+        ;; given
         (let [content {:sample "value"}
               session (create-session content)]
+
+          ;; then
           session => (instance-of Session)
           session => (has-secret :sid)
           session => (contains {:content content}))))
@@ -19,10 +23,12 @@
          (with-session-store (create-session-store ?store)
            (purge-sessions)
 
+           ;; given
            (let [content {:sample "value"}
                  initial (create-session content)
                  session (find-session (:sid initial))]
 
+             ;; then
              session => (instance-of Session)
              session => (has-secret :sid)
              session => (contains {:content content})))))
@@ -37,7 +43,10 @@
          (with-session-store (create-session-store ?store)
            (purge-sessions)
 
+           ;; given
            (let [session (create-session {:sample "value"})]
+
+             ;; then
              (find-session (:sid session)) => nil))))
 
  ?store :in-memory :sql :redis)
@@ -50,9 +59,14 @@
          (with-session-store (create-session-store ?store)
            (purge-sessions)
 
+           ;; given
            (let [initial (create-session {:sample "value"})
                  expires (:expires-at initial)
+
+                 ;; when
                  session (extend-session initial)]
+
+             ;; then
              (compare (:expires-at session) expires) => 1))))
 
  ?store :in-memory :sql :redis)
@@ -64,9 +78,14 @@
          (with-session-store (create-session-store ?store)
            (purge-sessions)
 
+           ;; given
            (let [initial (create-session {:sample "value"})
+
+                 ;; when
                  updated (update-session (assoc initial :content {:sample "updated"}))
                  session (find-session (:sid updated))]
+
+             ;; then
              (-> updated :content :sample) => "updated"
              (-> session :content :sample) => "updated"
              (= (:sid updated) (:sid session)) => true

@@ -15,7 +15,11 @@
 
 (fact "Newly created authcode is returned with secret code filled in."
       (with-authcode-store (create-authcode-store :in-memory)
+
+        ;; given
         (let [authcode (create-authcode client user scope redirect)]
+
+          ;; then
           authcode => (instance-of AuthCode)
           authcode => (has-secret :code))))
 
@@ -25,9 +29,12 @@
    (fact "Authcode found in a store is returned with secret code filled in."
          (with-authcode-store (create-authcode-store ?store)
            (purge-authcodes)
+
+           ;; given
            (let [authcode (create-authcode client user scope redirect)
                  found (find-authcode (:code authcode))]
 
+             ;; then
              found => (instance-of AuthCode)
              found => (has-secret :code)))))
 
@@ -39,7 +46,11 @@
    (fact "Revoked authcode is not returned from store."
          (with-authcode-store (create-authcode-store ?store)
            (purge-authcodes)
+
+           ;; given
            (let [authcode (create-authcode client user scope redirect)]
+
+             ;; then
              (find-authcode (:code authcode)) => (instance-of AuthCode)
              (revoke-authcode authcode)
              (find-authcode (:code authcode)) => nil))))
@@ -53,7 +64,11 @@
          (against-background (default-valid-for) => -1)
          (with-authcode-store (create-authcode-store ?store)
            (purge-authcodes)
+
+           ;; given
            (let [authcode (create-authcode client user scope redirect)]
+
+             ;; then
              (find-authcode (:code authcode))) => nil)))
 
  ?store :in-memory :sql :redis)

@@ -6,8 +6,12 @@
 
 (fact "Newly created user is returned with auto-generated id and crypted password filled in."
       (with-user-store (create-user-store :in-memory)
+
+        ;; given
         (let [pass "alamakota"
               user (create-user {:login "foo"} pass)]
+
+          ;; then
           user => (instance-of User)
           user => (has-secret :password)
 
@@ -22,9 +26,13 @@
 
 (fact "Newly created user is enabled by default if no :enabled property was set."
       (with-user-store (create-user-store :in-memory)
+
+        ;; given
         (let [user1 (create-user {:login "foo"} "aa")
               user2 (create-user {:login "bar"
                                   :enabled false} "bb")]
+
+          ;; then
           (:enabled user1) => true
           (:enabled user2) => false)))
 
@@ -34,9 +42,14 @@
    (fact "User found in a store is returned with details filled in."
          (with-user-store (create-user-store ?store)
            (purge-users)
+
+           ;; given
            (create-user {:login "foo"} "alamakota")
 
+           ;; when
            (let [user (find-user "foo")]
+
+             ;; then
              user => (instance-of User)
              user => (has-secret :password)))))
 
@@ -49,9 +62,14 @@
          (with-user-store (create-user-store ?store)
            (purge-users)
 
+           ;; given
            (let [user (create-user {:login "foo"} "alamakota")]
              (find-user "foo") => (instance-of User)
+
+             ;; when
              (revoke-user "foo")
+
+             ;; then
              (find-user "foo") => nil))))
 
  ?store :in-memory :sql :redis)
