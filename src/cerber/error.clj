@@ -65,7 +65,7 @@
       {:status code
        :headers {"WWW-Authenticate" (str "Bearer realm=\"" (get-in app-config [:cerber :realm])
                                          "\",error=\"" error
-                                         "\",error_description=" message "\"")}}
+                                         "\",error_description=\"" message "\"")}}
       {:status (or code 500)
        :body (-> {:error (or error "server_error")
                   :error_description message}

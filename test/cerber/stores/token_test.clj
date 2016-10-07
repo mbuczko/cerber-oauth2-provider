@@ -82,7 +82,8 @@
                ;; then
                (= (:access_token new-token) (:access_token access-token)) => false
                (= (:refresh_token new-token) (:refresh_token access-token)) => false
-               (find-refresh-token client-id (:secret refresh-token) nil) => nil)))))
+               (find-refresh-token client-id (:secret refresh-token) nil) => nil
+               (:expires-at refresh-token) => nil)))))
 
  ?store :in-memory :sql :redis)
 
