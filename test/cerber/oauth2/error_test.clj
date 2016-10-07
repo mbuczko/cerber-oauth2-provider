@@ -14,7 +14,7 @@
 
           ;; then
           (:error (authorize! (assoc-in req [:params :client_id] (:id client)))) => "invalid_request"
-          (:error (authorize! (assoc-in req [:params :client_id] "foo"))) => "invalid_client")))
+          (:error (authorize! (assoc-in req [:params :client_id] "foo"))) => "invalid_request")))
 
 (fact "Authorization fails when requested with unknown scope."
       (with-client-store (create-client-store :in-memory)

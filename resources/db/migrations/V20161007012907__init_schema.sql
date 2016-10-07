@@ -28,7 +28,7 @@ create table users (
 
 create table sessions (
   sid varchar(36) primary key,
-  content blob(2048),
+  content varbinary(2048),
   expires_at datetime not null,
   created_at datetime not null
 );
