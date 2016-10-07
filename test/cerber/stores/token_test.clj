@@ -35,7 +35,7 @@
 
            ;; given
            (let [token (create-token client user token-scope)
-                 found (find-access-token (:id client) (:secret token) "nioh")]
+                 found (find-access-token (:secret token))]
 
              ;; then
              found => (instance-of Token)
@@ -58,9 +58,9 @@
                  secret (:secret token)]
 
              ;; then
-             (find-access-token (:id client) secret "nioh") => (instance-of Token)
+             (find-access-token secret) => (instance-of Token)
              (revoke-access-token token)
-             (find-access-token (:id client) secret "nioh") => nil))))
+             (find-access-token secret) => nil))))
 
  ?store :in-memory :sql :redis)
 
@@ -82,7 +82,6 @@
                ;; then
                (= (:access_token new-token) (:access_token access-token)) => false
                (= (:refresh_token new-token) (:refresh_token access-token)) => false
-               (find-access-token client-id (:access_token access-token) "foo") => nil
                (find-refresh-token client-id (:secret refresh-token) nil) => nil)))))
 
  ?store :in-memory :sql :redis)

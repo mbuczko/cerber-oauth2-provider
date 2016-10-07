@@ -66,6 +66,13 @@
                                     (= refresh-token (:secret rtoken))) error/invalid-token)]
                    (assoc req ::refresh-token rtoken))))
 
+(defn bearer-valid? [req]
+  (f/attempt-all [authorization (get-in req [:headers "authorization"] error/unauthorized)
+                  bearer (or (second (.split authorization  " ")) error/unauthorized)
+                  token (or (token/find-access-token bearer) error/invalid-token)]
+                 (assoc req ::user (user/map->User {:id (:user-id token)
+                                                    :login (:login token)}))))
+
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
     (f/attempt-all [user (or (user/find-user login) error/invalid-authcode)

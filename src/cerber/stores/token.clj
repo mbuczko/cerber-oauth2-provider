@@ -26,16 +26,16 @@
 
 (defrecord SqlTokenStore []
   Store
-  (fetch-one [this [client-id tag secret]]
-    (->map (first (db/find-tokens-by-secret {:client-id client-id :secret secret :tag tag}))))
+  (fetch-one [this [client-id tag secret login]]
+    (->map (first (db/find-tokens-by-secret {:secret secret :tag tag}))))
   (fetch-all [this [client-id tag secret login]]
     (map ->map (if secret
-                    (db/find-tokens-by-secret {:client-id client-id :secret secret :tag tag})
-                    (if client-id
-                      (db/find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
-                      (db/find-tokens-by-login {:login login :tag tag})))))
+                 (db/find-tokens-by-secret {:secret secret :tag tag})
+                 (if client-id
+                   (db/find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
+                   (db/find-tokens-by-login {:login login :tag tag})))))
   (revoke-one! [this [client-id tag secret]]
-    (db/delete-token-by-secret {:client-id client-id :secret secret}))
+    (db/delete-token-by-secret {:secret secret}))
   (revoke-all! [this [client-id tag secret login]]
     (map ->Token (if login
                    (db/delete-tokens-by-login  {:client-id client-id :login login})
@@ -75,9 +75,12 @@
                    :scope scope
                    :expires-at (when (= tag :access) (now-plus-seconds ttl))
                    :created-at (java.util.Date.)
-                   :tag (name tag)})]
+                   :tag (name tag)})
+        key (if (= tag :access)
+              [nil :tag :secret nil]
+              [:client-id :tag :secret :login])]
 
-    (if-let [result (store! *token-store* [:client-id :tag :secret :login] token)]
+    (if-let [result (store! *token-store* key token)]
       (map->Token result)
       (error/internal-error "Cannot create token"))))
 
@@ -88,9 +91,8 @@
 
 (defn revoke-access-token
   [token]
-  (when-let [client-id (:client-id token)]
-    (when-let [login (:login token)]
-      (revoke-by-key [client-id "access" (:secret token) login]))))
+  (when-let [secret (:secret token)]
+    (revoke-by-key [nil "access" (:secret token) nil])))
 
 ;; retrieval
 
@@ -113,8 +115,8 @@
 (defn find-access-token
   "Finds access token issued for given client-user pair with particular auto-generated secret code."
 
-  [client-id secret login]
-  (find-by-key [client-id "access" secret login]))
+  [secret]
+  (find-by-key [nil "access" secret nil]))
 
 (defn find-refresh-token
   "Finds refresh token issued for given client-user pair with particular auto-generated secret code."
@@ -159,12 +161,11 @@
               (assoc :refresh_token (:secret refresh-token))))))))
 
 (defn refresh-access-token
-  "Refreshes access and refresh-tokens using provided refresh-token.
-  Already existing access- and refresh-tokens generated for given client-user pair get removed."
+  "Refreshes access and refresh-tokens using provided refresh-token."
 
   [refresh-token]
-  (let [{:keys [client-id user-id login scope]} refresh-token]
-    (revoke-by-pattern [client-id nil nil login])
+  (let [{:keys [client-id user-id login secret scope]} refresh-token]
+    (revoke-by-key [client-id "refresh" secret login])
     (generate-access-token {:id client-id}
                            {:id user-id :login login}
                            scope

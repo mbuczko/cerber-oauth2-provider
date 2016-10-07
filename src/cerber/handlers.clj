@@ -1,13 +1,15 @@
 (ns cerber.handlers
-  (:require  [cerber.oauth2.authorization :as auth]
-             [cerber
-              [error :as error]
-              [form :as form]
-              [middleware :refer [session-store]]]
-             [ring.middleware
-              [anti-forgery :refer [wrap-anti-forgery]]
-              [format :refer [wrap-restful-format]]
-              [session :refer [wrap-session]]]))
+  (:require [cerber
+             [error :as error]
+             [form :as form]
+             [middleware :refer [session-store]]]
+            [cerber.oauth2
+             [authorization :as auth]
+             [context :as ctx]]
+            [ring.middleware
+             [anti-forgery :refer [wrap-anti-forgery]]
+             [format :refer [wrap-restful-format]]
+             [session :refer [wrap-session]]]))
 
 (def custom-store (session-store))
 
@@ -17,6 +19,20 @@
       (if-let [error (:error response)]
         (error/error->json response (:state (:params req)))
         response))))
+
+(defn wrap-oauth-bearer [handler]
+  (fn [req]
+    (let [result (ctx/bearer-valid? req)]
+      (if (:error result)
+        result
+        (handler result)))))
+
+(defn wrap-token-auth [handler]
+  (-> handler
+      (wrap-oauth-bearer)
+      (wrap-oauth-errors)
+      (wrap-session {:store custom-store})
+      (wrap-restful-format :formats [:json-kw])))
 
 (defn login-form-handler [req]
   (-> form/render-login-form

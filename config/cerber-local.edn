@@ -4,12 +4,13 @@
                        :min-idle   1
                        :max-idle   4
                        :max-active 32
+                       :driver-class "org.h2.Driver"
                        :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/schema.sql'"}
           :endpoints  {:authentication "/login"
                        :authorization  "/authorize"}
           :authcodes  {:store :sql :valid-for 180}
           :sessions   {:store :sql :valid-for 180}
-          :tokens     {:store :sql :valid-for 180}
+          :tokens     {:store :redis :valid-for 180}
           :users      {:store :sql}
           :clients    {:store :sql}
           :realm      "http://defunkt.pl"

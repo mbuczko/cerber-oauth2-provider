@@ -10,7 +10,7 @@
   ([namespace composite nil-to]
    (ns-key namespace (mapv #(or %1 nil-to) composite)))
   ([namespace composite]
-   (str namespace "/" (str/join ":" composite))))
+   (str namespace "/" (str/join ":" (remove str/blank? composite)))))
 
 (defn generate-secret
   "Generates a unique secret code."

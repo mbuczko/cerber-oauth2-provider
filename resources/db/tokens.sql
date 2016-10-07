@@ -1,6 +1,6 @@
 -- :name find-tokens-by-secret :? :*
 -- :doc Returns tokens found by secret
-select * from tokens where client_id=:client-id and secret=:secret and tag=:tag
+select * from tokens where secret=:secret and tag=:tag
 
 -- :name find-tokens-by-login-and-client :? :*
 -- :doc Returns tokens found by client id and login
@@ -15,8 +15,8 @@ select * from tokens where login=:login and tag=:tag
 insert into tokens (client_id, user_id, secret, scope, login, tag, created_at, expires_at) values (:client-id, :user-id, :secret, :scope, :login, :tag, :created-at, :expires-at)
 
 -- :name delete-token-by-secret :! :1
--- :doc Deletes token by client and secret
-delete from tokens where client_id=:client-id and secret=:secret
+-- :doc Deletes token by secret
+delete from tokens where secret=:secret
 
 -- :name delete-tokens-by-login :! :1
 -- :doc Deletes access token
