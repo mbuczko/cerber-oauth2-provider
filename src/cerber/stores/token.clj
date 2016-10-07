@@ -45,10 +45,27 @@
   (purge! [this]
     (db/clear-tokens)))
 
+(defn init-periodic
+  "Runs periodically given function f"
+
+  [f interval]
+  (doto (Thread.
+         #(try
+            (while (not (.isInterrupted (Thread/currentThread)))
+              (Thread/sleep interval)
+              (f))
+            (catch InterruptedException _)))
+    (.start)))
+
+(defn stop-periodic [periodic]
+  (when periodic
+    (.interrupt periodic)))
+
 (defmulti create-token-store identity)
 
 (defstate ^:dynamic *token-store*
-  :start (create-token-store (-> app-config :cerber :tokens :store)))
+  :start (create-token-store (-> app-config :cerber :tokens :store))
+  :stop  (stop-periodic (:periodic *token-store*)))
 
 (defmethod create-token-store :in-memory [_]
   (MemoryStore. "tokens" (atom {})))
@@ -57,7 +74,9 @@
   (RedisStore. "tokens" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-token-store :sql [_]
-  (SqlTokenStore.))
+  (let [store (SqlTokenStore.)]
+    (assoc store :periodic
+           (init-periodic #(db/clear-expired {:date (java.util.Date.)}) 60000))))
 
 (defmacro with-token-store
   "Changes default binding to default token store."

@@ -69,7 +69,8 @@
 (defn bearer-valid? [req]
   (f/attempt-all [authorization (get-in req [:headers "authorization"] error/unauthorized)
                   bearer (or (second (.split authorization  " ")) error/unauthorized)
-                  token (or (token/find-access-token bearer) error/invalid-token)]
+                  token  (or (token/find-access-token bearer) error/invalid-token)
+                  valid? (or (not (expired? token)) error/invalid-token)]
                  (assoc req ::user (user/map->User {:id (:user-id token)
                                                     :login (:login token)}))))
 

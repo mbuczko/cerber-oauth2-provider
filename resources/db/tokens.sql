@@ -29,3 +29,7 @@ delete from tokens where client_id=:client-id
 -- :name clear-tokens :! :1
 -- :doc Purges tokens table
 delete from tokens
+
+-- :name clear-expired :! :1
+-- :doc Purges tokens table from expired token
+delete from tokens where expires_at < :date
