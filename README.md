@@ -15,7 +15,7 @@ To make all of this happen, Cerber sits on a shoulders of Stores.
 
 ## Stores
 
-Store is an abstraction of storage keeping information vital for Cerber. There are 4 stores introduced:
+Store is an abstraction of storage keeping information vital for Cerber. There are 5 stores introduced:
 
 * users - keeps users details (along with encoded password)
 * clients - keeps OAuth clients data (identifiers, secrets, allowed redirect URIs and so on)

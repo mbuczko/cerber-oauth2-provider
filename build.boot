@@ -16,11 +16,10 @@
                  [compojure "1.6.0-beta1" :scope "test"]
                  [http-kit "2.2.0" :scope "test"]
                  [helpful-loader "0.1.1"]
-                 [conman "0.6.0"]
+                 [conman "0.6.1"]
                  [mount "0.1.10"]
-                 [compojure "1.5.0"]
                  [crypto-random "1.2.0"]
-                 [selmer "1.0.7"]
+                 [selmer "1.10.0"]
                  [failjure "0.1.3"]
                  [ring-anti-forgery "0.3.0"]
                  [ring-middleware-format "0.7.0"]])
