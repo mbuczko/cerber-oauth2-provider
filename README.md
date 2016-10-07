@@ -151,7 +151,7 @@ It's responsible for looking for a token in HTTP ```Authorization``` header and 
 (def app
   (wrap-defaults
    (routes
-    oauth2-routes
+    oauth-routes
     (wrap-routes restricted-routes handlers/wrap-token-auth))
    api-defaults))
 ```
