@@ -5,7 +5,7 @@
                        :max-idle   4
                        :max-active 32
                        :driver-class "org.h2.Driver"
-                       :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/V20161007012907__init_scheme.sql'"}
+                       :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/V20161007012907__init_schema.sql'"}
           :authcodes  {:store :in-memory :valid-for 180}
           :sessions   {:store :in-memory :valid-for 180}
           :tokens     {:store :in-memory :valid-for 180}

@@ -18,17 +18,11 @@
 (def invalid-state
   (map->HttpError {:error "invalid_state" :message "Invalid state. Only alphanumeric characters are allowed." :code 400}))
 
-(def invalid-grant
-  (map->HttpError {:error "invalid_grant" :message "Invalid grant" :code 400}))
-
-(def invalid-client
-  (map->HttpError {:error "invalid_client" :message "Invalid client" :code 400}))
-
-(def invalid-authcode
-  (map->HttpError {:error "invalid_authcode" :message "Invalid code or redirect URI" :code 400}))
+(def client-unauthorized
+  (map->HttpError {:error "unauthorized_client" :message "Client unauthorized" :code 401}))
 
 (def invalid-token
-  (map->HttpError {:error "invalid_token" :message "Invalid token" :code 400}))
+  (map->HttpError {:error "invalid_request" :message "Invalid token" :code 400}))
 
 (def invalid-redirect-uri
   (map->HttpError {:error "invalid_redirect_uri" :message "Invalid redirect URI" :code 400}))

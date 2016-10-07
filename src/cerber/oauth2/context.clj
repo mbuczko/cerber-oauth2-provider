@@ -36,8 +36,8 @@
 
 (defn grant-allowed? [req mandatory-grant]
   (f/attempt-all [grant (get-in req [:params :grant_type] error/invalid-request)
-                  valid? (or (= grant mandatory-grant) error/invalid-grant)
-                  allowed? (or (client/grant-allowed? (::client req) mandatory-grant) error/invalid-grant)]
+                  valid? (or (= grant mandatory-grant) error/invalid-request)
+                  allowed? (or (client/grant-allowed? (::client req) mandatory-grant) error/client-unauthorized)]
                  (assoc req ::grant grant)))
 
 (defn redirect-allowed? [req]
@@ -47,14 +47,14 @@
 
 (defn redirect-valid? [req]
   (f/attempt-all [redirect-uri (get-in req [:params :redirect_uri] error/invalid-request)
-                  valid? (or (= redirect-uri (:redirect-uri (::authcode req))) error/invalid-authcode)]
+                  valid? (or (= redirect-uri (:redirect-uri (::authcode req))) error/invalid-request)]
                  (assoc req ::redirect-uri (.replaceAll redirect-uri "/\\z" ""))))
 
 (defn authcode-valid? [req]
   (f/attempt-all [code (get-in req [:params :code] error/invalid-request)
-                  authcode (or (authcode/find-authcode code) error/invalid-authcode)
+                  authcode (or (authcode/find-authcode code) error/invalid-request)
                   valid? (or (and (= (:client-id authcode) (:id (::client req)))
-                                  (not (expired? authcode))) error/invalid-authcode)]
+                                  (not (expired? authcode))) error/invalid-request)]
                  (assoc req ::authcode authcode)))
 
 (defn refresh-token-valid? [req]
@@ -76,19 +76,19 @@
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
-    (f/attempt-all [user (or (user/find-user login) error/invalid-authcode)
+    (f/attempt-all [user (or (user/find-user login) error/invalid-request)
                     valid? (or (:enabled user) error/unauthorized)]
                    (assoc req ::user user))))
 
 (defn client-valid? [req]
   (f/attempt-all [client-id (get-in req [:params :client_id] error/invalid-request)
-                  client (or (client/find-client client-id) error/invalid-client)]
+                  client (or (client/find-client client-id) error/invalid-request)]
                  (assoc req ::client client)))
 
 (defn client-authenticated? [req]
   (f/attempt-all [auth (or (basic-authentication-credentials req) error/unauthorized)
-                  client (or (client/find-client (first auth)) error/invalid-client)
-                  valid? (or (= (second auth) (:secret client)) error/unauthorized)]
+                  client (or (client/find-client (first auth)) error/invalid-request)
+                  valid? (or (= (second auth) (:secret client)) error/client-unauthorized)]
                  (assoc req ::client client)))
 
 (defn user-authenticated? [req authenticator-fn]
