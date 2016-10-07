@@ -114,7 +114,7 @@ Anyway, this is how bindings would look like with compojure:
 ``` clojure
 (require '[cerber.handlers :as handlers])
 
-(defroutes routes
+(defroutes oauth-routes
   (GET  "/authorize" [] handlers/authorization-handler)
   (POST "/authorize" [] handlers/authorization-approve-handler)
   (POST "/token"     [] handlers/token-handler)
@@ -123,6 +123,38 @@ Anyway, this is how bindings would look like with compojure:
 ```
 
 To recall, anytime /login or /authorize paths change it should be reflected in ```endpoints```  part of configuration.
+
+Having OAuth Authentication Server paths set up, next step is to configure restricted resources:
+
+``` clojure
+(defroutes restricted-routes
+  (GET "/user/info" [] user-info-handler))
+```
+
+Let's define ```user-info-handler``` to return user's details:
+
+``` clojure
+(require '[cerber.oauth2.context :as ctx])
+
+(defn user-info-handler [req]
+  {:status 200
+   :body (::ctx/user req)})
+```
+
+Almost there. To verify tokens as an OAuth Resource Server Cerber bases on a single ring wrapper - ```handlers/wrap-token-auth```.
+It's responsible for looking for a token in HTTP ```Authorization``` header and checking whether token matches one issued by Authorization Server.
+
+``` clojure
+(require '[compojure.core :refer [routes wrap-routes]
+          [ring.middleware.defaults :refer [api-defaults wrap-defaults]]])
+
+(def app
+  (wrap-defaults
+   (routes
+    oauth2-routes
+    (wrap-routes restricted-routes handlers/wrap-token-auth))
+   api-defaults))
+```
 
 ## API
 
