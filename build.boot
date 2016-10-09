@@ -49,13 +49,6 @@
         (midje)
         (speak)))
 
-(deftask uberjar
-  "Create an uberjar."
-  []
-  (comp (aot)
-        (uber)
-        (jar)))
-
 (deftask reset
   "Restarts system using local environment."
   []
@@ -70,8 +63,6 @@
 (task-options! midje  {:test-paths #{"test"}}
                flyway {:driver "com.mysql.cj.jdbc.Driver"
                        :url "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"}
-               aot    {:all true}
-               jar    {:file "cerber-oauth2-provider.jar" :main 'cerber.core}
                pom    {:project 'cerber/cerber-oauth2-provider
                        :version +version+
                        :description "OAuth2 provider"
