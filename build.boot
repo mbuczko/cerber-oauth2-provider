@@ -3,10 +3,8 @@
  :resource-paths #{"resources"}
  :directories    #{"config"}
  :dependencies '[[org.clojure/clojure "1.8.0" :scope "provided"]
-                 [org.clojure/tools.cli "0.3.5"]
                  [com.taoensso/carmine "2.14.0"]
                  [org.mindrot/jbcrypt "0.3m"]
-                 [org.flywaydb/flyway-core "3.2.1"]
                  [mbuczko/boot-flyway "0.1.0-SNAPSHOT"]
                  [ring/ring-defaults "0.3.0-beta1"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
@@ -74,8 +72,8 @@
                        :url "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"}
                aot    {:all true}
                jar    {:file "cerber-oauth2.jar" :main 'cerber.core}
-               pom    {:project 'mbuczko/clj-oauth2-provider
+               pom    {:project 'cerber/cerber-oauth2-provider
                        :version +version+
                        :description "OAuth2 provider"
-                       :url "https://github.com/mbuczko/clj-oauth2-provider"
-                       :scm {:url "https://github.com/mbuczko/clj-oauth2-provider"}})
+                       :url "https://github.com/mbuczko/cerber-oauth2-provider"
+                       :scm {:url "https://github.com/mbuczko/cerber-oauth2-provider"}})

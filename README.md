@@ -216,18 +216,18 @@ Revokes all access- and refresh-tokens bound with given client (and optional use
 
 #### I've chosen SQL engine for some of my stores. How to determine what the database schema is?
 
-Cerber uses SQL migrations to incrementally apply changes on database schema. If you want to see how do they look like, or want to apply them by hand, they all live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations).
+Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema. If you want to see how do they look like, or want to apply them by hand, they all live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations).
 
-To apply them in a bit more convenient way without checking out sources, you may want to use Cerber jar directly like this:
+To apply them in a bit easier way without checking out sources, you may want to use boot directly:
 
 ``` shell
-boot -d cerber-oauth2 -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota" -m
+boot -d cerber-oauth2-provider flyway -m -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
 ```
 
 where ```-j``` is a jdbc URL to database, ```-m``` just says to apply pending migrations. You may also use (with caution!) ```-c``` to clean db. When no switch (aside from -j) was used, information about applied migrations will be shown:
 
 ``` shell
-~/w/c/cerber-oauth2-provider $ boot -d cerber-oauth2.jar -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
+~/w/c/cerber-oauth2-provider $ boot -d cerber-oauth2-provider -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
 +----------------+-------------+---------------------+---------+
 | Version        | Description | Installed on        | State   |
 +----------------+-------------+---------------------+---------+
