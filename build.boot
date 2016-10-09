@@ -3,8 +3,10 @@
  :resource-paths #{"resources"}
  :directories    #{"config"}
  :dependencies '[[org.clojure/clojure "1.8.0" :scope "provided"]
+                 [org.clojure/tools.cli "0.3.5"]
                  [com.taoensso/carmine "2.14.0"]
                  [org.mindrot/jbcrypt "0.3m"]
+                 [org.flywaydb/flyway-core "3.2.1"]
                  [mbuczko/boot-flyway "0.1.0-SNAPSHOT"]
                  [ring/ring-defaults "0.3.0-beta1"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
@@ -22,7 +24,8 @@
                  [selmer "1.10.0"]
                  [failjure "0.1.3"]
                  [ring-anti-forgery "0.3.0"]
-                 [ring-middleware-format "0.7.0"]])
+                 [ring-middleware-format "0.7.0"]
+                 [mysql/mysql-connector-java "6.0.4"]])
 
 (def +version+ "0.1.0")
 
@@ -67,8 +70,10 @@
                      :basename "cerber"}))
 
 (task-options! midje  {:test-paths #{"test"}}
-               flyway {:driver "org.postgresql.Driver"
-                       :url "jdbc:postgresql://localhost:5432/template1?user=postgres"}
+               flyway {:driver "com.mysql.jdbc.Driver"
+                       :url "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"}
+               aot    {:all true}
+               jar    {:file "cerber.jar" :main 'cerber.core}
                pom    {:project 'mbuczko/clj-oauth2-provider
                        :version +version+
                        :description "OAuth2 provider"
