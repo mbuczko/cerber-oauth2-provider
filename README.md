@@ -224,7 +224,7 @@ To apply them in a bit more convenient way without checking out sources, you may
 boot -d cerber-oauth2 -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota" -m
 ```
 
-where ```-j``` is a jdbc URL to database, ```-m``` just says to apply pending migrations. You may also use (with caution!) ```-c``` to clean db from all applied migrations. When no switch (aside from -j) was used, information about applied migrations will be shown:
+where ```-j``` is a jdbc URL to database, ```-m``` just says to apply pending migrations. You may also use (with caution!) ```-c``` to clean db. When no switch (aside from -j) was used, information about applied migrations will be shown:
 
 ``` shell
 ~/w/c/cerber-oauth2-provider $ boot -d cerber-oauth2.jar -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
