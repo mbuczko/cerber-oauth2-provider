@@ -70,10 +70,10 @@
                      :basename "cerber"}))
 
 (task-options! midje  {:test-paths #{"test"}}
-               flyway {:driver "com.mysql.jdbc.Driver"
+               flyway {:driver "com.mysql.cj.jdbc.Driver"
                        :url "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"}
                aot    {:all true}
-               jar    {:file "cerber.jar" :main 'cerber.core}
+               jar    {:file "cerber-oauth2.jar" :main 'cerber.core}
                pom    {:project 'mbuczko/clj-oauth2-provider
                        :version +version+
                        :description "OAuth2 provider"

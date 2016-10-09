@@ -210,3 +210,27 @@ Returns list of non-expirable refresh-tokens generated for clients operating on 
 ```(revoke-tokens [client login])```
 
 Revokes all access- and refresh-tokens bound with given client (and optional user's login).
+
+
+## FAQ
+
+#### I've chosen SQL engine for some of my stores. How to determine what the database schema is?
+
+Cerber uses SQL migrations to incrementally apply changes on database schema. If you want to see how do they look like, or want to apply them by hand, they all live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations).
+
+To apply them in a bit more convenient way without checking out sources, you may want to use Cerber jar directly like this:
+
+``` shell
+boot -d cerber-oauth2 -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota" -m
+```
+
+where ```-j``` is a jdbc URL to database, ```-m``` just says to apply pending migrations. You may also use (with caution!) ```-c``` to clean db from all applied migrations. When no switch (aside from -j) was used, information about applied migrations will be shown:
+
+``` shell
+~/w/c/cerber-oauth2-provider $ boot -d cerber-oauth2.jar -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
++----------------+-------------+---------------------+---------+
+| Version        | Description | Installed on        | State   |
++----------------+-------------+---------------------+---------+
+| 20161007012907 | init schema | 2016-10-09 23:25:32 | Success |
++----------------+-------------+---------------------+---------+
+```
