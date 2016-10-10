@@ -1,6 +1,6 @@
 (ns cerber.stores.token-test
   (:require [midje.sweet :refer :all]
-            [cerber.store :refer [now-plus-seconds expired?]]
+            [cerber.helpers :as helpers]
             [cerber.stores
              [client :as c]
              [user :as u]]
@@ -89,5 +89,5 @@
 
 (fact "Tokens with expires-at date in the past are considered as expired ones."
       (with-token-store (create-token-store :in-memory)
-        (expired?
+        (helpers/expired?
          (create-token client user token-scope {:ttl -10})) => true))

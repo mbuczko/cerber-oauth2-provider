@@ -2,9 +2,11 @@
   (:require [cerber
              [config :refer [app-config]]
              [db :as db]
+             [helpers :as helpers]
              [store :refer :all]]
             [mount.core :refer [defstate]]
-            [taoensso.nippy :as nippy])
+            [taoensso.nippy :as nippy]
+            [cerber.helpers :as helpers])
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defn default-valid-for []
@@ -32,8 +34,8 @@
   (modify! [this k session]
     (let [result (db/update-session (assoc session :content (nippy/freeze (:content session))))]
       (when (= 1 result) session)))
-  (touch! [this k session]
-    (let [result (db/update-session-expiration session)]
+  (touch! [this k session ttl]
+    (let [result (db/update-session-expiration (helpers/extend-ttl session ttl))]
       (when (= 1 result) session)))
   (purge! [this]
     (db/clear-sessions)))
@@ -41,7 +43,8 @@
 (defmulti create-session-store identity)
 
 (defstate ^:dynamic *session-store*
-  :start (create-session-store (-> app-config :cerber :sessions :store)))
+  :start (create-session-store (-> app-config :cerber :sessions :store))
+  :stop  (helpers/stop-periodic (:periodic *session-store*)))
 
 (defmethod create-session-store :in-memory [_]
   (MemoryStore. "sessions" (atom {})))
@@ -50,25 +53,26 @@
   (RedisStore. "sessions" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-session-store :sql [_]
-  (SqlSessionStore.))
+  (assoc (SqlSessionStore.) :periodic
+         ;; start expired-sessions periodic garbage collector
+         (helpers/init-periodic #(db/clear-expired-sessions
+                                  {:date (java.util.Date.)}) 60000)))
 
 (defmacro with-session-store
   "Changes default binding to default session store."
   [store & body]
   `(binding [*session-store* ~store] ~@body))
 
-(defn extend-by [session ttl]
-  (assoc session :expires-at (now-plus-seconds
-                              (or ttl (default-valid-for)))))
-
 (defn create-session
   "Creates new session"
   [content & [opts]]
   (let [{:keys [ttl]} opts
-        session {:sid (.toString (java.util.UUID/randomUUID))
-                 :content content
-                 :created-at (java.util.Date.)}]
-    (when (store! *session-store* [:sid] (extend-by session ttl))
+        session (helpers/extend-ttl {:sid (.toString (java.util.UUID/randomUUID))
+                                     :content content
+                                     :created-at (java.util.Date.)}
+                                    (or ttl (default-valid-for)))]
+
+    (when (store! *session-store* [:sid] session)
       (map->Session session))))
 
 (defn revoke-session
@@ -77,15 +81,14 @@
   (revoke-one! *session-store* [(:sid session)]) nil)
 
 (defn update-session [session]
-  (modify! *session-store* [:sid] (extend-by session nil)))
+  (modify! *session-store* [:sid] (helpers/extend-ttl session (default-valid-for))))
 
 (defn extend-session [session]
-  (touch! *session-store* [:sid] (extend-by session nil)))
+  (touch! *session-store* [:sid] session (default-valid-for)))
 
 (defn find-session [sid]
   (when-let [found (fetch-one *session-store* [sid])]
-    (if (expired? found)
-      (revoke-session found)
+    (if-not (helpers/expired? found)
       (map->Session found))))
 
 (defn purge-sessions

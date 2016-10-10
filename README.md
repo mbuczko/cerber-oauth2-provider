@@ -40,8 +40,7 @@ Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everyt
 specific for each environment (local / test / prod):
 
 ``` clojure
-{:server {:host "localhost" :port 8090}
- :cerber {:redis-spec {:spec {:host "localhost" :port 6379}}
+{:cerber {:redis-spec {:spec {:host "localhost" :port 6379}}
           :jdbc-pool  {:init-size  1
                        :min-idle   1
                        :max-idle   4

@@ -3,11 +3,13 @@
             [cerber
              [config :refer [app-config]]
              [db :as db]
+             [helpers :refer :all]
              [store :refer :all]]
             [clojure.string :as str]
             [failjure.core :as f]
             [cerber.error :as error]
-            [cerber.stores.token :as token])
+            [cerber.stores.token :as token]
+            [cerber.helpers :as helpers])
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defrecord Client [id secret homepage redirects scopes grants authorities])

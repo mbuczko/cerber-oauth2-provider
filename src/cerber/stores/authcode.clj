@@ -2,6 +2,7 @@
   (:require [mount.core :refer [defstate]]
             [cerber
              [db :as db]
+             [helpers :as helpers]
              [config :refer [app-config]]
              [store :refer :all]]
             [failjure.core :as f]
@@ -65,9 +66,9 @@
   (let [authcode {:client-id (:id client)
                   :login (:login user)
                   :scope scope
-                  :code (generate-secret)
+                  :code (helpers/generate-secret)
                   :redirect-uri redirect-uri
-                  :expires-at (now-plus-seconds (default-valid-for))
+                  :expires-at (helpers/now-plus-seconds (default-valid-for))
                   :created-at (java.util.Date.)}]
     (if (store! *authcode-store* [:code] authcode)
       (map->AuthCode authcode)
@@ -75,7 +76,7 @@
 
 (defn find-authcode [code]
   (if-let [authcode (fetch-one *authcode-store* [code])]
-    (if (expired? authcode)
+    (if (helpers/expired? authcode)
       (revoke-authcode authcode)
       (map->AuthCode authcode))))
 

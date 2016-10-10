@@ -3,10 +3,12 @@
             [cerber
              [db :as db]
              [config :refer [app-config]]
+             [helpers :as helpers]
              [store :refer :all]]
             [failjure.core :as f]
             [cerber.stores.user :as user]
-            [cerber.error :as error])
+            [cerber.error :as error]
+            [cerber.helpers :as helpers])
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defn default-valid-for []
@@ -45,27 +47,12 @@
   (purge! [this]
     (db/clear-tokens)))
 
-(defn init-periodic
-  "Runs periodically given function f"
-
-  [f interval]
-  (doto (Thread.
-         #(try
-            (while (not (.isInterrupted (Thread/currentThread)))
-              (Thread/sleep interval)
-              (f))
-            (catch InterruptedException _)))
-    (.start)))
-
-(defn stop-periodic [periodic]
-  (when periodic
-    (.interrupt periodic)))
 
 (defmulti create-token-store identity)
 
 (defstate ^:dynamic *token-store*
   :start (create-token-store (-> app-config :cerber :tokens :store))
-  :stop  (stop-periodic (:periodic *token-store*)))
+  :stop  (helpers/stop-periodic (:periodic *token-store*)))
 
 (defmethod create-token-store :in-memory [_]
   (MemoryStore. "tokens" (atom {})))
@@ -74,9 +61,10 @@
   (RedisStore. "tokens" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-token-store :sql [_]
-  (let [store (SqlTokenStore.)]
-    (assoc store :periodic
-           (init-periodic #(db/clear-expired {:date (java.util.Date.)}) 60000))))
+  (assoc (SqlTokenStore.) :periodic
+         ;; start expired-tokens periodic garbage collector
+         (helpers/init-periodic #(db/clear-expired-tokens
+                                  {:date (java.util.Date.)}) 60000)))
 
 (defmacro with-token-store
   "Changes default binding to default token store."
@@ -90,9 +78,9 @@
         token (-> {:client-id (:id client)
                    :user-id (:id user)
                    :login (:login user)
-                   :secret (generate-secret)
+                   :secret (helpers/generate-secret)
                    :scope scope
-                   :expires-at (when (= tag :access) (now-plus-seconds ttl))
+                   :expires-at (when (= tag :access) (helpers/now-plus-seconds ttl))
                    :created-at (java.util.Date.)
                    :tag (name tag)})
         key (if (= tag :access)
