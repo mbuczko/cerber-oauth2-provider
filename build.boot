@@ -2,7 +2,7 @@
  :source-paths   #{"src"}
  :resource-paths #{"resources"}
  :directories    #{"config"}
- :dependencies '[[org.clojure/clojure "1.8.0" :scope "provided"]
+ :dependencies '[[org.clojure/clojure "1.8.0"]
                  [com.taoensso/carmine "2.14.0"]
                  [org.mindrot/jbcrypt "0.3m"]
                  [mbuczko/boot-flyway "0.1.0-SNAPSHOT"]
@@ -12,6 +12,7 @@
                  [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
                  [com.h2database/h2 "1.4.192" :scope "test"]
                  [mysql/mysql-connector-java "6.0.4" :scope "test"]
+                 [org.postgresql/postgresql "9.4.1211.jre7" :scope "test"]
                  [midje "1.8.3" :scope "test"]
                  [peridot "0.4.4" :scope "test"]
                  [compojure "1.6.0-beta1" :scope "test"]
@@ -25,7 +26,7 @@
                  [ring-anti-forgery "0.3.0"]
                  [ring-middleware-format "0.7.0"]])
 
-(def +version+ "0.1.0")
+(def +version+ "0.1.1")
 
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
