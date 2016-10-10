@@ -48,7 +48,7 @@
   (RedisStore. "authcodes" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-authcode-store :sql [_]
-  (SqlAuthCodeStore.))
+  (helpers/with-periodic (SqlAuthCodeStore.) db/clear-expired-authcodes 60000))
 
 (defmacro with-authcode-store
   "Changes default binding to default authcode store."

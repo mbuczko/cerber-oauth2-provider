@@ -13,3 +13,7 @@ delete from authcodes where code=:code
 -- :name clear-authcodes :! :1
 -- :doc Purges authcodes table
 delete from authcodes;
+
+-- :name clear-expired-authcodes :! :1
+-- :doc Purges authcodes table from expired token
+delete from authcodes where expires_at < :date

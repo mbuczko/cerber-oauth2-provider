@@ -54,10 +54,7 @@
   (RedisStore. "sessions" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-session-store :sql [_]
-  (assoc (SqlSessionStore.) :periodic
-         ;; start expired-sessions periodic garbage collector
-         (helpers/init-periodic #(db/clear-expired-sessions
-                                  {:date (java.util.Date.)}) 60000)))
+  (helpers/with-periodic (SqlSessionStore.) db/clear-expired-sessions 60000))
 
 (defmacro with-session-store
   "Changes default binding to default session store."

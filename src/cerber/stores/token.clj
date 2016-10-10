@@ -61,10 +61,7 @@
   (RedisStore. "tokens" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-token-store :sql [_]
-  (assoc (SqlTokenStore.) :periodic
-         ;; start expired-tokens periodic garbage collector
-         (helpers/init-periodic #(db/clear-expired-tokens
-                                  {:date (java.util.Date.)}) 60000)))
+  (helpers/with-periodic (SqlTokenStore.) db/clear-expired-tokens 60000))
 
 (defmacro with-token-store
   "Changes default binding to default token store."

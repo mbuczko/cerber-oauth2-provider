@@ -18,6 +18,9 @@
   (when periodic
     (.interrupt periodic)))
 
+(defn with-periodic [store fn interval]
+  (assoc store :periodic (init-periodic (partial fn {:date (java.util.Date.)}) interval)))
+
 (defn generate-secret
   "Generates a unique secret code."
   []
