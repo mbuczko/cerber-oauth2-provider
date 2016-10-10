@@ -22,8 +22,7 @@ create table users (
   authorities varchar(1024),
   enabled bit not null default true,
   created_at datetime not null,
-  UNIQUE KEY users_login_unique (login),
-  UNIQUE KEY users_id_unique (id)
+  UNIQUE KEY users_login_unique (login)
 );
 
 create table sessions (

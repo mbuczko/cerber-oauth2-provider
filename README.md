@@ -219,22 +219,24 @@ Revokes all access- and refresh-tokens bound with given client (and optional use
 
 Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema. If you want to see how do they look like, or want to apply them by hand, they all live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations).
 
-To apply them in a bit easier way without checking out sources, you may want to use [boot-flyway](https://github.com/mbuczko/boot-flyway) directly:
+To apply them in a bit easier way without checking out sources, you may want to use [boot-flyway](https://github.com/mbuczko/boot-flyway) directly (MySQL example):
 
 ``` shell
-boot -d cerber-oauth2-provider flyway -m -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
+boot -d cerber/cerber-oauth2-provider flyway -m -d "com.mysql.cj.jdbc.Driver" -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota" -o locations=db/migrations/mysql
 ```
 
-where ```-j``` is a jdbc URL to database, ```-m``` just says to apply pending migrations. There are also some other options available:
+where ```-d``` is a jdbc driver class to use, ```-j``` is a jdbc URL to database, ```-m``` just says to apply pending migrations. Following is the matrix of available migrations:
+
+| mysql                                 | postgres
+|---------------------------------------|-----------------------------------------
+| -d "com.mysql.cj.jdbc.Driver"         | -d "org.postgresql.Driver"
+| -j "jdbc:mysql://localhost:3306/db"   | -j "jdbc:postgresql://localhost:5432/db"
+| -o locations=db/migrations/mysql      | -o locations=db/migrations/postgres
+
+When no switch (aside from -djo) was used, information about applied migrations will be shown:
 
 ``` shell
-boot -d cerber-oauth2-provider flyway -h
-```
-
-When no switch (aside from -j) was used, information about applied migrations will be shown:
-
-``` shell
-~/w/c/cerber-oauth2-provider $ boot -d cerber-oauth2-provider -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
+boot -d cerber/cerber-oauth2-provider -d "com.mysql.cj.jdbc.Driver" -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
 +----------------+-------------+---------------------+---------+
 | Version        | Description | Installed on        | State   |
 +----------------+-------------+---------------------+---------+

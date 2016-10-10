@@ -12,7 +12,7 @@
                  [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
                  [com.h2database/h2 "1.4.192" :scope "test"]
                  [mysql/mysql-connector-java "6.0.4" :scope "test"]
-                 [org.postgresql/postgresql "9.4.1211.jre7" :scope "test"]
+                 [org.postgresql/postgresql "9.4.1211" :scope "test"]
                  [midje "1.8.3" :scope "test"]
                  [peridot "0.4.4" :scope "test"]
                  [compojure "1.6.0-beta1" :scope "test"]
