@@ -39,12 +39,11 @@
  (with-state-changes [(before :contents (.start redis))
                       (after  :contents (.stop redis))]
    (fact "Expired sessions are removed from store."
-         (against-background (default-valid-for) => -1)
          (with-session-store (create-session-store ?store)
            (purge-sessions)
 
            ;; given
-           (let [session (create-session {:sample "value"})]
+           (let [session (create-session {:sample "value"} {:ttl -1})]
 
              ;; then
              (find-session (:sid session)) => nil))))
@@ -55,7 +54,6 @@
  (with-state-changes [(before :contents (.start redis))
                       (after  :contents (.stop redis))]
    (fact "Extended session has expires-at updated."
-         (against-background (default-valid-for) => 2)
          (with-session-store (create-session-store ?store)
            (purge-sessions)
 

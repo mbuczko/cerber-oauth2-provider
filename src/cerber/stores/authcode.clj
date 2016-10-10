@@ -76,8 +76,7 @@
 
 (defn find-authcode [code]
   (if-let [authcode (fetch-one *authcode-store* [code])]
-    (if (helpers/expired? authcode)
-      (revoke-authcode authcode)
+    (when-not (helpers/expired? authcode)
       (map->AuthCode authcode))))
 
 (defn purge-authcodes

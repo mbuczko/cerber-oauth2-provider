@@ -44,7 +44,7 @@
       (when (get @store nskey) ;; replace value already existing
         (get (swap! store assoc nskey item) nskey))))
   (touch! [this k item ttl]
-    (.modify! this k (assoc item :expires-at (helpers/now-plus-seconds ttl))))
+    (.modify! this k (helpers/extend-ttl item ttl)))
   (purge! [this]
     (swap! store empty)))
 
@@ -54,12 +54,25 @@
    []
    (fn scan-fn [cursor] (car/wcar spec (car/scan cursor :match key)))))
 
+(defn- store-with-opt [ns item k conn opt]
+  (let [nskey  (ns-key ns (select-values item k))
+        milis  (helpers/expires->ttl (:expires-at item))
+        result (car/wcar conn (if (and milis (> milis 0))
+                                (car/set nskey item "PX" milis opt)
+                                (car/set nskey item opt)))]
+    (when (or (= result 1)
+              (= result "OK"))
+      item)))
+
 (defrecord RedisStore [namespace server-conn]
   Store
   (fetch-one [this k]
-    ;; expired keys are auto-removed by Redis so it's way faster to clear up their
-    ;; expiration time and pretend they're non-expirable than update expires-at at each touch
-    (dissoc (car/wcar server-conn (car/get (ns-key namespace k))) :expires-at))
+    (let [nskey (ns-key namespace k)
+          [item ttl] (car/wcar server-conn
+                               (car/get nskey)
+                               (car/ttl nskey))]
+      (when item
+        (assoc item :expires-at (and ttl (helpers/now-plus-seconds ttl))))))
   (fetch-all [this k]
     (if-let [result (scan-by-key server-conn (ns-key namespace k "*"))]
       (filter (complement nil?)
@@ -70,24 +83,13 @@
     (if-let [result (scan-by-key server-conn (ns-key namespace k "*"))]
       (car/wcar server-conn (doseq [s result] (car/del s)))))
   (store! [this k item]
-    (let [nskey (ns-key namespace (select-values item k))
-          milis (helpers/expires->ttl (:expires-at item))
-          result (car/wcar server-conn (if (and milis (> milis 0))
-                                         (car/set nskey item "PX" milis)
-                                         (car/set nskey item)))]
-      (when (or (= result 1)
-                (= result "OK")) item)))
+    (store-with-opt namespace item k server-conn "NX"))
   (modify! [this k item]
-    (let [nskey (ns-key namespace (select-values item k))
-          milis (helpers/expires->ttl (:expires-at item))
-          result (car/wcar server-conn (if (and milis (> milis 0))
-                                         (car/set nskey item "PX" milis "XX")
-                                         (car/set nskey item "XX")))]
-      (when (or (= result 1)
-                (= result "OK")) item)))
+    (store-with-opt namespace item k server-conn "XX"))
   (touch! [this k item ttl]
     (let [nskey (ns-key namespace (select-values item k))]
-      (car/wcar server-conn (car/pexpire nskey ttl))))
+      (when (= (car/wcar server-conn (car/expire nskey ttl)) 1)
+        (helpers/extend-ttl item ttl))))
   (purge! [this]
     (try
       (car/wcar server-conn (car/flushdb))

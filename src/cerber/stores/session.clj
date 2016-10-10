@@ -35,8 +35,9 @@
     (let [result (db/update-session (assoc session :content (nippy/freeze (:content session))))]
       (when (= 1 result) session)))
   (touch! [this k session ttl]
-    (let [result (db/update-session-expiration (helpers/extend-ttl session ttl))]
-      (when (= 1 result) session)))
+    (let [extended (helpers/extend-ttl session ttl)
+          result (db/update-session-expiration extended)]
+      (when (= 1 result) extended)))
   (purge! [this]
     (db/clear-sessions)))
 
@@ -88,7 +89,7 @@
 
 (defn find-session [sid]
   (when-let [found (fetch-one *session-store* [sid])]
-    (if-not (helpers/expired? found)
+    (when-not (helpers/expired? found)
       (map->Session found))))
 
 (defn purge-sessions

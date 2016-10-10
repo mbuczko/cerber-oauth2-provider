@@ -35,12 +35,12 @@
 
 (defn expired?
   "Returns true if given item (more specifically its :expires-at value)
-  is expired or false otherwise. Item with no expires-at is non-expirable."
+  is expired or falsey otherwise. Item with no expires-at is non-expirable."
 
   [item]
-  (if-let [expires-at (:expires-at item)]
-    (or (nil? expires-at)
-        (> (compare (java.util.Date.) expires-at) 0))))
+  (let [expires-at (:expires-at item)]
+    (and expires-at
+         (> (compare (java.util.Date.) expires-at) 0))))
 
 (defn extend-ttl
   "Extends time to live of given item by ttl seconds."
