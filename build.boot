@@ -5,7 +5,7 @@
  :dependencies '[[org.clojure/clojure "1.8.0"]
                  [com.taoensso/carmine "2.14.0"]
                  [org.mindrot/jbcrypt "0.3m"]
-                 [mbuczko/boot-flyway "0.1.0-SNAPSHOT"]
+                 [mbuczko/boot-flyway "0.1.1"]
                  [ring/ring-defaults "0.3.0-beta1"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
                  [zilti/boot-midje "0.2.1-SNAPSHOT" :scope "test"]
@@ -26,7 +26,7 @@
                  [ring-anti-forgery "0.3.0"]
                  [ring-middleware-format "0.7.0"]])
 
-(def +version+ "0.1.2")
+(def +version+ "0.1.3")
 
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
