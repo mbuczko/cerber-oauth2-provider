@@ -14,3 +14,4 @@ log/
 dist/
 *.pid
 *.paw
+gpg.edn

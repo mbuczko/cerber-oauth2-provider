@@ -69,22 +69,22 @@
   `(binding [*token-store* ~store] ~@body))
 
 (defn create-token
-  "Creates new token"
-  [client user scope & [opts]]
-  (let [{:keys [ttl tag] :or {tag :access ttl (default-valid-for)}} opts
-        token (-> {:client-id (:id client)
-                   :user-id (:id user)
-                   :login (:login user)
-                   :secret (helpers/generate-secret)
-                   :scope scope
-                   :expires-at (when (= tag :access) (helpers/now-plus-seconds ttl))
-                   :created-at (java.util.Date.)
-                   :tag (name tag)})
-        key (if (= tag :access)
-              [nil :tag :secret nil]
-              [:client-id :tag :secret :login])]
+  "Creates new token."
+  [tag client user scope & [ttl]]
+  (let [token (helpers/reset-ttl
+               {:client-id (:id client)
+                :user-id (:id user)
+                :login (:login user)
+                :secret (helpers/generate-secret)
+                :scope scope
+                :tag (name tag)
+                :created-at (java.util.Date.)}
+               (and (= tag :access) (or ttl (default-valid-for))))
+        keyvec (if (= tag :access)
+                 [nil :tag :secret nil]
+                 [:client-id :tag :secret :login])]
 
-    (if-let [result (store! *token-store* key token)]
+    (if-let [result (store! *token-store* keyvec token)]
       (map->Token result)
       (error/internal-error "Cannot create token"))))
 
@@ -144,7 +144,7 @@
   generated refresh-token for given client/user pair."
 
   [client user scope & [opts]]
-  (let [access-token (create-token client user scope)
+  (let [access-token (create-token :access client user scope)
         {:keys [secret created-at expires-at login]} access-token
         {:keys [type refresh?] :or {type "Bearer"}} opts]
 
@@ -152,7 +152,7 @@
       access-token
       (let [refresh-token (and refresh?
                                (or (find-refresh-token (:id client) nil (:login user))
-                                   (create-token client user scope {:tag :refresh})))]
+                                   (create-token :refresh client user scope)))]
 
         (-> {:access_token secret
              :token_type type

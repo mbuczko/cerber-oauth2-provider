@@ -61,12 +61,11 @@
  (with-state-changes [(before :contents (.start redis))
                       (after  :contents (.stop redis))]
    (fact "Expired authcodes are removed from store."
-         (against-background (default-valid-for) => -1)
          (with-authcode-store (create-authcode-store ?store)
            (purge-authcodes)
 
            ;; given
-           (let [authcode (create-authcode client user scope redirect)]
+           (let [authcode (create-authcode client user scope redirect -1)]
 
              ;; then
              (find-authcode (:code authcode))) => nil)))

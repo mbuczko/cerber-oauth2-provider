@@ -16,7 +16,7 @@
 (fact "Newly created token is returned with user/client ids and secret filled in."
       (with-token-store (create-token-store :in-memory)
         ;; given
-        (let [token (create-token client user token-scope)]
+        (let [token (create-token :access client user token-scope)]
 
           ;; then
           token => (instance-of Token)
@@ -34,7 +34,7 @@
            (purge-tokens)
 
            ;; given
-           (let [token (create-token client user token-scope)
+           (let [token (create-token :access client user token-scope)
                  found (find-access-token (:secret token))]
 
              ;; then
@@ -54,7 +54,7 @@
            (purge-tokens)
 
            ;; given
-           (let [token (create-token client user token-scope)
+           (let [token (create-token :access client user token-scope)
                  secret (:secret token)]
 
              ;; then
@@ -90,4 +90,4 @@
 (fact "Tokens with expires-at date in the past are considered as expired ones."
       (with-token-store (create-token-store :in-memory)
         (helpers/expired?
-         (create-token client user token-scope {:ttl -10})) => true))
+         (create-token :access client user token-scope -10)) => true))

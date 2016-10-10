@@ -35,7 +35,7 @@
     (let [result (db/update-session (assoc session :content (nippy/freeze (:content session))))]
       (when (= 1 result) session)))
   (touch! [this k session ttl]
-    (let [extended (helpers/extend-ttl session ttl)
+    (let [extended (helpers/reset-ttl session ttl)
           result (db/update-session-expiration extended)]
       (when (= 1 result) extended)))
   (purge! [this]
@@ -63,12 +63,12 @@
 
 (defn create-session
   "Creates new session"
-  [content & [opts]]
-  (let [{:keys [ttl]} opts
-        session (helpers/extend-ttl {:sid (.toString (java.util.UUID/randomUUID))
-                                     :content content
-                                     :created-at (java.util.Date.)}
-                                    (or ttl (default-valid-for)))]
+  [content & [ttl]]
+  (let [session (helpers/reset-ttl
+                 {:sid (.toString (java.util.UUID/randomUUID))
+                  :content content
+                  :created-at (java.util.Date.)}
+                 (or ttl (default-valid-for)))]
 
     (when (store! *session-store* [:sid] session)
       (map->Session session))))
@@ -79,7 +79,7 @@
   (revoke-one! *session-store* [(:sid session)]) nil)
 
 (defn update-session [session]
-  (modify! *session-store* [:sid] (helpers/extend-ttl session (default-valid-for))))
+  (modify! *session-store* [:sid] (helpers/reset-ttl session (default-valid-for))))
 
 (defn extend-session [session]
   (touch! *session-store* [:sid] session (default-valid-for)))

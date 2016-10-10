@@ -43,7 +43,7 @@
            (purge-sessions)
 
            ;; given
-           (let [session (create-session {:sample "value"} {:ttl -1})]
+           (let [session (create-session {:sample "value"} -1)]
 
              ;; then
              (find-session (:sid session)) => nil))))
@@ -58,11 +58,11 @@
            (purge-sessions)
 
            ;; given
-           (let [initial (create-session {:sample "value"})
+           (let [initial (create-session {:sample "value"} 1)
                  expires (:expires-at initial)
 
                  ;; when
-                 session (extend-session initial)]
+                 session (find-session (:sid (extend-session initial)))]
 
              ;; then
              (compare (:expires-at session) expires) => 1))))

@@ -62,14 +62,16 @@
 
 (defn create-authcode
   "Creates new auth code"
-  [client user scope redirect-uri]
-  (let [authcode {:client-id (:id client)
-                  :login (:login user)
-                  :scope scope
-                  :code (helpers/generate-secret)
-                  :redirect-uri redirect-uri
-                  :expires-at (helpers/now-plus-seconds (default-valid-for))
-                  :created-at (java.util.Date.)}]
+  [client user scope redirect-uri & [ttl]]
+  (let [authcode (helpers/reset-ttl
+                  {:client-id (:id client)
+                   :login (:login user)
+                   :scope scope
+                   :code (helpers/generate-secret)
+                   :redirect-uri redirect-uri
+                   :created-at (java.util.Date.)}
+                  (or ttl (default-valid-for)))]
+
     (if (store! *authcode-store* [:code] authcode)
       (map->AuthCode authcode)
       (error/internal-error "Cannot store authcode"))))

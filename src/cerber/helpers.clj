@@ -45,7 +45,7 @@
     (and expires-at
          (> (compare (java.util.Date.) expires-at) 0))))
 
-(defn extend-ttl
+(defn reset-ttl
   "Extends time to live of given item by ttl seconds."
 
   [item ttl]

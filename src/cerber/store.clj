@@ -44,7 +44,7 @@
       (when (get @store nskey) ;; replace value already existing
         (get (swap! store assoc nskey item) nskey))))
   (touch! [this k item ttl]
-    (.modify! this k (helpers/extend-ttl item ttl)))
+    (.modify! this k (helpers/reset-ttl item ttl)))
   (purge! [this]
     (swap! store empty)))
 
@@ -89,7 +89,7 @@
   (touch! [this k item ttl]
     (let [nskey (ns-key namespace (select-values item k))]
       (when (= (car/wcar server-conn (car/expire nskey ttl)) 1)
-        (helpers/extend-ttl item ttl))))
+        (helpers/reset-ttl item ttl))))
   (purge! [this]
     (try
       (car/wcar server-conn (car/flushdb))
