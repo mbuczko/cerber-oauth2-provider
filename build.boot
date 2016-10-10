@@ -10,7 +10,8 @@
                  [adzerk/bootlaces "0.1.13" :scope "test"]
                  [zilti/boot-midje "0.2.1-SNAPSHOT" :scope "test"]
                  [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
-                 [com.h2database/h2 "1.4.192"]
+                 [com.h2database/h2 "1.4.192" :scope "test"]
+                 [mysql/mysql-connector-java "6.0.4" :scope "test"]
                  [midje "1.8.3" :scope "test"]
                  [peridot "0.4.4" :scope "test"]
                  [compojure "1.6.0-beta1" :scope "test"]
@@ -22,8 +23,7 @@
                  [selmer "1.10.0"]
                  [failjure "0.1.3"]
                  [ring-anti-forgery "0.3.0"]
-                 [ring-middleware-format "0.7.0"]
-                 [mysql/mysql-connector-java "6.0.4"]])
+                 [ring-middleware-format "0.7.0"]])
 
 (def +version+ "0.1.0")
 
