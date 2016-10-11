@@ -3,23 +3,24 @@
             [clojure.string :as str]))
 
 (defn init-periodic
-  "Runs periodically given function f"
+  "Periodically run garbage collecting function f.
+  Function gets {:date now} as an argument."
 
   [f interval]
   (doto (Thread.
          #(try
             (while (not (.isInterrupted (Thread/currentThread)))
               (Thread/sleep interval)
-              (f))
+              (f {:date (java.time.LocalDateTime/now)}))
             (catch InterruptedException _)))
     (.start)))
 
-(defn stop-periodic [periodic]
-  (when periodic
+(defn stop-collecting [store]
+  (when-let [periodic (:periodic store)]
     (.interrupt periodic)))
 
-(defn with-periodic [store fn interval]
-  (assoc store :periodic (init-periodic (partial fn {:date (java.time.LocalDateTime/now)}) interval)))
+(defn with-garbage-collector [store f interval]
+  (assoc store :periodic (init-periodic f interval)))
 
 (defn generate-secret
   "Generates a unique secret code."

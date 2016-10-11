@@ -45,7 +45,7 @@
 
 (defstate ^:dynamic *session-store*
   :start (create-session-store (-> app-config :cerber :sessions :store))
-  :stop  (helpers/stop-periodic (:periodic *session-store*)))
+  :stop  (helpers/stop-collecting *session-store*))
 
 (defmethod create-session-store :in-memory [_]
   (MemoryStore. "sessions" (atom {})))
@@ -54,7 +54,8 @@
   (RedisStore. "sessions" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-session-store :sql [_]
-  (helpers/with-periodic (SqlSessionStore.) db/clear-expired-sessions 60000))
+  (helpers/with-garbage-collector
+    (SqlSessionStore.) db/clear-expired-sessions 10000))
 
 (defmacro with-session-store
   "Changes default binding to default session store."

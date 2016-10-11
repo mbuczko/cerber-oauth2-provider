@@ -52,7 +52,7 @@
 
 (defstate ^:dynamic *token-store*
   :start (create-token-store (-> app-config :cerber :tokens :store))
-  :stop  (helpers/stop-periodic (:periodic *token-store*)))
+  :stop  (helpers/stop-collecting *token-store*))
 
 (defmethod create-token-store :in-memory [_]
   (MemoryStore. "tokens" (atom {})))
@@ -61,7 +61,8 @@
   (RedisStore. "tokens" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-token-store :sql [_]
-  (helpers/with-periodic (SqlTokenStore.) db/clear-expired-tokens 60000))
+  (helpers/with-garbage-collector
+    (SqlTokenStore.) db/clear-expired-tokens 60000))
 
 (defmacro with-token-store
   "Changes default binding to default token store."

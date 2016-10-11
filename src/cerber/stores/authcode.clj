@@ -39,7 +39,8 @@
 (defmulti create-authcode-store identity)
 
 (defstate ^:dynamic *authcode-store*
-  :start (create-authcode-store (-> app-config :cerber :authcodes :store)))
+  :start (create-authcode-store (-> app-config :cerber :authcodes :store))
+  :stop  (helpers/stop-collecting *authcode-store*))
 
 (defmethod create-authcode-store :in-memory [_]
   (MemoryStore. "authcodes" (atom {})))
@@ -48,7 +49,8 @@
   (RedisStore. "authcodes" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-authcode-store :sql [_]
-  (helpers/with-periodic (SqlAuthCodeStore.) db/clear-expired-authcodes 60000))
+  (helpers/with-garbage-collector
+    (SqlAuthCodeStore.) db/clear-expired-authcodes 8000))
 
 (defmacro with-authcode-store
   "Changes default binding to default authcode store."
