@@ -51,9 +51,10 @@
   [uri]
   (if (empty? uri)
     (error/internal-error "redirect-uri cannot be empty")
-    (if (or (>= (.indexOf uri " ") 0)
+    (if (or (>= (.indexOf uri "#") 0)
+            (>= (.indexOf uri " ") 0)
             (>= (.indexOf uri "..") 0))
-      (error/internal-error "Segments not allowed in redirect URI")
+      (error/internal-error "Illegal characters in redirect URI")
       (try
         (java.net.URL. uri)
         (catch Exception e (error/internal-error (.getMessage e)))))))

@@ -26,7 +26,7 @@
                  [ring-anti-forgery "0.3.0"]
                  [ring-middleware-format "0.7.0"]])
 
-(def +version+ "0.1.5")
+(def +version+ "0.1.6")
 
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
