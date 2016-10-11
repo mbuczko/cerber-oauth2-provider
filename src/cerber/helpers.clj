@@ -2,6 +2,17 @@
   (:require [crypto.random :as random]
             [clojure.string :as str]))
 
+(defn now []
+  (java.sql.Timestamp/valueOf (java.time.LocalDateTime/now)))
+
+(defn now-plus-seconds
+  "Generates current datetime shifted forward by seconds."
+
+  [seconds]
+  (when seconds
+    (java.sql.Timestamp/valueOf (-> (java.time.LocalDateTime/now)
+                                    (.plusSeconds seconds)))))
+
 (defn init-periodic
   "Periodically run garbage collecting function f.
   Function gets {:date now} as an argument."
@@ -11,7 +22,7 @@
          #(try
             (while (not (.isInterrupted (Thread/currentThread)))
               (Thread/sleep interval)
-              (f {:date (java.time.LocalDateTime/now)}))
+              (f {:date (now)}))
             (catch InterruptedException _)))
     (.start)))
 
@@ -27,13 +38,6 @@
   []
   (random/base32 20))
 
-(defn now-plus-seconds
-  "Generates current datetime shifted forward by seconds."
-
-  [seconds]
-  (when seconds
-    (.plusSeconds (java.time.LocalDateTime/now) seconds)))
-
 (defn expired?
   "Returns true if given item (more specifically its :expires-at value)
   is expired or falsey otherwise. Item with no expires-at is non-expirable."
@@ -41,7 +45,7 @@
   [item]
   (let [expires-at (:expires-at item)]
     (and expires-at
-         (> (compare (java.time.LocalDateTime/now) (.toLocalDateTime expires-at)) 0))))
+         (.isBefore (.toLocalDateTime expires-at) (java.time.LocalDateTime/now)))))
 
 (defn reset-ttl
   "Extends time to live of given item by ttl seconds."
@@ -64,11 +68,12 @@
   [arr]
   (str/join " " arr))
 
+
 (defn expires->ttl
   "Returns number of seconds between now and expires-at."
 
   [expires-at]
   (when expires-at
     (.between (java.time.temporal.ChronoUnit/SECONDS)
-              expires-at
-              (java.time.LocalDateTime/now))))
+              (java.time.LocalDateTime/now)
+              (.toLocalDateTime expires-at))))

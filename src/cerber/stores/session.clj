@@ -68,7 +68,7 @@
   (let [session (helpers/reset-ttl
                  {:sid (.toString (java.util.UUID/randomUUID))
                   :content content
-                  :created-at (java.time.LocalDateTime/now)}
+                  :created-at (helpers/now)}
                  (or ttl (default-valid-for)))]
 
     (when (store! *session-store* [:sid] session)

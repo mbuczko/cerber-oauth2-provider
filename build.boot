@@ -59,7 +59,7 @@
   "Starts system initializing all defined states."
   [e env ENVIRONMENT str "Environment to use while starting application up."]
   (cerber.system/go {:env (or env "local")
-                     :basename "cerber"}))
+                     :base-name "cerber"}))
 
 (task-options! midje  {:test-paths #{"test"}}
                flyway {:driver "com.mysql.cj.jdbc.Driver"

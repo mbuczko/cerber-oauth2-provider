@@ -2,6 +2,7 @@
   (:require [mount.core :refer [defstate]]
             [cerber
              [db :as db]
+             [helpers :as helpers]
              [config :refer [app-config]]
              [store :refer :all]])
   (:import [cerber.store MemoryStore RedisStore]
@@ -63,7 +64,7 @@
                         :enabled true
                         :password (bcrypt password)
                         :authorities authorities
-                        :created-at (java.time.LocalDateTime/now)} (dissoc user :password :created-at))]
+                        :created-at (helpers/now)} (dissoc user :password :created-at))]
 
      (when (store! *user-store* [:login] merged)
        (map->User merged)))))

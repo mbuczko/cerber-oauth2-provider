@@ -48,7 +48,7 @@ specific for each environment (local / test / prod):
                        :max-idle   4
                        :max-active 32
                        :driver-class "org.h2.Driver"
-                       :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/mysql/V20161007012907__init_schema.sql'"}
+                       :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"}
           :endpoints  {:authentication "/login"
                        :authorization  "/authorize"}
           :authcodes  {:store :sql :valid-for 180}

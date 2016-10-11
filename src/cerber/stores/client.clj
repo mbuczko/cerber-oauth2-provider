@@ -81,7 +81,7 @@
                 :grants (array->str grants)
                 :redirects (array->str redirects)
                 :authorities (array->str authorities)
-                :created-at (java.time.LocalDateTime/now)}]
+                :created-at (helpers/now)}]
 
     (if (empty? result)
       (if (store! *client-store* [:id] client)
