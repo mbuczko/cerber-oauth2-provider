@@ -217,26 +217,25 @@ Revokes all access- and refresh-tokens bound with given client (and optional use
 
 #### I've chosen SQL engine for some of my stores. How to determine what the database schema is?
 
-Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema. If you want to see how do they look like, or want to apply them by hand, they all live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations).
+Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema. All migrations live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations).
 
-To apply them you may want to use [boot-flyway](https://github.com/mbuczko/boot-flyway) task directly (MySQL example):
+You may either apply them by hand or use predefined tasks for supported SQL databases:
 
 ``` shell
-boot -d cerber/cerber-oauth2-provider flyway -m -d "com.mysql.cj.jdbc.Driver" -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota" -o "locations=db/migrations/mysql"
+$ boot -d cerber/cerber-oauth2-provider migrate-mysql -m -j jdbc-url
+
+  or:
+
+$ boot -d cerber/cerber-oauth2-provider migrate-postgres -m -j jdbc-url
 ```
 
-where ```-d``` is a jdbc driver class to use, ```-j``` is a jdbc URL to database, ```-m``` just says to apply pending migrations. Following is the matrix of available migrations:
+where ```-j``` is a jdbc URL to database, ```-m``` just says to apply pending migrations. There is also ```-c``` available which clears database schema (use with caution!).
 
-| mysql                                 | postgres
-|---------------------------------------|-----------------------------------------
-| -d "com.mysql.cj.jdbc.Driver"         | -d "org.postgresql.Driver"
-| -j "jdbc:mysql://localhost:3306/db"   | -j "jdbc:postgresql://localhost:5432/db"
-| -o "locations=db/migrations/mysql"    | -o "locations=db/migrations/postgres"
-
-When no switch (aside from -djo) was used, information about applied migrations will be shown:
+Migration task invoked with no action (migrate or clear) shows current status of available migrations:
 
 ``` shell
-boot -d cerber/cerber-oauth2-provider -d "com.mysql.cj.jdbc.Driver" -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
+$ boot -d cerber/cerber-oauth2-provider migrate-mysql -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
+
 +----------------+-------------+---------------------+---------+
 | Version        | Description | Installed on        | State   |
 +----------------+-------------+---------------------+---------+

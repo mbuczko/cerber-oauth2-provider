@@ -55,17 +55,37 @@
   []
   (cerber.system/reset))
 
+(deftask migrate-mysql
+  [j jdbc-url URL str  "jdbc url"
+   m migrate      bool "apply migrations"
+   c clean        bool "clean schema"]
+  (let [action (cond migrate "-m" clean "-c" :else "-i")]
+    (flyway "-d" "com.mysql.cj.jdbc.Driver"
+            "-o" "locations=db/migrations/mysql"
+            "-j" jdbc-url action)))
+
+(deftask migrate-postgres
+  [j jdbc-url URL str  "jdbc url"
+   m migrate      bool "apply migrations"
+   c clean        bool "clean schema"]
+  (let [action (cond migrate "-m" clean "-c" :else "-i")]
+    (flyway "-d" "org.postgresql.Driver"
+            "-o" "locations=db/migrations/postgres"
+            "-j" jdbc-url action)))
+
 (deftask go
   "Starts system initializing all defined states."
   [e env ENVIRONMENT str "Environment to use while starting application up."]
   (cerber.system/go {:env (or env "local")
                      :base-name "cerber"}))
 
-(task-options! midje  {:test-paths #{"test"}}
-               flyway {:driver "com.mysql.cj.jdbc.Driver"
-                       :url "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"}
-               pom    {:project 'cerber/cerber-oauth2-provider
-                       :version +version+
-                       :description "OAuth2 provider"
-                       :url "https://github.com/mbuczko/cerber-oauth2-provider"
-                       :scm {:url "https://github.com/mbuczko/cerber-oauth2-provider"}})
+(task-options! midje {:test-paths #{"test"}}
+               pom   {:project 'cerber/cerber-oauth2-provider
+                      :version +version+
+                      :description "OAuth2 provider"
+                      :url "https://github.com/mbuczko/cerber-oauth2-provider"
+                      :scm {:url "https://github.com/mbuczko/cerber-oauth2-provider"}}
+
+               ;; default migration jdbc-urls
+               migrate-mysql {:jdbc-url "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"}
+               migrate-postgres {:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres&password=alamakota"})
