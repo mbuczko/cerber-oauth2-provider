@@ -19,7 +19,7 @@
     (.interrupt periodic)))
 
 (defn with-periodic [store fn interval]
-  (assoc store :periodic (init-periodic (partial fn {:date (java.util.Date.)}) interval)))
+  (assoc store :periodic (init-periodic (partial fn {:date (java.time.LocalDateTime/now)}) interval)))
 
 (defn generate-secret
   "Generates a unique secret code."
@@ -31,10 +31,7 @@
 
   [seconds]
   (when seconds
-    (java.util.Date/from (-> (java.time.LocalDateTime/now)
-                             (.plusSeconds seconds)
-                             (.atZone (java.time.ZoneId/systemDefault))
-                             (.toInstant)))))
+    (.plusSeconds (java.time.LocalDateTime/now) seconds)))
 
 (defn expired?
   "Returns true if given item (more specifically its :expires-at value)
@@ -43,7 +40,7 @@
   [item]
   (let [expires-at (:expires-at item)]
     (and expires-at
-         (> (compare (java.util.Date.) expires-at) 0))))
+         (> (compare (java.time.LocalDateTime/now) (.toLocalDateTime expires-at)) 0))))
 
 (defn reset-ttl
   "Extends time to live of given item by ttl seconds."
@@ -67,9 +64,10 @@
   (str/join " " arr))
 
 (defn expires->ttl
-  "Returns number of miliseconds between current and expires-at datetimes."
+  "Returns number of seconds between now and expires-at."
 
   [expires-at]
   (when expires-at
-    (- (.getTime expires-at)
-       (.getTime (java.util.Date.)))))
+    (.between (java.time.temporal.ChronoUnit/SECONDS)
+              expires-at
+              (java.time.LocalDateTime/now))))

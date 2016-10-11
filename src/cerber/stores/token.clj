@@ -78,7 +78,7 @@
                 :secret (helpers/generate-secret)
                 :scope scope
                 :tag (name tag)
-                :created-at (java.util.Date.)}
+                :created-at (java.time.LocalDateTime/now)}
                (and (= tag :access) (or ttl (default-valid-for))))
         keyvec (if (= tag :access)
                  [nil :tag :secret nil]
@@ -156,9 +156,12 @@
 
         (-> {:access_token secret
              :token_type type
-             :created_at created-at
-             :expires_in (/ (- (.getTime expires-at)
-                               (.getTime created-at)) 1000)}
+             :created_at (java.util.Date/from (-> created-at
+                                                  (.atZone (java.time.ZoneId/systemDefault))
+                                                  (.toInstant)))
+             :expires_in (.between (java.time.temporal.ChronoUnit/SECONDS)
+                                   expires-at
+                                   created-at)}
             (cond-> scope
               (assoc :scope scope))
             (cond-> (and refresh-token (not (f/failed? refresh-token)))

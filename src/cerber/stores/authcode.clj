@@ -69,7 +69,7 @@
                    :scope scope
                    :code (helpers/generate-secret)
                    :redirect-uri redirect-uri
-                   :created-at (java.util.Date.)}
+                   :created-at (java.time.LocalDateTime/now)}
                   (or ttl (default-valid-for)))]
 
     (if (store! *authcode-store* [:code] authcode)

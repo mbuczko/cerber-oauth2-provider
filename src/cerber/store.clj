@@ -55,10 +55,10 @@
    (fn scan-fn [cursor] (car/wcar spec (car/scan cursor :match key)))))
 
 (defn- store-with-opt [ns item k conn opt]
-  (let [nskey  (ns-key ns (select-values item k))
-        milis  (helpers/expires->ttl (:expires-at item))
-        result (car/wcar conn (if (and milis (> milis 0))
-                                (car/set nskey item "PX" milis opt)
+  (let [nskey   (ns-key ns (select-values item k))
+        seconds (helpers/expires->ttl (:expires-at item))
+        result  (car/wcar conn (if (and seconds (> seconds 0))
+                                (car/set nskey item "EX" seconds opt)
                                 (car/set nskey item opt)))]
     (when (or (= result 1)
               (= result "OK"))

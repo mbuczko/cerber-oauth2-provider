@@ -63,7 +63,7 @@
                         :enabled true
                         :password (bcrypt password)
                         :authorities authorities
-                        :created-at (java.util.Date.)} (dissoc user :password :created-at))]
+                        :created-at (java.time.LocalDateTime/now)} (dissoc user :password :created-at))]
 
      (when (store! *user-store* [:login] merged)
        (map->User merged)))))
