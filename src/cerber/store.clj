@@ -74,7 +74,7 @@
       (when item
         (assoc item :expires-at (and ttl (helpers/now-plus-seconds ttl))))))
   (fetch-all [this k]
-    (if-let [result (scan-by-key server-conn (ns-key namespace k "*"))]
+    (when-let [result (scan-by-key server-conn (ns-key namespace k "*"))]
       (filter (complement nil?)
               (car/wcar server-conn (apply (partial car/mget server-conn) result)))))
   (revoke-one! [this k]

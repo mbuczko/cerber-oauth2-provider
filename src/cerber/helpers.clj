@@ -3,15 +3,11 @@
             [clojure.string :as str]))
 
 (defn now []
-  (java.sql.Timestamp/valueOf (java.time.LocalDateTime/now)))
+  (java.sql.Timestamp. (System/currentTimeMillis)))
 
-(defn now-plus-seconds
-  "Generates current datetime shifted forward by seconds."
-
-  [seconds]
+(defn now-plus-seconds [seconds]
   (when seconds
-    (java.sql.Timestamp/valueOf (-> (java.time.LocalDateTime/now)
-                                    (.plusSeconds seconds)))))
+    (java.sql.Timestamp. (+ (System/currentTimeMillis) (* 1000 seconds)))))
 
 (defn init-periodic
   "Periodically run garbage collecting function f.
@@ -45,7 +41,8 @@
   [item]
   (let [expires-at (:expires-at item)]
     (and expires-at
-         (.isBefore (.toLocalDateTime expires-at) (java.time.LocalDateTime/now)))))
+         (.isBefore (.toLocalDateTime expires-at)
+                    (java.time.LocalDateTime/now)))))
 
 (defn reset-ttl
   "Extends time to live of given item by ttl seconds."
