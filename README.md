@@ -217,9 +217,7 @@ Revokes all access- and refresh-tokens bound with given client (and optional use
 
 #### I've chosen SQL engine for some of my stores. How to determine what the database schema is?
 
-Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema. All migrations live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations).
-
-You may either apply them by hand or use predefined tasks for supported SQL databases:
+Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema. All migrations live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations). You may either apply them by hand or use predefined tasks for supported SQL databases:
 
 ``` shell
 $ boot -d cerber/cerber-oauth2-provider migrate-mysql -m -j jdbc-url
@@ -229,9 +227,9 @@ $ boot -d cerber/cerber-oauth2-provider migrate-mysql -m -j jdbc-url
 $ boot -d cerber/cerber-oauth2-provider migrate-postgres -m -j jdbc-url
 ```
 
-where ```-j``` is a jdbc URL to database, ```-m``` just says to apply pending migrations. There is also ```-c``` available which clears database schema (use with caution!).
+where ```jdbc-url``` is a jdbc URL used to connect to database, ```-m``` just says to apply pending migrations. There is also ```-c``` available which clears database schema (use with caution!).
 
-Migration task invoked with no action (migrate or clear) shows current status of available migrations:
+Migration task invoked with no action (_migrate_ or _clear_) shows current status of available migrations:
 
 ``` shell
 $ boot -d cerber/cerber-oauth2-provider migrate-mysql -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
