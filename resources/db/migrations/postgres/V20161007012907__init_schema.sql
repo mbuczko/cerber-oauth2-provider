@@ -7,7 +7,7 @@ create table tokens (
   user_id varchar(50),
   secret varchar(32) not null UNIQUE,
   scope varchar(255),
-  login varchar(32) not null,
+  login varchar(32),
   expires_at timestamp,
   created_at timestamp not null
 );
