@@ -150,7 +150,6 @@
         {:keys [client-id secret created-at expires-at login]} access-token
         {:keys [type refresh?] :or {type "Bearer"}} opts]
 
-    (println [client-id "refresh" nil login])
     (if (f/failed? access-token)
       access-token
       (let [refresh-token (and refresh?
