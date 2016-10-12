@@ -1,6 +1,7 @@
 (ns cerber.helpers
   (:require [crypto.random :as random]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [digest]))
 
 (defn now []
   (java.sql.Timestamp. (System/currentTimeMillis)))
@@ -74,3 +75,8 @@
     (.between (java.time.temporal.ChronoUnit/SECONDS)
               (java.time.LocalDateTime/now)
               (.toLocalDateTime expires-at))))
+
+(defn digest
+  "Applies SHA-256 on given token"
+  [secret]
+  (digest/sha-256 secret))
