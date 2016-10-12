@@ -15,9 +15,11 @@
 
 (defn wrap-oauth-errors [handler]
   (fn [req]
-    (let [response (handler req)]
+    (let [response (handler req), params (:params req)]
       (if-let [error (:error response)]
-        (error/error->json response (:state (:params req)))
+        (if (= (:code response) 302)
+          (error/error->redirect response (:state params) (:redirect_uri params))
+          (error/error->json response (:state params)))
         response))))
 
 (defn wrap-oauth-bearer [handler]
@@ -50,11 +52,16 @@
       (wrap-session {:store custom-store})
       (wrap-restful-format :formats [:json-kw])))
 
-(defn authorization-approve-handler [req]
+(defn client-approve-handler [req]
   (-> auth/approve!
       (wrap-oauth-errors)
       (wrap-anti-forgery)
       (wrap-session {:store custom-store})
+      (wrap-restful-format :formats [:json-kw])))
+
+(defn client-refuse-handler [req]
+  (-> auth/refuse!
+      (wrap-oauth-errors)
       (wrap-restful-format :formats [:json-kw])))
 
 (defn token-handler [req]

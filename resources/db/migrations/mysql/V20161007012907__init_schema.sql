@@ -47,7 +47,7 @@ create table authcodes (
 create table clients (
   id varchar(32) primary key,
   secret varchar(32) not null,
-  homepage varchar(255),
+  info varchar(255),
   approved bit not null default false,
   scopes varchar(1024),
   grants varchar(255),

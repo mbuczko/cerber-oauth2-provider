@@ -18,7 +18,8 @@
 
 (defroutes oauth-routes
   (GET  "/authorize" [] handlers/authorization-handler)
-  (POST "/authorize" [] handlers/authorization-approve-handler)
+  (POST "/approve"   [] handlers/client-approve-handler)
+  (GET  "/refuse"    [] handlers/client-refuse-handler)
   (POST "/token"     [] handlers/token-handler)
   (GET  "/login"     [] handlers/login-form-handler)
   (POST "/login"     [] handlers/login-submit-handler))
@@ -106,7 +107,7 @@
 
                       ;; authorization prompt
                       (follow-redirect)
-                      (request-secured "/authorize"
+                      (request-secured "/approve"
                                        :request-method :post
                                        :params {:client_id (:id client)
                                                 :response_type "code"

@@ -34,7 +34,7 @@ All stores may use one of following implementations:
 To keep maximal flexibility, each store can use different store implementation. It's definitely recommended to use ```in-memory``` stores for development process and persistent ones for production.
 Typical configuration might use ```sql``` for users and clients and ```redis``` for sessions / tokens / authcodes.
 
-Now, when it comes to configuration...
+Now, when speaking of configuration...
 
 ## Configuration
 
@@ -50,7 +50,8 @@ specific for each environment (local / test / prod):
                        :driver-class "org.h2.Driver"
                        :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"}
           :endpoints  {:authentication "/login"
-                       :authorization  "/authorize"}
+                       :client-approve "/approve"
+                       :client-refuse  "/refuse"}
           :authcodes  {:store :sql :valid-for 180}
           :sessions   {:store :sql :valid-for 180}
           :tokens     {:store :sql :valid-for 180}
@@ -66,7 +67,7 @@ Words of explanation:
 
 ```jdbc-pool``` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info)
 
-```endpoints``` (optional) any change in default OAuth authentication/authorization URLs need to be reflected here
+```endpoints``` (optional) any change in default OAuth authentication- and client acceptance/refusal paths need to be reflected here
 
 ```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
 
@@ -96,7 +97,7 @@ _(todo)_ introduce JWT tokens
 All _NOT RECOMMENDED_ points from specification have been purposely omitted for security reasons. Bearer tokens and client credentials should be passed in HTTP
 headers. All other ways (like query param or form fields) are ignored and will result in HTTP 401 (Unauthorized) or HTTP 403 (Forbidden) errors.
 
-Any errors returned by this implementation should be formed according to specification:
+Any errors returned in a response body are formed according to specification as following json:
 
 ``` json
 {
@@ -106,9 +107,14 @@ Any errors returned by this implementation should be formed according to specifi
 }
 ```
 
+or added to the _error_ query param in case of callback requests.
+
+Callback requests (redirects) are one of the crucial concepts of OAuth flow thus it's extremally important to have redirect URIs verified. There are several way to validate redirect URI,
+this implementation however goes the simplest way and does _exact match_ which means that URI provided by client in a request MUST be exactly the same as one of URIs bound to the client during registration.
+
 ## Usage
 
-Cerber OAuth2 provider defines 5 [ring handlers](https://github.com/ring-clojure/ring/wiki/Concepts) that should be bound to specific routes. It's not done automagically. Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
+Cerber OAuth2 provider defines 6 [ring handlers](https://github.com/ring-clojure/ring/wiki/Concepts) that should be bound to specific routes. It's not done automagically. Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
 
 Anyway, this is how bindings would look like with compojure:
 
@@ -117,13 +123,14 @@ Anyway, this is how bindings would look like with compojure:
 
 (defroutes oauth-routes
   (GET  "/authorize" [] handlers/authorization-handler)
-  (POST "/authorize" [] handlers/authorization-approve-handler)
+  (POST "/approve"   [] handlers/client-approve-handler)
+  (GET  "/refuse"    [] handlers/client-refuse-handler)
   (POST "/token"     [] handlers/token-handler)
   (GET  "/login"     [] handlers/login-form-handler)
   (POST "/login"     [] handlers/login-submit-handler))
 ```
 
-To recall, anytime /login or /authorize paths change it should be reflected in ```endpoints```  part of configuration.
+To recall, any change in default /login, /approve or /refuse paths should be reflected in corresponding ```endpoints``` part of configuration.
 
 Having OAuth Authentication Server paths set up, next step is to configure restricted resources:
 
@@ -163,10 +170,10 @@ API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to
 
 ### clients
 
-```(create-client [homepage redirects scopes grants authorities approved?])```
+```(create-client [info redirects scopes grants authorities approved?])```
 
 used to create new OAuth client, where:
-- homepage is a non-validated info string (typically an URL to client's homepage)
+- info is a non-validated info string (typically client's app name or URL to client's homepage)
 - redirects is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
 - scopes is an optional vector of OAuth scopes that client may request an access to
 - authorities is an optional vector of authorities that client may operate with

@@ -5,7 +5,7 @@
   (:import cerber.error.HttpError
            cerber.stores.client.Client))
 
-(def homepage "http://ooops.com")
+(def info "testing client")
 
 (def redirects ["http://localhost" "http://defunkt.pl"])
 (def authorities [])
@@ -14,14 +14,14 @@
 
 (fact "New client is returned as Client record with secret filled in."
       (with-client-store (create-client-store :in-memory)
-        (let [client (create-client homepage redirects scopes grants authorities false)]
+        (let [client (create-client info redirects scopes grants authorities false)]
           client => (instance-of Client)
           client => (has-secret :secret))))
 
 (tabular
  (fact "Redirect URIs must be a valid URLs with no forbidden characters."
        (with-client-store (create-client-store :in-memory)
-         (create-client homepage ?redirects scopes grants authorities false) => ?expected))
+         (create-client info ?redirects scopes grants authorities false) => ?expected))
 
  ?redirects                       ?expected
  ["http://dupa.z.trupa"]          truthy
@@ -38,7 +38,7 @@
            (purge-clients)
 
            ;; given
-           (let [client (create-client homepage redirects scopes grants authorities false)
+           (let [client (create-client info redirects scopes grants authorities false)
                  found  (find-client (:id client))]
 
              ;; then
@@ -55,7 +55,7 @@
            (purge-clients)
 
            ;; given
-           (let [client (create-client homepage redirects scopes grants authorities false)
+           (let [client (create-client info redirects scopes grants authorities false)
                  id (:id client)]
 
              ;; and

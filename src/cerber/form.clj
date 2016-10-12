@@ -13,8 +13,11 @@
 (defn default-authentication-endpoint []
   (get-in app-config [:cerber :enpoints :authentication] "/login"))
 
-(defn default-authorization-endpoint []
-  (get-in app-config [:cerber :enpoints :authorization] "/authorize"))
+(defn default-approve-endpoint []
+  (get-in app-config [:cerber :enpoints :client-approve] "/approve"))
+
+(defn default-refuse-endpoint []
+  (get-in app-config [:cerber :enpoints :client-refuse] "/refuse"))
 
 (defn render-form [file kv]
   (-> (selmer/render-file file kv)
@@ -24,19 +27,17 @@
 (defn render-login-form [req]
   (let [session (:session req)]
     (-> (render-form "forms/login.html" {:csrf (anti-forgery-field)
-                                          :action (default-authentication-endpoint)
-                                          :failed? (boolean (:failed? req))})
+                                         :action (default-authentication-endpoint)
+                                         :failed? (boolean (:failed? req))})
 
         ;; clear up auth info if already existed
         (assoc :session (dissoc session :login)))))
 
 (defn render-approval-form [client req]
   (render-form "forms/authorize.html" {:csrf (anti-forgery-field)
-                                        :client client
-                                        :action (str
-                                                 (default-authorization-endpoint)
-                                                 "?"
-                                                 (:query-string req))}))
+                                       :client client
+                                       :action-approve (str (default-approve-endpoint) "?" (:query-string req))
+                                       :action-refuse  (str (default-refuse-endpoint) "?" (:query-string req))}))
 
 (defn handle-login-submit [req]
   (let [result (ctx/user-password-valid? req)

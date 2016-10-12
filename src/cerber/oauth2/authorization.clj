@@ -39,10 +39,10 @@
 (defmethod authorization-request-handler "code"
   [req]
   (let [result (f/attempt-> req
-                            (ctx/state-allowed?)
                             (ctx/client-valid?)
-                            (ctx/scope-allowed?)
                             (ctx/redirect-allowed?)
+                            (ctx/state-allowed?)
+                            (ctx/scope-allowed?)
                             (ctx/user-authenticated? (:authenticator arbiters))
                             (ctx/request-auto-approved? (:auto-approver arbiters)))]
     (if (f/failed? result)
@@ -54,10 +54,10 @@
 (defmethod authorization-request-handler "token"
   [req]
   (let [result (f/attempt-> req
-                            (ctx/state-allowed?)
                             (ctx/client-valid?)
-                            (ctx/scope-allowed?)
                             (ctx/redirect-allowed?)
+                            (ctx/state-allowed?)
+                            (ctx/scope-allowed?)
                             (ctx/user-authenticated? (:authenticator arbiters)))]
     (if (f/failed? result)
       result
@@ -132,6 +132,9 @@
 
 (defn approve! [req]
   (authorize! (ctx/approve-authorization req)))
+
+(defn refuse! [req]
+  error/access-denied)
 
 (defn issue-token! [req]
   (token-request-handler req))

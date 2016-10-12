@@ -12,7 +12,7 @@
             [cerber.helpers :as helpers])
   (:import [cerber.store MemoryStore RedisStore]))
 
-(defrecord Client [id secret homepage redirects scopes grants authorities])
+(defrecord Client [id secret info redirects scopes grants authorities])
 
 (defrecord SqlClientStore []
   Store
@@ -72,11 +72,11 @@
 
 (defn create-client
   "Creates new client"
-  [homepage redirects scopes grants authorities approved?]
+  [info redirects scopes grants authorities approved?]
   (let [result (validate-redirects redirects)
         client {:id (generate-secret)
                 :secret (generate-secret)
-                :homepage homepage
+                :info info
                 :approved approved?
                 :scopes (array->str scopes)
                 :grants (array->str grants)

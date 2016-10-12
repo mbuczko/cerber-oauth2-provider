@@ -26,5 +26,5 @@
                             :client_id (:id client)}}]
 
           ;; then
-          (:error (authorize! (assoc-in req [:params :scope] "foo"))) => "invalid_scope"
+          (:error (authorize! (assoc-in req [:params :scope] "foo"))) => "invalid_request"
           (:error (authorize! (assoc-in req [:params :scope] "photo"))) => "invalid_request")))

@@ -9,17 +9,17 @@
   (message [this] (:message this))
   (failed? [this] true))
 
-(def invalid-request
-  (map->HttpError {:error "invalid_request" :message "Invalid request" :code 400}))
-
 (def invalid-scope
-  (map->HttpError {:error "invalid_scope" :message "Invalid scope" :code 400}))
+  (map->HttpError {:error "invalid_scope" :message "Invalid scope" :code 302}))
 
 (def invalid-state
-  (map->HttpError {:error "invalid_state" :message "Invalid state. Only alphanumeric characters are allowed." :code 400}))
+  (map->HttpError {:error "invalid_state" :message "Invalid state. Only alphanumeric characters are allowed." :code 302}))
 
-(def client-unauthorized
-  (map->HttpError {:error "unauthorized_client" :message "Client unauthorized" :code 401}))
+(def access-denied
+  (map->HttpError {:error "access_denied" :message "Authorization refused" :code 302}))
+
+(def invalid-request
+  (map->HttpError {:error "invalid_request" :message "Invalid request" :code 400}))
 
 (def invalid-token
   (map->HttpError {:error "invalid_request" :message "Invalid token" :code 400}))
@@ -47,6 +47,17 @@
 
 (defn internal-error [message]
   (map->HttpError {:error "server_error" :message message :code 500}))
+
+(defn error->redirect
+  "Tranforms error into http redirect response.
+  Error info is added as query param as described in 4.1.2.1. Error Response of OAuth2 spec"
+
+  [http-error state redirect-uri]
+  (let [{:keys [code error message]} http-error]
+    {:status 302
+     :headers {"Location" (str redirect-uri
+                               "?error=" error
+                               "&state=" state)}}))
 
 (defn error->json
   "Tranforms error into http response.

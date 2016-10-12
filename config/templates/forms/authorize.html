@@ -1,18 +1,25 @@
 <html>
     <body>
         <div class="auth-container">
-            <form class="pure-form pure-form-aligned" method="post" action="{{ action }}">
+            <form class="pure-form pure-form-aligned" method="post" action="{{ action-approve }}">
                 <fieldset>
                     {{ csrf|safe }}
 
                     <p>
+                        Client <em>{{ client.info }}</em> wants to access your resources:
+                        <ul>
+                        {% for scope in client.scopes %}
+                            <li>{{ scope }}</li>
+                        {% endfor %}
+                        </ul>
                         Should authorize?
-                        client: {{ client }}
                     </p>
 
                     <div class="pure-controls">
                         <button type="submit" class="pure-button pure-button-primary">Authorize</button>
+                        <a href="{{ action-refuse }}"> refuse </a>
                     </div>
+
                 </fieldset>
             </form>
         </div>

@@ -37,7 +37,7 @@
 (defn grant-allowed? [req mandatory-grant]
   (f/attempt-all [grant (get-in req [:params :grant_type] error/invalid-request)
                   valid? (or (= grant mandatory-grant) error/invalid-request)
-                  allowed? (or (client/grant-allowed? (::client req) mandatory-grant) error/client-unauthorized)]
+                  allowed? (or (client/grant-allowed? (::client req) mandatory-grant) error/unauthorized)]
                  (assoc req ::grant grant)))
 
 (defn redirect-allowed? [req]
@@ -88,7 +88,7 @@
 (defn client-authenticated? [req]
   (f/attempt-all [auth (or (basic-authentication-credentials req) error/unauthorized)
                   client (or (client/find-client (first auth)) error/invalid-request)
-                  valid? (or (= (second auth) (:secret client)) error/client-unauthorized)]
+                  valid? (or (= (second auth) (:secret client)) error/invalid-request)]
                  (assoc req ::client client)))
 
 (defn user-authenticated? [req authenticator-fn]
