@@ -24,7 +24,8 @@
                  [selmer "1.10.0"]
                  [failjure "0.1.3"]
                  [ring-anti-forgery "0.3.0"]
-                 [ring-middleware-format "0.7.0"]])
+                 [ring-middleware-format "0.7.0"]
+                 [digest "1.4.5"]])
 
 (def +version+ "0.1.6")
 

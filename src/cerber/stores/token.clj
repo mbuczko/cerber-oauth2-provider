@@ -72,21 +72,22 @@
 (defn create-token
   "Creates new token."
   [tag client user scope & [ttl]]
-  (let [token (helpers/reset-ttl
-               {:client-id (:id client)
-                :user-id (:id user)
-                :login (:login user)
-                :secret (helpers/generate-secret)
-                :scope scope
-                :tag (name tag)
-                :created-at (helpers/now)}
-               (and (= tag :access) (or ttl (default-valid-for))))
-        keyvec (if (= tag :access)
-                 [nil :tag :secret nil]
-                 [:client-id :tag :secret :login])]
+  (let [secret (helpers/generate-secret)
+        token  (helpers/reset-ttl
+                {:client-id (:id client)
+                 :user-id (:id user)
+                 :login (:login user)
+                 :secret (helpers/digest secret)
+                 :scope scope
+                 :tag (name tag)
+                 :created-at (helpers/now)}
+                (and (= tag :access) (or ttl (default-valid-for))))
+        keyvec  (if (= tag :access)
+                  [nil :tag :secret nil]
+                  [:client-id :tag :secret :login])]
 
     (if-let [result (store! *token-store* keyvec token)]
-      (map->Token result)
+      (map->Token (assoc result :secret secret))
       (error/internal-error "Cannot create token"))))
 
 ;; revocation
@@ -97,7 +98,7 @@
 (defn revoke-access-token
   [token]
   (when-let [secret (:secret token)]
-    (revoke-by-key [nil "access" (:secret token) nil])))
+    (revoke-by-key [nil "access" (helpers/digest (:secret token)) nil])))
 
 ;; retrieval
 
@@ -121,13 +122,13 @@
   "Finds access token issued for given client-user pair with particular auto-generated secret code."
 
   [secret]
-  (find-by-key [nil "access" secret nil]))
+  (find-by-key [nil "access" (helpers/digest secret) nil]))
 
 (defn find-refresh-token
   "Finds refresh token issued for given client-user pair with particular auto-generated secret code."
 
   [client-id secret login]
-  (first (find-by-pattern [client-id "refresh" secret login])))
+  (first (find-by-pattern [client-id "refresh" (helpers/digest secret) login])))
 
 (defn purge-tokens
   "Removes token from store. Used for tests only."
@@ -146,15 +147,14 @@
 
   [client user scope & [opts]]
   (let [access-token (create-token :access client user scope)
-        {:keys [secret created-at expires-at login]} access-token
+        {:keys [client-id secret created-at expires-at login]} access-token
         {:keys [type refresh?] :or {type "Bearer"}} opts]
 
     (if (f/failed? access-token)
       access-token
       (let [refresh-token (and refresh?
-                               (or (find-refresh-token (:id client) nil (:login user))
-                                   (create-token :refresh client user scope)))]
-
+                               (nil? (revoke-by-pattern [client-id "refresh" nil login]))
+                               (create-token :refresh client user scope))]
         (-> {:access_token secret
              :token_type type
              :created_at created-at
@@ -169,8 +169,7 @@
   "Refreshes access and refresh-tokens using provided refresh-token."
 
   [refresh-token]
-  (let [{:keys [client-id user-id login secret scope]} refresh-token]
-    (revoke-by-key [client-id "refresh" secret login])
+  (let [{:keys [client-id user-id login scope]} refresh-token]
     (generate-access-token {:id client-id}
                            {:id user-id :login login}
                            scope

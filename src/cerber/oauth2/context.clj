@@ -10,7 +10,6 @@
             [failjure.core :as f])
   (:import org.apache.commons.codec.binary.Base64))
 
-(def refresh-token-pattern #"[A-Z0-9]{32}")
 (def state-pattern #"\p{Alnum}+")
 
 (defn basic-authentication-credentials
@@ -60,10 +59,8 @@
 (defn refresh-token-valid? [req]
   (let [client-id (:id (::client req))]
     (f/attempt-all [refresh-token (get-in req [:params :refresh_token] error/invalid-request)
-                    match? (or (re-matches refresh-token-pattern refresh-token) error/invalid-token)
                     rtoken (or (token/find-refresh-token client-id refresh-token nil) error/invalid-token)
-                    valid? (or (and (= client-id (:client-id rtoken))
-                                    (= refresh-token (:secret rtoken))) error/invalid-token)]
+                    valid? (or (= client-id (:client-id rtoken)) error/invalid-token)]
                    (assoc req ::refresh-token rtoken))))
 
 (defn bearer-valid? [req]

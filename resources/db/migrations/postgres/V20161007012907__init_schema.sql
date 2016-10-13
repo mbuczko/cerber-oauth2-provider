@@ -5,7 +5,7 @@ create table tokens (
   tag varchar(10),
   client_id varchar(32) not null,
   user_id varchar(50),
-  secret varchar(32) not null UNIQUE,
+  secret varchar(64) not null UNIQUE,
   scope varchar(255),
   login varchar(32),
   expires_at timestamp,
