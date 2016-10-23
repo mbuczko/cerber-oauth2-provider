@@ -7,8 +7,8 @@
             [midje.sweet :refer :all])
   (:import cerber.stores.authcode.AuthCode))
 
-(defonce client (c/create-client "http://foo.com" ["http://foo.com/callback"] ["photo:read"]  nil ["moderator"] false))
-(defonce user (u/create-user {:login "nioh"} "alamakota"))
+(def client (c/create-client "http://foo.com" ["http://foo.com/callback"] ["photo:read"]  nil ["moderator"] false))
+(def user (u/create-user {:login "nioh"} "alamakota"))
 
 (def scope "photo:read")
 (def redirect "http://localhost:8080/callback")
@@ -24,50 +24,44 @@
           authcode => (has-secret :code))))
 
 (tabular
- (with-state-changes [(before :contents (.start redis))
-                      (after  :contents (.stop redis))]
-   (fact "Authcode found in a store is returned with secret code filled in."
-         (with-authcode-store (create-authcode-store ?store)
-           (purge-authcodes)
+ (fact "Authcode found in a store is returned with secret code filled in."
+       (with-authcode-store (create-authcode-store ?store)
+         (purge-authcodes)
 
-           ;; given
-           (let [authcode (create-authcode client user scope redirect)
-                 found (find-authcode (:code authcode))]
+         ;; given
+         (let [authcode (create-authcode client user scope redirect)
+               found (find-authcode (:code authcode))]
 
-             ;; then
-             found => (instance-of AuthCode)
-             found => (has-secret :code)))))
+           ;; then
+           found => (instance-of AuthCode)
+           found => (has-secret :code))))
 
  ?store :in-memory :sql :redis)
 
 (tabular
- (with-state-changes [(before :contents (.start redis))
-                      (after  :contents (.stop redis))]
-   (fact "Revoked authcode is not returned from store."
-         (with-authcode-store (create-authcode-store ?store)
-           (purge-authcodes)
+ (fact "Revoked authcode is not returned from store."
+       (with-authcode-store (create-authcode-store ?store)
+         (purge-authcodes)
 
-           ;; given
-           (let [authcode (create-authcode client user scope redirect)]
+         ;; given
+         (let [authcode (create-authcode client user scope redirect)]
 
-             ;; then
-             (find-authcode (:code authcode)) => (instance-of AuthCode)
-             (revoke-authcode authcode)
-             (find-authcode (:code authcode)) => nil))))
+           ;; then
+           (find-authcode (:code authcode)) => (instance-of AuthCode)
+           (revoke-authcode authcode)
+           (find-authcode (:code authcode)) => nil)))
 
  ?store :in-memory :sql :redis)
 
 (tabular
- (with-state-changes [(before :contents (.start redis))
-                      (after  :contents (.stop redis))]
-   (fact "Expired authcodes are removed from store."
-         (with-authcode-store (create-authcode-store ?store)
-           (purge-authcodes)
+ (fact "Expired authcodes are removed from store."
+       (with-authcode-store (create-authcode-store ?store)
+         (purge-authcodes)
 
-           ;; given
-           (let [authcode (create-authcode client user scope redirect -1)]
+         ;; given
+         (let [authcode (create-authcode client user scope redirect -1)]
 
-             ;; then
-             (find-authcode (:code authcode))) => nil)))
+           ;; then
+           (find-authcode (:code authcode))) => nil))
 
  ?store :in-memory :sql :redis)

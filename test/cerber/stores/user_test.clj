@@ -37,39 +37,35 @@
           (:enabled user2) => false)))
 
 (tabular
- (with-state-changes [(before :contents (.start redis))
-                      (after  :contents (.stop redis))]
-   (fact "User found in a store is returned with details filled in."
-         (with-user-store (create-user-store ?store)
-           (purge-users)
+ (fact "User found in a store is returned with details filled in."
+       (with-user-store (create-user-store ?store)
+         (purge-users)
 
-           ;; given
-           (create-user {:login "foo"} "alamakota")
+         ;; given
+         (create-user {:login "foo"} "alamakota")
 
-           ;; when
-           (let [user (find-user "foo")]
+         ;; when
+         (let [user (find-user "foo")]
 
-             ;; then
-             user => (instance-of User)
-             user => (has-secret :password)))))
+           ;; then
+           user => (instance-of User)
+           user => (has-secret :password))))
 
  ?store :in-memory :sql :redis)
 
 (tabular
- (with-state-changes [(before :contents (.start redis))
-                      (after  :contents (.stop redis))]
-   (fact "Revoked user is not returned from store."
-         (with-user-store (create-user-store ?store)
-           (purge-users)
+ (fact "Revoked user is not returned from store."
+       (with-user-store (create-user-store ?store)
+         (purge-users)
 
-           ;; given
-           (let [user (create-user {:login "foo"} "alamakota")]
-             (find-user "foo") => (instance-of User)
+         ;; given
+         (let [user (create-user {:login "foo"} "alamakota")]
+           (find-user "foo") => (instance-of User)
 
-             ;; when
-             (revoke-user "foo")
+           ;; when
+           (revoke-user "foo")
 
-             ;; then
-             (find-user "foo") => nil))))
+           ;; then
+           (find-user "foo") => nil)))
 
  ?store :in-memory :sql :redis)
