@@ -5,12 +5,11 @@
   (:import cerber.error.HttpError
            cerber.stores.client.Client))
 
-(def info "testing client")
-
 (def redirects ["http://localhost" "http://defunkt.pl"])
 (def authorities [])
 (def grants [])
 (def scopes ["photo"])
+(def info "testing client")
 
 (fact "New client is returned as Client record with secret filled in."
       (with-client-store (create-client-store :in-memory)
@@ -31,40 +30,36 @@
  ["http://some nasty.pl"]         (instance-of HttpError))
 
 (tabular
- (with-state-changes [(before :contents (.start redis))
-                      (after  :contents (.stop redis))]
-   (fact "Newly created client is returned when stored correctly in a store."
-         (with-client-store (create-client-store ?store)
-           (purge-clients)
+ (fact "Newly created client is returned when stored correctly in a store."
+       (with-client-store (create-client-store ?store)
+         (purge-clients)
 
-           ;; given
-           (let [client (create-client info redirects scopes grants authorities false)
-                 found  (find-client (:id client))]
+         ;; given
+         (let [client (create-client info redirects scopes grants authorities false)
+               found  (find-client (:id client))]
 
-             ;; then
-             found => (instance-of Client)
-             found => (has-secret :secret)))))
+           ;; then
+           found => (instance-of Client)
+           found => (has-secret :secret))))
 
- ?store :in-memory :sql :redis)
+ ?store :in-memory :redis :sql)
 
 (tabular
- (with-state-changes [(before :contents (.start redis))
-                      (after  :contents (.stop redis))]
-   (fact "Revoked client is not returned from store."
-         (with-client-store (create-client-store ?store)
-           (purge-clients)
+ (fact "Revoked client is not returned from store."
+       (with-client-store (create-client-store ?store)
+         (purge-clients)
 
-           ;; given
-           (let [client (create-client info redirects scopes grants authorities false)
-                 id (:id client)]
+         ;; given
+         (let [client (create-client info redirects scopes grants authorities false)
+               id (:id client)]
 
-             ;; and
-             (find-client id) => (instance-of Client)
+           ;; and
+           (find-client id) => (instance-of Client)
 
-             ;; when
-             (revoke-client id)
+           ;; when
+           (revoke-client id)
 
-             ;; then
-             (find-client id) => nil))))
+           ;; then
+           (find-client id) => nil)))
 
  ?store :in-memory :sql :redis)

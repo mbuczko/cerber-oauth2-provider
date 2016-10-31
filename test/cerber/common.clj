@@ -1,16 +1,33 @@
 (ns cerber.common
-  (:require [cerber.server]
+  (:require [mount.core :refer [defstate] :as mount]
+            [cerber.oauth2.authorization]
+            [cerber.stores
+             [user     :as u]
+             [client   :as c]
+             [session  :as s]
+             [authcode :as a]
+             ]
             [peridot.core :refer [request]]
-            [clojure.data.codec.base64 :as b64]
-            [mount.core :as mount])
+            [clojure.data.codec.base64 :as b64])
   (:import redis.embedded.RedisServer))
 
-;; in-memory redis instance
-(defonce redis (RedisServer. (Integer. 6379)))
+(def redirect-uri "http://localhost")
+(def scope "photo:read")
+(def state "123ABC")
 
-(defonce system (-> (mount/with-args {:env "test"})
-                    (mount/except [#'cerber.server/http-server])
-                    mount/start))
+(defn redis-start []
+  (when-let [redis (RedisServer. (Integer. 6380))]
+    (.start redis)
+    redis))
+
+(defn redis-stop [instance]
+  (and instance (.stop instance)))
+
+;; in-memory redis instance
+
+(defstate redis-instance
+  :start (redis-start)
+  :stop  (redis-stop redis-instance))
 
 ;; some additional midje checkers
 
@@ -39,3 +56,14 @@
 (defn request-secured [state & opts]
   (let [token (extract-csrf state)]
     (apply request state (map #(if (map? %) (assoc % "__anti-forgery-token" token) %) opts))))
+
+(defn create-test-user [login password]
+  (u/purge-users)
+  (u/create-user {:login login} password))
+
+(defn create-test-client []
+  (c/purge-clients)
+  (c/create-client "test client" [redirect-uri] [scope] nil ["moderator"] false))
+
+;; start testing system
+(mount/start (mount/with-args {:env "test"}))
