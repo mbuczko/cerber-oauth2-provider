@@ -1,87 +1,85 @@
 (ns cerber.stores.token-test
-  (:require [midje.sweet :refer :all]
-            [cerber.helpers :as helpers]
-            [cerber.stores
-             [client :as c]
-             [user :as u]]
+  (:require [cerber.stores.token :refer :all]
             [cerber.common :refer :all]
-            [cerber.stores.token :refer :all])
+            [cerber.helpers :as helpers]
+            [midje.sweet :refer :all])
   (:import  [cerber.stores.token Token]))
 
-(defonce client (c/create-client "http://foo.com" ["http://foo.com/callback"] ["photo:read"]  nil ["moderator"] false))
-(defonce user (u/create-user {:login "nioh"} "alamakota"))
+(against-background
+ [(around :contents (let [user (create-test-user "nioh" "alamakota")
+                          client (create-test-client)] ?form))]
 
-(def token-scope "photo:read")
-
-(fact "Newly created token is returned with user/client ids and secret filled in."
-      (with-token-store (create-token-store :in-memory)
-        ;; given
-        (let [token (create-token :access client user token-scope)]
-
-          ;; then
-          token => (instance-of Token)
-          token => (has-secret :secret)
-          token => (contains {:client-id (:id client)
-                              :user-id (:id user)
-                              :login "nioh"
-                              :scope token-scope}))))
-
-(tabular
- (fact "Token found in a store is returned with user/client ids and secret filled in."
-       (with-token-store (create-token-store ?store)
-         (purge-tokens)
+ (fact "Newly created token is returned with user/client ids and secret filled in."
+       (with-token-store (create-token-store :in-memory)
 
          ;; given
-         (let [token (create-token :access client user token-scope)
-               found (find-access-token (:secret token))]
+         (let [token (create-token :access client user scope)]
 
            ;; then
-           found => (instance-of Token)
-           found => (has-secret :secret)
-           found => (contains {:client-id (:id client)
+           token => (instance-of Token)
+           token => (has-secret :secret)
+           token => (contains {:client-id (:id client)
                                :user-id (:id user)
                                :login "nioh"
-                               :scope token-scope}))))
- ?store :in-memory :sql :redis)
+                               :scope scope}))))
 
-(tabular
- (fact "Revoked token is not returned from store."
-       (with-token-store (create-token-store ?store)
-         (purge-tokens)
+ (tabular
+  (fact "Token found in a store is returned with user/client ids and secret filled in."
+        (with-token-store (create-token-store ?store)
+          (purge-tokens)
 
-         ;; given
-         (let [token (create-token :access client user token-scope)
-               secret (:secret token)]
+          ;; given
+          (let [token (create-token :access client user scope)
+                found (find-access-token (:secret token))]
 
-           ;; then
-           (find-access-token secret) => (instance-of Token)
-           (revoke-access-token token)
-           (find-access-token secret) => nil)))
+            ;; then
+            found => (instance-of Token)
+            found => (has-secret :secret)
+            found => (contains {:client-id (:id client)
+                                :user-id (:id user)
+                                :login "nioh"
+                                :scope scope}))))
 
- ?store :in-memory :sql :redis)
+  ?store :in-memory :sql :redis)
 
-(tabular
- (fact "Refreshing re-generates access/refresh tokens and revokes old ones from store."
-       (with-token-store (create-token-store ?store)
-         (purge-tokens)
+ (tabular
+  (fact "Revoked token is not returned from store."
+        (with-token-store (create-token-store ?store)
+          (purge-tokens)
 
-         ;; given
-         (let [client-id (:id client)
-               access-token (generate-access-token client user token-scope {:refresh? true})
-               refresh-token (find-refresh-token client-id (:refresh_token access-token) nil)]
+          ;; given
+          (let [token (create-token :access client user scope)
+                secret (:secret token)]
 
-           ;; when
-           (let [new-token (refresh-access-token refresh-token)]
+            ;; then
+            (find-access-token secret) => (instance-of Token)
+            (revoke-access-token token)
+            (find-access-token secret) => nil)))
 
-             ;; then
-             (= (:access_token new-token) (:access_token access-token)) => false
-             (= (:refresh_token new-token) (:refresh_token access-token)) => false
-             (find-refresh-token client-id (:secret refresh-token) nil) => nil
-             (:expires-at refresh-token) => nil))))
+  ?store :in-memory :sql :redis)
 
- ?store :in-memory :sql :redis)
+ (tabular
+  (fact "Refreshing re-generates access/refresh tokens and revokes old ones from store."
+        (with-token-store (create-token-store ?store)
+          (purge-tokens)
 
-(fact "Tokens with expires-at date in the past are considered as expired ones."
-      (with-token-store (create-token-store :in-memory)
-        (helpers/expired?
-         (create-token :access client user token-scope -10)) => true))
+          ;; given
+          (let [client-id (:id client)
+                access-token (generate-access-token client user scope {:refresh? true})
+                refresh-token (find-refresh-token client-id (:refresh_token access-token) nil)]
+
+            ;; when
+            (let [new-token (refresh-access-token refresh-token)]
+
+              ;; then
+              (= (:access_token new-token) (:access_token access-token)) => false
+              (= (:refresh_token new-token) (:refresh_token access-token)) => false
+              (find-refresh-token client-id (:secret refresh-token) nil) => nil
+              (:expires-at refresh-token) => nil))))
+
+  ?store :in-memory :sql :redis)
+
+ (fact "Tokens with expires-at date in the past are considered as expired ones."
+       (with-token-store (create-token-store :in-memory)
+         (helpers/expired?
+          (create-token :access client user scope -10)) => true)))

@@ -5,12 +5,11 @@
   (:import cerber.error.HttpError
            cerber.stores.client.Client))
 
-(def info "testing client")
-
 (def redirects ["http://localhost" "http://defunkt.pl"])
 (def authorities [])
 (def grants [])
 (def scopes ["photo"])
+(def info "testing client")
 
 (fact "New client is returned as Client record with secret filled in."
       (with-client-store (create-client-store :in-memory)
@@ -43,7 +42,7 @@
            found => (instance-of Client)
            found => (has-secret :secret))))
 
- ?store :in-memory :sql :redis)
+ ?store :in-memory :redis :sql)
 
 (tabular
  (fact "Revoked client is not returned from store."

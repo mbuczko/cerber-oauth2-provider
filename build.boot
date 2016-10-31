@@ -43,9 +43,16 @@
 (apply clojure.tools.namespace.repl/set-refresh-dirs (get-env :source-paths))
 
 
-(deftask dev
-  "Bunch of tasks making things easier in development mode."
+(deftask go
+  "Starts system initializing all defined states."
+  [e env ENVIRONMENT str "Environment to use while starting application up."]
+  (cerber.system/go {:env (or env (get-env :env) "local")
+                     :base-name "cerber"}))
+
+(deftask tdd
+  "Environment for test-driven development."
   []
+  (set-env! :env "test")
   (comp (watch)
         (midje)
         (speak)))
@@ -55,37 +62,19 @@
   []
   (cerber.system/reset))
 
-(deftask migrate-mysql
+(def mysql-opts ["-d" "com.mysql.cj.jdbc.Driver" "-o" "locations=db/migrations/mysql" "-j"])
+(def pgsql-opts ["-d" "org.postgresql.Driver" "-o" "locations=db/migrations/postgres" "-j"])
+
+(deftask migrate
   [j jdbc-url URL str  "jdbc url"
    m migrate      bool "apply migrations"
    c clean        bool "clean schema"]
-  (let [action (cond migrate "-m" clean "-c" :else "-i")]
-    (flyway "-d" "com.mysql.cj.jdbc.Driver"
-            "-o" "locations=db/migrations/mysql"
-            "-j" jdbc-url action)))
-
-(deftask migrate-postgres
-  [j jdbc-url URL str  "jdbc url"
-   m migrate      bool "apply migrations"
-   c clean        bool "clean schema"]
-  (let [action (cond migrate "-m" clean "-c" :else "-i")]
-    (flyway "-d" "org.postgresql.Driver"
-            "-o" "locations=db/migrations/postgres"
-            "-j" jdbc-url action)))
-
-(deftask go
-  "Starts system initializing all defined states."
-  [e env ENVIRONMENT str "Environment to use while starting application up."]
-  (cerber.system/go {:env (or env "local")
-                     :base-name "cerber"}))
+  (let [args (if (.startsWith jdbc-url "jdbc:postgresql") pgsql-opts mysql-opts)]
+    (apply flyway (conj args jdbc-url (cond migrate "-m" clean "-c" :else "-i")))))
 
 (task-options! midje {:test-paths #{"test"}}
                pom   {:project 'cerber/cerber-oauth2-provider
                       :version +version+
                       :description "OAuth2 provider"
                       :url "https://github.com/mbuczko/cerber-oauth2-provider"
-                      :scm {:url "https://github.com/mbuczko/cerber-oauth2-provider"}}
-
-               ;; default migration jdbc-urls
-               migrate-mysql {:jdbc-url "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"}
-               migrate-postgres {:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres&password=alamakota"})
+                      :scm {:url "https://github.com/mbuczko/cerber-oauth2-provider"}})

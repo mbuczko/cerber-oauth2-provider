@@ -45,6 +45,7 @@
                             (ctx/scope-allowed?)
                             (ctx/user-authenticated? (:authenticator arbiters))
                             (ctx/request-auto-approved? (:auto-approver arbiters)))]
+
     (if (f/failed? result)
       result
       (response/redirect-with-code result))))
