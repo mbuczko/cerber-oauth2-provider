@@ -235,7 +235,7 @@ where ```jdbc-url``` is a jdbc URL used to connect to database, ```-m``` just sa
 Migration task invoked with no action (_migrate_ or _clear_) shows current status of available migrations:
 
 ``` shell
-$ boot -d cerber/cerber-oauth2-provider migrate-mysql -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
+$ boot -d cerber/cerber-oauth2-provider migrate -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
 
 +----------------+-------------+---------------------+---------+
 | Version        | Description | Installed on        | State   |

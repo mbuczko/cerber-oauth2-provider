@@ -27,7 +27,7 @@
                  [ring-middleware-format "0.7.0"]
                  [digest "1.4.5"]])
 
-(def +version+ "0.1.6")
+(def +version+ "0.1.7")
 
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
