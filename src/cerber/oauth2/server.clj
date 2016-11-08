@@ -1,4 +1,4 @@
-(ns cerber.server
+(ns cerber.oauth2.server
   (:require [cerber
              [config :refer [app-config]]
              [handlers :as handlers]]

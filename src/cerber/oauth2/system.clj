@@ -1,7 +1,7 @@
-(ns cerber.system
+(ns cerber.oauth2.system
   (:require [clojure.tools.namespace.repl :as tn]
             [mount.core :refer [defstate] :as mount]
-            [cerber.server]))
+            [cerber.oauth2.server]))
 
 (defn go
   ([] (go {}))
@@ -12,7 +12,7 @@
 
 (defn reset []
   (stop)
-  (tn/refresh :after 'cerber.system/go))
+  (tn/refresh :after 'cerber.oauth2.system/go))
 
 (defn refresh []
   (stop)
@@ -26,4 +26,4 @@
   "Stops all states defined by defstate, reloads modified source files, and selectively restarts the states."
   []
   (stop)
-  (tn/refresh :after 'cerber.system/go))
+  (tn/refresh :after 'cerber.oauth2.system/go))

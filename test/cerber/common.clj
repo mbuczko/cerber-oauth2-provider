@@ -5,8 +5,7 @@
              [user     :as u]
              [client   :as c]
              [session  :as s]
-             [authcode :as a]
-             ]
+             [authcode :as a]]
             [peridot.core :refer [request]]
             [clojure.data.codec.base64 :as b64])
   (:import redis.embedded.RedisServer))

@@ -29,11 +29,15 @@
 
 (def +version+ "0.1.7")
 
+(def mysql-opts ["-d" "com.mysql.cj.jdbc.Driver" "-o" "locations=db/migrations/mysql" "-j"])
+
+(def pgsql-opts ["-d" "org.postgresql.Driver" "-o" "locations=db/migrations/postgres" "-j"])
+
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
 
 (require
- '[cerber.system]
+ '[cerber.oauth2.system]
  '[adzerk.bootlaces    :refer [bootlaces! build-jar push-release]]
  '[zilti.boot-midje    :refer [midje]]
  '[mbuczko.boot-flyway :refer [flyway]])
@@ -47,8 +51,8 @@
 (deftask go
   "Starts system initializing all defined states."
   [e env ENVIRONMENT str "Environment to use while starting application up."]
-  (cerber.system/go {:env (or env (get-env :env) "local")
-                     :base-name "cerber"}))
+  (cerber.oauth2.system/go {:env (or env (get-env :env) "local")
+                            :base-name "cerber"}))
 
 (deftask tdd
   "Environment for test-driven development."
@@ -61,15 +65,13 @@
 (deftask reset
   "Restarts system using local environment."
   []
-  (cerber.system/reset))
-
-(def mysql-opts ["-d" "com.mysql.cj.jdbc.Driver" "-o" "locations=db/migrations/mysql" "-j"])
-(def pgsql-opts ["-d" "org.postgresql.Driver" "-o" "locations=db/migrations/postgres" "-j"])
+  (cerber.oauth2.system/reset))
 
 (deftask migrate
   [j jdbc-url URL str  "jdbc url"
    m migrate      bool "apply migrations"
    c clean        bool "clean schema"]
+
   (let [args (if (.startsWith jdbc-url "jdbc:postgresql") pgsql-opts mysql-opts)]
     (apply flyway (conj args jdbc-url (cond migrate "-m" clean "-c" :else "-i")))))
 
