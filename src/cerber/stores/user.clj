@@ -1,3 +1,4 @@
+
 (ns cerber.stores.user
   (:require [mount.core :refer [defstate]]
             [cerber
@@ -58,13 +59,17 @@
   ([user password]
    (create-user user password nil))
   ([user password authorities]
-   (let [merged (merge {:id (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" "")
-                        :name nil
-                        :email nil
-                        :enabled true
-                        :password (bcrypt password)
-                        :authorities authorities
-                        :created-at (helpers/now)} (dissoc user :password :created-at))]
+   (let [enabled (:enabled user)
+         merged  (merge-with
+                  #(or %2 %1)
+                  user
+                  {:id (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" "")
+                   :name nil
+                   :email nil
+                   :enabled (if (nil? enabled) true enabled)
+                   :password (bcrypt password)
+                   :authorities authorities
+                   :created-at (helpers/now)})]
 
      (when (store! *user-store* [:login] merged)
        (map->User merged)))))
