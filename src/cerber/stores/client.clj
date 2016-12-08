@@ -22,8 +22,6 @@
     (db/delete-client {:id client-id}))
   (store! [this k client]
     (when (= 1 (db/insert-client client)) client))
-  (modify! [this k client]
-    client)
   (purge! [this]
     (db/clear-clients)))
 

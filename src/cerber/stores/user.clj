@@ -1,4 +1,3 @@
-
 (ns cerber.stores.user
   (:require [mount.core :refer [defstate]]
             [cerber
@@ -25,8 +24,6 @@
     (db/delete-user {:login login}))
   (store! [this k user]
     (when (= 1 (db/insert-user user)) user))
-  (modify! [this k user]
-    user)
   (purge! [this]
     (db/clear-users)))
 

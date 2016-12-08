@@ -45,7 +45,7 @@
 
 (defstate ^:dynamic *session-store*
   :start (create-session-store (-> app-config :cerber :sessions :store))
-  :stop  (helpers/stop-collecting *session-store*))
+  :stop  (helpers/stop-periodic *session-store*))
 
 (defmethod create-session-store :in-memory [_]
   (MemoryStore. "sessions" (atom {})))
@@ -54,7 +54,7 @@
   (RedisStore. "sessions" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-session-store :sql [_]
-  (helpers/with-garbage-collector
+  (helpers/with-periodic-fn
     (SqlSessionStore.) db/clear-expired-sessions 10000))
 
 (defmacro with-session-store

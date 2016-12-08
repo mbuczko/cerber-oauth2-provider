@@ -23,11 +23,11 @@
             (catch InterruptedException _)))
     (.start)))
 
-(defn stop-collecting [store]
+(defn stop-periodic [store]
   (when-let [periodic (:periodic store)]
     (.interrupt periodic)))
 
-(defn with-garbage-collector [store f interval]
+(defn with-periodic-fn [store f interval]
   (assoc store :periodic (init-periodic f interval)))
 
 (defn generate-secret

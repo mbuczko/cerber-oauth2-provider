@@ -14,7 +14,7 @@ create table tokens (
 );
 
 create table users (
-  id int auto_increment primary key,
+  id varchar(32) primary key,
   login varchar(32) not null,
   email varchar(50),
   name varchar(128),

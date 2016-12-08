@@ -12,8 +12,15 @@
              [request :refer [request-url]]
              [response :as response]]))
 
+
+(defn redirect-to
+  "Redirects browser to given location"
+
+  [location]
+  (response/redirect location))
+
 (defn redirect-with-session [url session]
-  (-> (response/redirect url)
+  (-> (redirect-to url)
       (assoc :session session)))
 
 (defn redirect-with-code [{:keys [params ::ctx/user ::ctx/client ::ctx/scope ::ctx/state ::ctx/redirect-uri]}]
@@ -21,7 +28,7 @@
                   redirect (str redirect-uri
                                 "?code=" (:code authcode)
                                 (when state (str "&state=" state)))]
-                 (response/redirect redirect)))
+                 (redirect-to redirect)))
 
 (defn redirect-with-token [{:keys [params ::ctx/user ::ctx/client ::ctx/scope ::ctx/state ::ctx/redirect-uri]}]
   (f/attempt-all [access-token (token/generate-access-token client user scope)
@@ -30,7 +37,7 @@
                                 "&expires_in=" (:expires_in access-token)
                                 (when scope (str "&scope=" scope))
                                 (when state (str "&state=" state)))]
-                 (response/redirect redirect)))
+                 (redirect-to redirect)))
 
 (defn access-token-response [{:keys [::ctx/client ::ctx/scope ::ctx/user ::ctx/authcode]}]
   (when authcode

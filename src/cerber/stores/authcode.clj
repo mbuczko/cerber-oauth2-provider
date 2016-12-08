@@ -40,7 +40,7 @@
 
 (defstate ^:dynamic *authcode-store*
   :start (create-authcode-store (-> app-config :cerber :authcodes :store))
-  :stop  (helpers/stop-collecting *authcode-store*))
+  :stop  (helpers/stop-periodic *authcode-store*))
 
 (defmethod create-authcode-store :in-memory [_]
   (MemoryStore. "authcodes" (atom {})))
@@ -49,7 +49,7 @@
   (RedisStore. "authcodes" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-authcode-store :sql [_]
-  (helpers/with-garbage-collector
+  (helpers/with-periodic-fn
     (SqlAuthCodeStore.) db/clear-expired-authcodes 8000))
 
 (defmacro with-authcode-store

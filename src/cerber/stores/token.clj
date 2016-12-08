@@ -52,7 +52,7 @@
 
 (defstate ^:dynamic *token-store*
   :start (create-token-store (-> app-config :cerber :tokens :store))
-  :stop  (helpers/stop-collecting *token-store*))
+  :stop  (helpers/stop-periodic *token-store*))
 
 (defmethod create-token-store :in-memory [_]
   (MemoryStore. "tokens" (atom {})))
@@ -61,7 +61,7 @@
   (RedisStore. "tokens" (-> app-config :cerber :redis-spec)))
 
 (defmethod create-token-store :sql [_]
-  (helpers/with-garbage-collector
+  (helpers/with-periodic-fn
     (SqlTokenStore.) db/clear-expired-tokens 60000))
 
 (defmacro with-token-store
