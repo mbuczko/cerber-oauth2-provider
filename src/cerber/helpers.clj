@@ -3,6 +3,9 @@
             [clojure.string :as str]
             [digest]))
 
+(def scheduler ^java.util.concurrent.ScheduledExecutorService
+  (java.util.concurrent.Executors/newScheduledThreadPool 1))
+
 (defn now []
   (java.sql.Timestamp. (System/currentTimeMillis)))
 
@@ -15,17 +18,12 @@
   Function gets {:date now} as an argument."
 
   [f interval]
-  (doto (Thread.
-         #(try
-            (while (not (.isInterrupted (Thread/currentThread)))
-              (Thread/sleep interval)
-              (f {:date (now)}))
-            (catch InterruptedException _)))
-    (.start)))
+  (let [runnable (proxy [Runnable] [] (run [] (f {:date (now)})))]
+    (.scheduleAtFixedRate scheduler runnable 0 interval java.util.concurrent.TimeUnit/MILLISECONDS)))
 
 (defn stop-periodic [store]
   (when-let [periodic (:periodic store)]
-    (.interrupt periodic)))
+    (.cancel periodic false)))
 
 (defn with-periodic-fn [store f interval]
   (assoc store :periodic (init-periodic f interval)))
