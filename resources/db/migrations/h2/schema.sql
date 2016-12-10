@@ -20,7 +20,7 @@ create table tokens (
 create table users (
   id varchar(32) primary key,
   login varchar(32) not null,
-  email varchar(50),
+  email varchar(128),
   name varchar(128),
   password varchar(255) not null,
   authorities varchar(1024),

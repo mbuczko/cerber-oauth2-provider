@@ -80,3 +80,7 @@
   "Applies SHA-256 on given token"
   [secret]
   (digest/sha-256 secret))
+
+(defn uuid []
+  "Generates uuid"
+  (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" ""))

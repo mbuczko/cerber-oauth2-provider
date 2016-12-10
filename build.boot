@@ -29,18 +29,14 @@
 
 (def +version+ "0.1.7")
 
-(def mysql-opts ["-d" "com.mysql.cj.jdbc.Driver" "-o" "locations=db/migrations/mysql" "-j"])
-
-(def pgsql-opts ["-d" "org.postgresql.Driver" "-o" "locations=db/migrations/postgres" "-j"])
-
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
 
 (require
  '[cerber.oauth2.system]
+ '[cerber.migration]
  '[adzerk.bootlaces    :refer [bootlaces! build-jar push-release]]
- '[zilti.boot-midje    :refer [midje]]
- '[mbuczko.boot-flyway :refer [flyway]])
+ '[zilti.boot-midje    :refer [midje]])
 
 (bootlaces! +version+)
 
@@ -71,9 +67,7 @@
   [j jdbc-url URL str  "jdbc url"
    m migrate      bool "apply migrations"
    c clean        bool "clean schema"]
-
-  (let [args (if (.startsWith jdbc-url "jdbc:postgresql") pgsql-opts mysql-opts)]
-    (apply flyway (conj args jdbc-url (cond migrate "-m" clean "-c" :else "-i")))))
+  (cerber.migration/migrate jdbc-url (if migrate :migrate (when clean :clean))))
 
 (task-options! midje {:test-paths #{"test"}}
                pom   {:project 'cerber/cerber-oauth2-provider

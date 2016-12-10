@@ -14,17 +14,9 @@
 (defn default-valid-for []
   (-> app-config :cerber :tokens :valid-for))
 
-(defrecord Token [client-id user-id login scope secret created-at expires-at])
+(declare ->map)
 
-(defn ->map [result]
-  (when-let [{:keys [client_id user_id login scope secret created_at expires_at]} result]
-    {:client-id client_id
-     :user-id user_id
-     :login login
-     :scope scope
-     :secret secret
-     :created-at created_at
-     :expires-at expires_at}))
+(defrecord Token [client-id user-id login scope secret created-at expires-at])
 
 (defrecord SqlTokenStore []
   Store
@@ -174,3 +166,13 @@
                            {:id user-id :login login}
                            scope
                            {:refresh? true})))
+
+(defn ->map [result]
+  (when-let [{:keys [client_id user_id login scope secret created_at expires_at]} result]
+    {:client-id client_id
+     :user-id user_id
+     :login login
+     :scope scope
+     :secret secret
+     :created-at created_at
+     :expires-at expires_at}))

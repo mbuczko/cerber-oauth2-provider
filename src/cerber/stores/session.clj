@@ -12,14 +12,9 @@
 (defn default-valid-for []
   (-> app-config :cerber :sessions :valid-for))
 
-(defrecord Session [sid content created-at expires-at])
+(declare ->map)
 
-(defn ->map [result]
-  (when-let [{:keys [sid content created_at expires_at]} result]
-    {:sid sid
-     :content (nippy/thaw content)
-     :expires-at expires_at
-     :created-at created_at}))
+(defrecord Session [sid content created-at expires-at])
 
 (defrecord SqlSessionStore []
   Store
@@ -66,7 +61,7 @@
   "Creates new session"
   [content & [ttl]]
   (let [session (helpers/reset-ttl
-                 {:sid (.toString (java.util.UUID/randomUUID))
+                 {:sid (helpers/uuid)
                   :content content
                   :created-at (helpers/now)}
                  (or ttl (default-valid-for)))]
@@ -94,3 +89,10 @@
   []
   "Removes sessions from store. Used for tests only."
   (purge! *session-store*))
+
+(defn ->map [result]
+  (when-let [{:keys [sid content created_at expires_at]} result]
+    {:sid sid
+     :content (nippy/thaw content)
+     :expires-at expires_at
+     :created-at created_at}))

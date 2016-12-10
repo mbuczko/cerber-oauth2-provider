@@ -13,17 +13,9 @@
 (defn default-valid-for []
   (-> app-config :cerber :authcodes :valid-for))
 
-(defrecord AuthCode [client-id login code scope redirect-uri expires-at created-at])
+(declare ->map)
 
-(defn ->map [result]
-  (when-let [{:keys [client_id login code scope redirect_uri created_at expires_at]} result]
-    {:client-id client_id
-     :login login
-     :code code
-     :scope scope
-     :redirect-uri redirect_uri
-     :expires-at expires_at
-     :created-at created_at}))
+(defrecord AuthCode [client-id login code scope redirect-uri expires-at created-at])
 
 (defrecord SqlAuthCodeStore []
   Store
@@ -87,3 +79,13 @@
   []
   "Removes auth code from store. Used for tests only."
   (purge! *authcode-store*))
+
+(defn ->map [result]
+  (when-let [{:keys [client_id login code scope redirect_uri created_at expires_at]} result]
+    {:client-id client_id
+     :login login
+     :code code
+     :scope scope
+     :redirect-uri redirect_uri
+     :expires-at expires_at
+     :created-at created_at}))

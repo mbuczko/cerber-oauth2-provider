@@ -8,13 +8,9 @@
   (:import [cerber.store MemoryStore RedisStore]
            [org.mindrot.jbcrypt BCrypt]))
 
-(defrecord User [id login email name password authoritites enabled created-at])
+(declare ->map)
 
-(defn ->map [result]
-  (when-let [{:keys [created_at modified_at]} result]
-    (-> result
-        (assoc  :created-at created_at :modified-at modified_at)
-        (dissoc :created_at :modified_at))))
+(defrecord User [id login email name password authoritites enabled created-at])
 
 (defrecord SqlUserStore []
   Store
@@ -60,7 +56,7 @@
          merged  (merge-with
                   #(or %2 %1)
                   user
-                  {:id (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" "")
+                  {:id (helpers/uuid)
                    :name nil
                    :email nil
                    :enabled (if (nil? enabled) true enabled)
@@ -89,3 +85,9 @@
   "Verify that candidate password matches the hashed bcrypted password"
   [candidate hashed]
   (BCrypt/checkpw candidate hashed))
+
+(defn ->map [result]
+  (when-let [{:keys [created_at modified_at]} result]
+    (-> result
+        (assoc  :created-at created_at :modified-at modified_at)
+        (dissoc :created_at :modified_at))))
