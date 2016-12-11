@@ -1,6 +1,7 @@
 (ns cerber.oauth2.authorization
   (:require [cerber
              [config :refer [app-config]]
+             [form  :as form]
              [error :as error]]
             [cerber.oauth2
              [context :as ctx]
@@ -8,28 +9,6 @@
             [cerber.stores.user :as user]
             [failjure.core :as f]
             [mount.core :refer [defstate]]))
-
-(defn default-auto-approver-fn
-  "Auto-approver function.
-  Denies all non-approved clients by default."
-
-  [req]
-  (when-let [client (::ctx/client req)]
-    (:approved client)))
-
-(defn default-authenticator-fn
-  "Default user-authenticator function.
-  Returns user if request is authorized or falsey otherwise."
-
-  [req]
-  (let [login (get-in req [:session :login])
-        user (user/find-user login)]
-    (and (:enabled user) user)))
-
-(defstate arbiters
-  :start (let [{:keys [auto-approver-fn authenticator-fn]} (:cerber app-config)]
-           {:auto-approver (or (and auto-approver-fn (resolve auto-approver-fn)) default-auto-approver-fn)
-            :authenticator (or (and authenticator-fn (resolve authenticator-fn)) default-authenticator-fn)}))
 
 (defmulti authorization-request-handler (comp :response_type :params))
 (defmulti token-request-handler (comp :grant_type :params))
@@ -43,9 +22,8 @@
                             (ctx/redirect-allowed?)
                             (ctx/state-allowed?)
                             (ctx/scope-allowed?)
-                            (ctx/user-authenticated? (:authenticator arbiters))
-                            (ctx/request-auto-approved? (:auto-approver arbiters)))]
-
+                            (ctx/user-authenticated?)
+                            (ctx/request-auto-approved?))]
     (if (f/failed? result)
       result
       (response/redirect-with-code result))))
@@ -59,7 +37,7 @@
                             (ctx/redirect-allowed?)
                             (ctx/state-allowed?)
                             (ctx/scope-allowed?)
-                            (ctx/user-authenticated? (:authenticator arbiters)))]
+                            (ctx/user-authenticated?))]
     (if (f/failed? result)
       result
       (response/redirect-with-token result))))
@@ -90,7 +68,7 @@
   (let [result (f/attempt-> req
                             (ctx/client-authenticated?)
                             (ctx/scope-allowed?)
-                            (ctx/user-password-valid?))]
+                            (ctx/user-password-valid? form/authenticator-fn))]
     (if (f/failed? result)
       result
       (response/access-token-response result))))
