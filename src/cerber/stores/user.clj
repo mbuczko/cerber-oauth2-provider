@@ -60,7 +60,7 @@
                    :name nil
                    :email nil
                    :enabled (if (nil? enabled) true enabled)
-                   :password (bcrypt password)
+                   :password (and password (bcrypt password))
                    :authorities authorities
                    :created-at (helpers/now)})]
 
@@ -84,7 +84,7 @@
 (defn valid-password?
   "Verify that candidate password matches the hashed bcrypted password"
   [candidate hashed]
-  (BCrypt/checkpw candidate hashed))
+  (and candidate hashed (BCrypt/checkpw candidate hashed)))
 
 (defn ->map [result]
   (when-let [{:keys [created_at modified_at]} result]

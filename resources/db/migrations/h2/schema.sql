@@ -22,7 +22,7 @@ create table users (
   login varchar(32) not null,
   email varchar(128),
   name varchar(128),
-  password varchar(255) not null,
+  password varchar(255),
   authorities varchar(1024),
   enabled bit not null default true,
   created_at datetime not null,

@@ -17,7 +17,7 @@ create table users (
   login varchar(32) not null UNIQUE,
   email varchar(50),
   name varchar(128),
-  password varchar(255) not null,
+  password varchar(255),
   authorities varchar(1024),
   enabled boolean not null default true,
   created_at timestamp not null

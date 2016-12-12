@@ -7,9 +7,7 @@
 (def pgsql-opts
   ["-d" "org.postgresql.Driver" "-o" "locations=db/migrations/postgres" "-j"])
 
-(defn migrate [jdbc-url action]
-  (let [args (if (.startsWith jdbc-url "jdbc:postgresql") pgsql-opts mysql-opts)]
-    (apply flyway (conj args jdbc-url (condp = action
-                                        :migrate "-m"
-                                        :clean "-c"
-                                        "-i")))))
+(defn migrate [jdbc-url]
+  (apply flyway (if-not jdbc-url ["-i"] (conj (if (.startsWith jdbc-url "jdbc:postgresql")
+                                                pgsql-opts
+                                                mysql-opts) jdbc-url "-m"))))

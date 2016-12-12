@@ -48,12 +48,12 @@
                                            :action-approve (str (default-approve-endpoint) "?" (:query-string req))
                                            :action-refuse  (str (default-refuse-endpoint) "?" (:query-string req))}))
 
-(def authenticator-fn
+(defn authenticator-fn []
   (let [auth-fn (get-in app-config [:cerber :authenticator])]
     (or (and auth-fn (resolve auth-fn)) default-authenticator-fn)))
 
 (defn handle-login-submit [req]
-  (let [result (ctx/user-password-valid? req authenticator-fn)]
+  (let [result (ctx/user-password-valid? req (authenticator-fn))]
     (if (f/failed? result)
       (-> (assoc req :failed? true)
           (render-login-form))

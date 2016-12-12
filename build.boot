@@ -64,10 +64,9 @@
   (cerber.oauth2.system/reset))
 
 (deftask migrate
-  [j jdbc-url URL str  "jdbc url"
-   m migrate      bool "apply migrations"
-   c clean        bool "clean schema"]
-  (cerber.migration/migrate jdbc-url (if migrate :migrate (when clean :clean))))
+  "Applies pending migrations."
+  [j jdbc-url URL str "JDBC url"]
+  (cerber.migration/migrate jdbc-url))
 
 (task-options! midje {:test-paths #{"test"}}
                pom   {:project 'cerber/cerber-oauth2-provider

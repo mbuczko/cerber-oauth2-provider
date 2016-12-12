@@ -227,23 +227,13 @@ Revokes all access- and refresh-tokens bound with given client (and optional use
 Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema. All migrations live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations). You may either apply them by hand or use task which will migrate schema changes for supported SQL databases:
 
 ``` shell
-$ boot -d cerber/cerber-oauth2-provider migrate -m -j jdbc-url
-```
 
-where ```jdbc-url``` is a jdbc URL used to connect to database, ```-m``` just says to apply pending migrations. There is also ```-c``` available which clears database schema (use with caution!).
+$ boot -d cerber/cerber-oauth2-provider migrate -j <jdbc-url>
 
-Migration task invoked with no action (_migrate_ or _clear_) shows current status of available migrations:
+$ boot -d cerber/cerber-oauth2-provider migrate -j "jdbc:mysql://localhost:3306/template1?user=root&password=secret"
 
-``` shell
-$ boot -d cerber/cerber-oauth2-provider migrate -j "jdbc:mysql://localhost:3306/template1?user=root&password=alamakota"
-
-+----------------+-------------+---------------------+---------+
-| Version        | Description | Installed on        | State   |
-+----------------+-------------+---------------------+---------+
-| 20161007012907 | init schema | 2016-10-09 23:25:32 | Success |
-+----------------+-------------+---------------------+---------+
 ```
 
 ### What SQL databases are supported?
 
-Currently MySQL and Postgres are supported and recognized based on jdbc-url.
+Currently MySQL and Postgres are supported out of the box and recognized based on jdbc-url.
