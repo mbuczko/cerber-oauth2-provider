@@ -10,7 +10,7 @@
 
 (declare ->map)
 
-(defrecord User [id login email name password authoritites enabled created-at])
+(defrecord User [id login email name password authoritites enabled created-at activated-at blocked-at])
 
 (defrecord SqlUserStore []
   Store
@@ -20,6 +20,10 @@
     (db/delete-user {:login login}))
   (store! [this k user]
     (when (= 1 (db/insert-user user)) user))
+  (modify! [this k user]
+    (if (:enabled user)
+      (db/enable-user user)
+      (db/disable-user user)))
   (purge! [this]
     (db/clear-users)))
 
@@ -52,16 +56,17 @@
   ([user password]
    (create-user user password nil))
   ([user password authorities]
-   (let [enabled (:enabled user)
+   (let [enabled (:enabled user true)
          merged  (merge-with
                   #(or %2 %1)
                   user
                   {:id (helpers/uuid)
                    :name nil
                    :email nil
-                   :enabled (if (nil? enabled) true enabled)
+                   :enabled enabled
                    :password (and password (bcrypt password))
                    :authorities authorities
+                   :activated-at (when enabled (helpers/now))
                    :created-at (helpers/now)})]
 
      (when (store! *user-store* [:login] merged)
@@ -76,9 +81,19 @@
   [login]
   (revoke-one! *user-store* [login]))
 
+(defn enable-user
+  "Enables user. Returns true if user has been enabled successfully or false otherwise."
+  [user]
+  (= 1 (modify! *user-store* [:login] (assoc user :enabled true :activated-at (helpers/now)))))
+
+(defn disable-user
+  "Disables user. Returns true if user has been disabled successfully or false otherwise."
+  [user]
+  (= 1 (modify! *user-store* [:login] (assoc user :enabled false :blocked-at (helpers/now)))))
+
 (defn purge-users
-  []
   "Removes users from store. Used for tests only."
+  []
   (purge! *user-store*))
 
 (defn valid-password?
@@ -87,7 +102,7 @@
   (and candidate hashed (BCrypt/checkpw candidate hashed)))
 
 (defn ->map [result]
-  (when-let [{:keys [created_at modified_at]} result]
+  (when-let [{:keys [created_at modified_at activated_at blocked_at]} result]
     (-> result
-        (assoc  :created-at created_at :modified-at modified_at)
-        (dissoc :created_at :modified_at))))
+        (assoc  :created-at created_at :modified-at modified_at :activated-at activated_at :blocked-at blocked_at)
+        (dissoc :created_at :modified_at :confirmed_at :activated_at :blocked_at))))

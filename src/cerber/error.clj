@@ -48,6 +48,9 @@
 (defn internal-error [message]
   (map->HttpError {:error "server_error" :message message :code 500}))
 
+(defn bad-request [message]
+  (map->HttpError {:error "bad_request" :message message :code 400}))
+
 (defn error->redirect
   "Tranforms error into http redirect response.
   Error info is added as query param as described in 4.1.2.1. Error Response of OAuth2 spec"

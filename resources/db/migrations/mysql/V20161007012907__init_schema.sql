@@ -22,6 +22,8 @@ create table users (
   authorities varchar(1024),
   enabled bit not null default true,
   created_at datetime not null,
+  activated_at datetime,
+  blocked_at datetime,
   UNIQUE KEY users_login_unique (login)
 );
 

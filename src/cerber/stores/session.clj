@@ -27,7 +27,7 @@
           result  (db/insert-session (assoc session :content content))]
       (when (= 1 result) session)))
   (modify! [this k session]
-    (let [result (db/update-session (assoc session :content (nippy/freeze (:content session))))]
+    (let [result (db/update-session (update session :content nippy/freeze))]
       (when (= 1 result) session)))
   (touch! [this k session ttl]
     (let [extended (helpers/reset-ttl session ttl)
