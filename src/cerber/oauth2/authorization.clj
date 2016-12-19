@@ -35,6 +35,7 @@
   (let [result (f/attempt-> req
                             (ctx/client-valid?)
                             (ctx/redirect-allowed?)
+                            (ctx/grant-allowed? "token")
                             (ctx/state-allowed?)
                             (ctx/scope-allowed?)
                             (ctx/user-authenticated?))]
