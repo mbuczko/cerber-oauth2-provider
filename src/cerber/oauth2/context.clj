@@ -33,10 +33,8 @@
     (f/attempt-all [valid? (or (client/scope-valid? (::client req) scope) error/invalid-scope)]
                    (assoc req ::scope scope))))
 
-(defn grant-allowed? [req mandatory-grant]
-  (f/attempt-all [grant (get-in req [:params :grant_type] error/invalid-request)
-                  valid?   (or (= grant mandatory-grant) error/invalid-request)
-                  allowed? (or (client/grant-allowed? (::client req) mandatory-grant) error/unauthorized)]
+(defn grant-allowed? [req grant]
+  (f/attempt-all [allowed? (or (client/grant-allowed? (::client req) grant) error/unsupported-grant-type)]
                  (assoc req ::grant grant)))
 
 (defn redirect-allowed? [req]
@@ -100,7 +98,8 @@
                  (assoc req ::user user)))
 
 (defn request-auto-approved? [req]
-  (if (or (::approved? req) (:approved ::client))
+  (if (or (::approved? req)
+          (:approved (::client req)))
     req
     (assoc error/unapproved :client (::client req))))
 

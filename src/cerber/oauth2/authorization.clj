@@ -54,6 +54,7 @@
   [req]
   (let [result (f/attempt-> req
                             (ctx/client-authenticated?)
+                            (ctx/grant-allowed? "authorization_code")
                             (ctx/authcode-valid?)
                             (ctx/redirect-valid?)
                             (ctx/user-valid?))]
@@ -67,6 +68,7 @@
   [req]
   (let [result (f/attempt-> req
                             (ctx/client-authenticated?)
+                            (ctx/grant-allowed? "password")
                             (ctx/scope-allowed?)
                             (ctx/user-password-valid? form/authenticator-fn))]
     (if (f/failed? result)
@@ -79,6 +81,7 @@
   [req]
   (let [result (f/attempt-> req
                             (ctx/client-authenticated?)
+                            (ctx/grant-allowed? "client_credentials")
                             (ctx/scope-allowed?))]
     (if (f/failed? result)
       result

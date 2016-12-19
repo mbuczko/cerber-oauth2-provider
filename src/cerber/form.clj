@@ -20,13 +20,17 @@
 (defn default-refuse-endpoint []
   (get-in app-config [:cerber :enpoints :client-refuse] "/refuse"))
 
-(defn default-authenticator-fn
+(defn form-authenticator-fn
   "Default authentication function.
   Returns user instance when user is successfully authenticated or nil otherwise."
 
   [username password]
   (if-let [user (user/find-user username)]
     (and (user/valid-password? password (:password user)) (:enabled user) user)))
+
+(defn default-authenticator-fn []
+  (let [auth-fn (get-in app-config [:cerber :authenticator])]
+    (or (and auth-fn (resolve auth-fn)) form-authenticator-fn)))
 
 (defn render-template [file kv]
   (-> (render-file file kv)
@@ -48,12 +52,10 @@
                                            :action-approve (str (default-approve-endpoint) "?" (:query-string req))
                                            :action-refuse  (str (default-refuse-endpoint) "?" (:query-string req))}))
 
-(defn authenticator-fn []
-  (let [auth-fn (get-in app-config [:cerber :authenticator])]
-    (or (and auth-fn (resolve auth-fn)) default-authenticator-fn)))
+(def authenticator-fn (default-authenticator-fn))
 
 (defn handle-login-submit [req]
-  (let [result (ctx/user-password-valid? req (authenticator-fn))]
+  (let [result (ctx/user-password-valid? req authenticator-fn)]
     (if (f/failed? result)
       (-> (assoc req :failed? true)
           (render-login-form))
