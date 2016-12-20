@@ -31,7 +31,7 @@
 (defn scope-allowed? [req]
   (let [scope (get-in req [:params :scope])]
     (f/attempt-all [valid? (or (client/scope-valid? (::client req) scope) error/invalid-scope)]
-                   (assoc req ::scope (set (.split scope " "))))))
+                   (assoc req ::scope (and scope (set (.split scope " ")))))))
 
 (defn grant-allowed? [req grant]
   (f/attempt-all [allowed? (or (client/grant-allowed? (::client req) grant) error/unsupported-grant-type)]
