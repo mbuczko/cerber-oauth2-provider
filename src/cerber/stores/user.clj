@@ -10,7 +10,7 @@
 
 (declare ->map)
 
-(defrecord User [id login email name password roles enabled created-at activated-at blocked-at])
+(defrecord User [id login email name password roles permissions enabled created-at activated-at blocked-at])
 
 (defrecord SqlUserStore []
   Store
@@ -55,7 +55,7 @@
   "Creates new user"
   ([user password]
    (create-user user password nil))
-  ([user password roles]
+  ([user password roles permissions]
    (let [enabled (:enabled user true)
          merged  (merge-with
                   #(or %2 %1)
@@ -66,6 +66,7 @@
                    :enabled enabled
                    :password (and password (bcrypt password))
                    :roles roles
+                   :permissions permissions
                    :activated-at (when enabled (helpers/now))
                    :created-at (helpers/now)})]
 

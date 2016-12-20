@@ -27,7 +27,7 @@
 (def app-handler
   (wrap-defaults
    (routes oauth2-routes (-> restricted-routes
-                             (wrap-routes handlers/wrap-token-auth)))
+                             (wrap-routes handlers/wrap-authorized)))
    api-defaults))
 
 (defn init-server

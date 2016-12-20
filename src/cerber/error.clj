@@ -67,13 +67,22 @@
   In case of 401 (unauthorized) and 403 (forbidden) error codes, additional WWW-Authenticate
   header is returned as described in https://tools.ietf.org/html/rfc6750#section-3"
 
-  [http-error state]
+  [http-error state url]
   (let [{:keys [code error message]} http-error]
     (if (or (= code 401) (= code 403))
-      {:status code
-       :headers {"WWW-Authenticate" (str "Bearer realm=\"" (get-in app-config [:cerber :realm])
-                                         "\",error=\"" error
-                                         "\",error_description=\"" message "\"")}}
+      (if state
+
+        ;; oauth request
+        {:status code
+         :headers {"WWW-Authenticate" (str "Bearer realm=\"" (get-in app-config [:cerber :realm])
+                                           "\",error=\"" error
+                                           "\",error_description=\"" message "\"")}}
+        ;; browser-based requested
+        {:status 302
+         :headers {"Location" (get-in app-config [:cerber :endpoints :authentication])}
+         :session {:landing-url url}})
+
+      ;; uups, something bad happened
       {:status (or code 500)
        :body (-> {:error (or error "server_error")
                   :error_description message}

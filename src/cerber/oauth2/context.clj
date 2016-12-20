@@ -67,7 +67,9 @@
                   token  (or (token/find-access-token bearer) error/invalid-token)
                   valid? (or (not (expired? token)) error/invalid-token)]
                  (assoc req ::user (user/map->User {:id (:user-id token)
-                                                    :login (:login token)}))))
+                                                    :login (:login token)
+                                                    :roles nil
+                                                    :permissions (set (:scope token))}))))
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
@@ -87,9 +89,16 @@
                  (assoc req ::client client)))
 
 (defn user-authenticated? [req]
-  (if-let [user (user/find-user (get-in req [:session :login]))]
+  (if-let [user (user/find-user (-> req :session :login))]
     (assoc req ::user user)
     error/unauthorized))
+
+(defn user-logged? [req]
+  (when-let [session (:session req)]
+    (when-let [login (:login session)]
+      (assoc req ::user {:login login
+                         :roles (:roles session)
+                         :permissions (:permissions session)}))))
 
 (defn user-password-valid? [req authenticator-fn]
   (f/attempt-all [username (get-in req [:params :username] error/invalid-request)

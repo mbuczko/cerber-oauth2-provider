@@ -57,8 +57,14 @@
 (defn handle-login-submit [req]
   (let [result (ctx/user-password-valid? req authenticator-fn)]
     (if (f/failed? result)
-      (-> (assoc req :failed? true)
-          (render-login-form))
-      (-> (get-in req [:session :landing-url] (default-landing-url))
-          (redirect)
-          (assoc :session {:login (-> result ::ctx/user :login)})))))
+
+      ;; login failed. re-render login page with failure flag set on.
+      (render-login-form (assoc req :failed? true))
+
+      ;; login succeeded. redirect either to session-stored or default landing url.
+      (let [{:keys [login roles permissions]} (::ctx/user result)]
+        (-> (get-in req [:session :landing-url] (default-landing-url))
+            (redirect)
+            (assoc :session {:login login
+                             :roles roles
+                             :permissions permissions}))))))

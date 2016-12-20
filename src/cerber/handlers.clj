@@ -19,19 +19,21 @@
       (if-let [error (:error response)]
         (if (= (:code response) 302)
           (error/error->redirect response (:state params) (:redirect_uri params))
-          (error/error->json response (:state params)))
+          (error/error->json response (:state params) (:uri req)))
         response))))
 
-(defn wrap-oauth-bearer [handler]
+(defn wrap-authorization [handler]
   (fn [req]
-    (let [result (ctx/bearer-valid? req)]
+    (let [result (or (ctx/user-logged? req)
+                     (ctx/bearer-valid? req))]
+
       (if (:error result)
         result
         (handler result)))))
 
-(defn wrap-token-auth [handler]
+(defn wrap-authorized [handler]
   (-> handler
-      (wrap-oauth-bearer)
+      (wrap-authorization)
       (wrap-oauth-errors)
       (wrap-session {:store custom-store})
       (wrap-restful-format :formats [:json-kw])))

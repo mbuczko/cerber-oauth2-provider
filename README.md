@@ -149,7 +149,7 @@ Let's define ```user-info-handler``` to return user's details:
    :body (::ctx/user req)})
 ```
 
-Almost there. To verify tokens as an OAuth Resource Server Cerber bases on a single ring wrapper - ```handlers/wrap-token-auth```.
+Almost there. To verify tokens as an OAuth Resource Server Cerber bases on a single ring wrapper - ```handlers/wrap-authorized```.
 It's responsible for looking for a token in HTTP ```Authorization``` header and checking whether token matches one issued by Authorization Server.
 
 ``` clojure
@@ -160,7 +160,7 @@ It's responsible for looking for a token in HTTP ```Authorization``` header and 
   (wrap-defaults
    (routes
     oauth-routes
-    (wrap-routes restricted-routes handlers/wrap-token-auth))
+    (wrap-routes restricted-routes handlers/wrap-authorized))
    api-defaults))
 ```
 
@@ -188,7 +188,6 @@ Example:
                      ["http://defunkt.pl/callback"]
                      ["authorization_code" "password"]
                      ["photos:read" "photos:list"]
-                     ["moderator"]
                      true)
 ```
 

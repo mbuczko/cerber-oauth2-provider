@@ -4,7 +4,7 @@ select * from users where login=:login
 
 -- :name insert-user :! :1
 -- :doc Inserts new user
-insert into users (id, login, email, name, password, roles, enabled, created_at, activated_at) values (:id, :login, :email, :name, :password, :roles, :enabled, :created-at, :activated-at)
+insert into users (id, login, email, name, password, roles, permissions, enabled, created_at, activated_at) values (:id, :login, :email, :name, :password, :roles, :permissions, :enabled, :created-at, :activated-at)
 
 -- :name enable-user :! :1
 -- :doc Enables user
