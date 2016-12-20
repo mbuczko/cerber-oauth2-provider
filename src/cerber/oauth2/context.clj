@@ -31,7 +31,7 @@
 (defn scope-allowed? [req]
   (let [scope (get-in req [:params :scope])]
     (f/attempt-all [valid? (or (client/scope-valid? (::client req) scope) error/invalid-scope)]
-                   (assoc req ::scope scope))))
+                   (assoc req ::scope (set (.split scope " "))))))
 
 (defn grant-allowed? [req grant]
   (f/attempt-all [allowed? (or (client/grant-allowed? (::client req) grant) error/unsupported-grant-type)]
@@ -69,7 +69,7 @@
                  (assoc req ::user (user/map->User {:id (:user-id token)
                                                     :login (:login token)
                                                     :roles nil
-                                                    :permissions (set (:scope token))}))))
+                                                    :permissions (:scope token)}))))
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
@@ -96,9 +96,9 @@
 (defn user-logged? [req]
   (when-let [session (:session req)]
     (when-let [login (:login session)]
-      (assoc req ::user {:login login
-                         :roles (:roles session)
-                         :permissions (:permissions session)}))))
+      (assoc req ::user (user/map->User {:login login
+                                         :roles (:roles session)
+                                         :permissions (:permissions session)})))))
 
 (defn user-password-valid? [req authenticator-fn]
   (f/attempt-all [username (get-in req [:params :username] error/invalid-request)
