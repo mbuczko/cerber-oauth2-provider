@@ -12,7 +12,7 @@
             [cerber.helpers :as helpers])
   (:import [cerber.store MemoryStore RedisStore]))
 
-(defrecord Client [id secret info redirects scopes grants authorities])
+(defrecord Client [id secret info redirects grants scopes])
 
 (defrecord SqlClientStore []
   Store
@@ -70,7 +70,7 @@
 
 (defn create-client
   "Creates new client"
-  [info redirects scopes grants authorities approved?]
+  [info redirects scopes grants approved?]
   (let [result (validate-redirects redirects)
         client {:id (generate-secret)
                 :secret (generate-secret)
@@ -79,7 +79,6 @@
                 :scopes (array->str scopes)
                 :grants (array->str grants)
                 :redirects (array->str redirects)
-                :authorities (array->str authorities)
                 :created-at (helpers/now)}]
 
     (if (empty? result)
@@ -87,20 +86,18 @@
         (map->Client (assoc client
                             :scopes (or scopes [])
                             :grants (or grants [])
-                            :redirects (or redirects [])
-                            :authorities (or authorities [])))
+                            :redirects (or redirects [])))
         (error/internal-error "Cannot store client"))
       (first result))))
 
 (defn find-client [client-id]
   (if-let [found (fetch-one *client-store* [client-id])]
-    (let [{:keys [scopes grants redirects authorities]} found]
+    (let [{:keys [scopes grants redirects]} found]
       (map->Client
        (assoc found
               :scopes (str->array scopes)
               :grants (str->array grants)
-              :redirects (str->array redirects)
-              :authorities (str->array authorities))))))
+              :redirects (str->array redirects))))))
 
 (defn purge-clients
   []

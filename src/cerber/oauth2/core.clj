@@ -29,8 +29,8 @@
   (client/find-client client-id))
 
 (defn create-client
-  [info redirects & [grants scopes authorities approved?]]
-  (client/create-client info redirects scopes grants authorities approved?))
+  [info redirects & [grants scopes approved?]]
+  (client/create-client info redirects scopes grants approved?))
 
 (defn modify-client
   [client])

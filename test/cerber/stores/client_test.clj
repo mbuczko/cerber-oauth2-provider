@@ -6,21 +6,20 @@
            cerber.stores.client.Client))
 
 (def redirects ["http://localhost" "http://defunkt.pl"])
-(def authorities [])
 (def grants [])
 (def scopes ["photo"])
 (def info "testing client")
 
 (fact "New client is returned as Client record with secret filled in."
       (with-client-store (create-client-store :in-memory)
-        (let [client (create-client info redirects scopes grants authorities false)]
+        (let [client (create-client info redirects scopes grants false)]
           client => (instance-of Client)
           client => (has-secret :secret))))
 
 (tabular
  (fact "Redirect URIs must be a valid URLs with no forbidden characters."
        (with-client-store (create-client-store :in-memory)
-         (create-client info ?redirects scopes grants authorities false) => ?expected))
+         (create-client info ?redirects scopes grants false) => ?expected))
 
  ?redirects                       ?expected
  ["http://dupa.z.trupa"]          truthy
@@ -35,7 +34,7 @@
          (purge-clients)
 
          ;; given
-         (let [client (create-client info redirects scopes grants authorities false)
+         (let [client (create-client info redirects scopes grants false)
                found  (find-client (:id client))]
 
            ;; then
@@ -50,7 +49,7 @@
          (purge-clients)
 
          ;; given
-         (let [client (create-client info redirects scopes grants authorities false)
+         (let [client (create-client info redirects scopes grants false)
                id (:id client)]
 
            ;; and

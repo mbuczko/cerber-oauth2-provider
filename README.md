@@ -170,14 +170,13 @@ API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to
 
 ### clients
 
-```(create-client [info redirects & [grants scopes authorities approved?]])```
+```(create-client [info redirects & [grants scopes approved?]])```
 
 used to create new OAuth client, where:
 - info is a non-validated info string (typically client's app name or URL to client's homepage)
 - redirects is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
 - grants is an optional vector of allowed grants: "authorization_code", "token", "password" or "client_credentials". if nil - all grants are allowed.
 - scopes is an optional vector of OAuth scopes that client may request an access to
-- authorities is an optional vector of authorities that client may operate with
 - approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.
 
 Example:

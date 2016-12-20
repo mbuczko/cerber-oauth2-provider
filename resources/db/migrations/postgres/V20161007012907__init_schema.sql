@@ -18,7 +18,7 @@ create table users (
   email varchar(50),
   name varchar(128),
   password varchar(255),
-  authorities varchar(1024),
+  roles varchar(1024),
   enabled boolean not null default true,
   created_at timestamp not null,
   activated_at timestamp,
@@ -52,6 +52,5 @@ create table clients (
   scopes varchar(1024),
   grants varchar(255),
   redirects varchar(512) not null,
-  authorities varchar(1024),
   created_at timestamp not null
 );
