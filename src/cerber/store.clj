@@ -3,8 +3,7 @@
             [clojure.string :as str]
             [cerber.helpers :as helpers]))
 
-(def select-values
-  (comp vals select-keys))
+(def select-values (comp vals select-keys))
 
 (defn ns-key
   ([namespace composite nil-to]
@@ -37,12 +36,10 @@
         (when (re-matches matcher s) (swap! store dissoc s)))))
   (store! [this k item]
     (let [nskey (ns-key namespace (select-values item k))]
-      (when-not (get @store nskey) ;; poor-man uniqueness check
-        (get (swap! store assoc nskey item) nskey))))
+      (helpers/atomic-assoc-or-nil store nskey item helpers/assoc-if-not-exists)))
   (modify! [this k item]
     (let [nskey (ns-key namespace (select-values item k))]
-      (when (get @store nskey) ;; replace value already existing
-        (get (swap! store assoc nskey item) nskey))))
+      (helpers/atomic-assoc-or-nil store nskey item helpers/assoc-if-exists)))
   (touch! [this k item ttl]
     (.modify! this k (helpers/reset-ttl item ttl)))
   (purge! [this]

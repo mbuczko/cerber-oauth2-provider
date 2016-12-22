@@ -19,7 +19,7 @@
       (if-let [error (:error response)]
         (if (= (:code response) 302)
           (error/error->redirect response (:state params) (:redirect_uri params))
-          (error/error->json response (:state params) (:uri req)))
+          (error/error->json response (:state params) (:headers req) (:uri req)))
         response))))
 
 (defn wrap-authorization [handler]

@@ -70,7 +70,7 @@
 
 (defn create-client
   "Creates new client"
-  [info redirects scopes grants approved?]
+  [info redirects grants scopes approved?]
   (let [result (validate-redirects redirects)
         client {:id (generate-secret)
                 :secret (generate-secret)

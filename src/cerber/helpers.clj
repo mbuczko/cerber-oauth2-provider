@@ -14,22 +14,30 @@
     (java.sql.Timestamp. (+ (System/currentTimeMillis) (* 1000 seconds)))))
 
 (defn init-periodic
-  "Periodically run garbage collecting function f.
+  "Schedules a function f to be run periodically at given interval.
   Function gets {:date now} as an argument."
 
   [f interval]
   (let [runnable (proxy [Runnable] [] (run [] (f {:date (now)})))]
     (.scheduleAtFixedRate scheduler runnable 0 interval java.util.concurrent.TimeUnit/MILLISECONDS)))
 
-(defn stop-periodic [store]
+(defn with-periodic-fn
+  "Initializes periodically run function and associates it to given store."
+
+  [store f interval]
+  (assoc store :periodic (init-periodic f interval)))
+
+(defn stop-periodic
+  "Stops periodically run funciton attached to store."
+
+  [store]
   (when-let [periodic (:periodic store)]
     (.cancel periodic false)))
 
-(defn with-periodic-fn [store f interval]
-  (assoc store :periodic (init-periodic f interval)))
 
 (defn generate-secret
   "Generates a unique secret code."
+
   []
   (random/base32 20))
 
@@ -64,7 +72,6 @@
   [arr]
   (str/join " " arr))
 
-
 (defn expires->ttl
   "Returns number of seconds between now and expires-at."
 
@@ -76,9 +83,27 @@
 
 (defn digest
   "Applies SHA-256 on given token"
+
   [secret]
   (digest/sha-256 secret))
 
-(defn uuid []
+(defn uuid
   "Generates uuid"
+
+  []
   (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" ""))
+
+(defn assoc-if-exists
+  "Assocs k with value v to map m only if there is already k associated."
+
+  [m k v]
+  (when (m k) (assoc m k v)))
+
+(defn assoc-if-not-exists
+  "Assocs k to store with value v only if no k was associated before."
+
+  [m k v]
+  (when-not (m k) (assoc m k v)))
+
+(defn atomic-assoc-or-nil [a k v f]
+  (get (swap! a f k v) k))

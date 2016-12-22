@@ -62,7 +62,7 @@
 
 (defn create-test-client []
   (c/purge-clients)
-  (c/create-client "test client" [redirect-uri] [scope] nil ["moderator"] false))
+  (c/create-client "test client" [redirect-uri] ["authorization_code" "token" "password" "client_credentials"] [scope] false))
 
 ;; start testing system
 (mount/start (mount/with-args {:env "test"}))

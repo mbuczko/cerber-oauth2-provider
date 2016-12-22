@@ -54,7 +54,7 @@
 (defn create-user
   "Creates new user"
   ([user password]
-   (create-user user password nil))
+   (create-user user password nil nil))
   ([user password roles permissions]
    (let [enabled (:enabled user true)
          merged  (merge-with

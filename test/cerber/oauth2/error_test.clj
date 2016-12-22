@@ -8,7 +8,7 @@
       (with-client-store (create-client-store :in-memory)
 
         ;; given
-        (let [client (create-client "http://localhost" ["http://localhost"] ["photo"] nil nil false)
+        (let [client (create-client "http://localhost" ["http://localhost"] nil ["photo"] false)
               req {:request-method :get
                    :params {:response_type "code"}}]
 
@@ -20,7 +20,7 @@
       (with-client-store (create-client-store :in-memory)
 
         ;; given
-        (let [client (create-client "http://localhost" ["http://localhost"] ["photo"] nil nil false)
+        (let [client (create-client "http://localhost" ["http://localhost"] nil ["photo"] false)
               req {:request-method :get
                    :params {:response_type "code"
                             :client_id (:id client)}}]
