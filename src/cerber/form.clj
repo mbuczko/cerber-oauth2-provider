@@ -1,12 +1,18 @@
 (ns cerber.form
-  (:require [failjure.core :as f]
-            [cerber.config :refer [app-config]]
+  (:require [cerber.config :refer [app-config]]
+            [cerber.oauth2
+             [authenticator :refer [authentication-handler]]
+             [context :as ctx]]
             [cerber.stores.user :as user]
-            [cerber.oauth2.context :as ctx]
+            [failjure.core :as f]
             [ring.util
              [anti-forgery :refer [anti-forgery-field]]
-             [response :refer [response header redirect]]]
+             [response :refer [header redirect response]]]
             [selmer.parser :refer [render-file]]))
+
+(defn default-authenticator []
+  (authentication-handler
+   (get-in app-config [:cerber :authenticator] :default)))
 
 (defn default-landing-url []
   (get-in app-config [:cerber :landing-url] "/"))
@@ -19,18 +25,6 @@
 
 (defn default-refuse-endpoint []
   (get-in app-config [:cerber :enpoints :client-refuse] "/refuse"))
-
-(defn form-authenticator-fn
-  "Default authentication function.
-  Returns user instance when user is successfully authenticated or nil otherwise."
-
-  [username password]
-  (if-let [user (user/find-user username)]
-    (and (user/valid-password? password (:password user)) (:enabled user) user)))
-
-(defn default-authenticator-fn []
-  (let [auth-fn (get-in app-config [:cerber :authenticator])]
-    (or (and auth-fn (resolve auth-fn)) form-authenticator-fn)))
 
 (defn render-template [file kv]
   (-> (render-file file kv)
@@ -52,10 +46,8 @@
                                            :action-approve (str (default-approve-endpoint) "?" (:query-string req))
                                            :action-refuse  (str (default-refuse-endpoint) "?" (:query-string req))}))
 
-(def authenticator-fn (default-authenticator-fn))
-
 (defn handle-login-submit [req]
-  (let [result (ctx/user-password-valid? req authenticator-fn)]
+  (let [result (ctx/user-password-valid? req (default-authenticator))]
     (if (f/failed? result)
 
       ;; login failed. re-render login page with failure flag set on.

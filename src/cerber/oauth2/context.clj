@@ -100,10 +100,10 @@
                                          :roles (:roles session)
                                          :permissions (:permissions session)})))))
 
-(defn user-password-valid? [req authenticator-fn]
+(defn user-password-valid? [req authenticator]
   (f/attempt-all [username (get-in req [:params :username] error/invalid-request)
                   password (get-in req [:params :password] error/invalid-request)
-                  user     (or (authenticator-fn username password) error/unauthorized)]
+                  user     (or (.authenticate authenticator username password) error/unauthorized)]
                  (assoc req ::user user)))
 
 (defn request-auto-approved? [req]

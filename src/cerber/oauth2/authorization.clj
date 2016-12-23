@@ -71,7 +71,7 @@
                             (ctx/client-authenticated?)
                             (ctx/grant-allowed? "password")
                             (ctx/scope-allowed?)
-                            (ctx/user-password-valid? form/authenticator-fn))]
+                            (ctx/user-password-valid? (form/default-authenticator)))]
     (if (f/failed? result)
       result
       (response/access-token-response result))))

@@ -3,7 +3,8 @@
              [config :refer [app-config]]
              [handlers :as handlers]]
             [cerber.oauth2.context :as ctx]
-            [compojure.core :refer [defroutes GET POST routes wrap-routes]]
+            [compojure
+             [core :refer [defroutes GET POST routes wrap-routes]]]
             [mount.core :as mount :refer [defstate]]
             [org.httpkit.server :as web]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]
@@ -11,7 +12,7 @@
 
 (defn user-info-handler [req]
   {:status 200
-   :body (::ctx/user req)})
+   :body (select-keys (::ctx/user req) [:login :name :email :roles :permissions])})
 
 (defroutes oauth2-routes
   (GET  "/authorize" [] handlers/authorization-handler)
@@ -22,7 +23,7 @@
   (POST "/login"     [] handlers/login-submit-handler))
 
 (defroutes restricted-routes
-  (GET "/user/info" [] user-info-handler))
+  (GET "/users/me" [] user-info-handler))
 
 (def app-handler
   (wrap-defaults

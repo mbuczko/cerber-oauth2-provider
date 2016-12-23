@@ -10,19 +10,19 @@
                  [adzerk/bootlaces "0.1.13" :scope "test"]
                  [zilti/boot-midje "0.2.1-SNAPSHOT" :scope "test"]
                  [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
-                 [com.h2database/h2 "1.4.192" :scope "test"]
+                 [com.h2database/h2 "1.4.193" :scope "test"]
                  [mysql/mysql-connector-java "6.0.5" :scope "test"]
-                 [org.postgresql/postgresql "9.4.1211" :scope "test"]
+                 [org.postgresql/postgresql "9.4.1212" :scope "test"]
                  [midje "1.8.3" :scope "test"]
                  [peridot "0.4.4" :scope "test"]
                  [compojure "1.6.0-beta1" :scope "test"]
                  [http-kit "2.2.0" :scope "test"]
                  [helpful-loader "0.1.1"]
                  [conman "0.6.2"]
-                 [mount "0.1.10"]
+                 [mount "0.1.11"]
                  [crypto-random "1.2.0"]
-                 [selmer "1.10.0"]
-                 [failjure "0.1.3"]
+                 [selmer "1.10.3"]
+                 [failjure "0.1.4"]
                  [ring-anti-forgery "0.3.0"]
                  [ring-middleware-format "0.7.0"]
                  [digest "1.4.5"]])
@@ -50,7 +50,7 @@
   (cerber.oauth2.system/go {:env (or env (get-env :env) "local")
                             :base-name "cerber"}))
 
-(deftask tdd
+(deftask test
   "Environment for test-driven development."
   []
   (set-env! :env "test")
