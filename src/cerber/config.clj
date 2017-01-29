@@ -1,5 +1,7 @@
 (ns cerber.config
-  (:require [helpful-loader.edn :as edn-loader]
+  (:require [cprop
+             [core :as cprop]
+             [source :refer [from-resource from-system-props]]]
             [mount.core :refer [defstate] :as mount]))
 
 (defn load-config
@@ -12,8 +14,9 @@
                :is-test? (= env "test")
                :is-dev?  (or (= env "dev")
                              (= env "local"))}
-              (edn-loader/load-one-or-nil (str base-name ".edn"))
-              (edn-loader/load-one-or-nil (str base-name "-" env ".edn"))))
+              (cprop/load-config :resource (str base-name ".edn")
+                                 :merge [(from-resource (str base-name "-" env ".edn"))
+                                         (from-system-props)])))
 
 (defn init-cerber [{:keys [base-name env]}]
   (load-config (or base-name "cerber") (or env "local")))

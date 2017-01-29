@@ -17,7 +17,7 @@
                  [peridot "0.4.4" :scope "test"]
                  [compojure "1.6.0-beta1" :scope "test"]
                  [http-kit "2.2.0" :scope "test"]
-                 [helpful-loader "0.1.1"]
+                 [cprop "0.1.10"]
                  [conman "0.6.2"]
                  [mount "0.1.11"]
                  [crypto-random "1.2.0"]
@@ -27,7 +27,7 @@
                  [ring-middleware-format "0.7.0"]
                  [digest "1.4.5"]])
 
-(def +version+ "0.1.7")
+(def +version+ "0.1.8")
 
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
