@@ -1,11 +1,10 @@
-(ns cerber.oauth2.system
+(ns cerber.oauth2.standalone.system
   (:require [clojure.tools.namespace.repl :as tn]
             [mount.core :refer [defstate] :as mount]
-            [cerber.oauth2.server]))
+            [cerber.oauth2.standalone.server]))
 
-(defn go
-  ([] (go {}))
-  ([args] (mount/start-with-args args) :ready-with-args))
+(defn go []
+  (mount/start))
 
 (defn stop []
   (mount/stop))

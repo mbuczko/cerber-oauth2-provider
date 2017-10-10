@@ -13,7 +13,7 @@
 
 (def custom-store (session-store))
 
-(defn wrap-oauth-errors [handler]
+(defn wrap-errors [handler]
   (fn [req]
     (let [response (handler req), params (:params req)]
       (if-let [error (:error response)]
@@ -34,7 +34,7 @@
 (defn wrap-authorized [handler]
   (-> handler
       (wrap-authorization)
-      (wrap-oauth-errors)
+      (wrap-errors)
       (wrap-session {:store custom-store})
       (wrap-restful-format :formats [:json-kw])))
 
@@ -50,23 +50,23 @@
 
 (defn authorization-handler [req]
   (-> auth/authorize!
-      (wrap-oauth-errors)
+      (wrap-errors)
       (wrap-session {:store custom-store})
       (wrap-restful-format :formats [:json-kw])))
 
 (defn client-approve-handler [req]
   (-> auth/approve!
-      (wrap-oauth-errors)
+      (wrap-errors)
       (wrap-anti-forgery)
       (wrap-session {:store custom-store})
       (wrap-restful-format :formats [:json-kw])))
 
 (defn client-refuse-handler [req]
   (-> auth/refuse!
-      (wrap-oauth-errors)
+      (wrap-errors)
       (wrap-restful-format :formats [:json-kw])))
 
 (defn token-handler [req]
   (-> auth/issue-token!
-      (wrap-oauth-errors)
+      (wrap-errors)
       (wrap-restful-format :formats [:json-kw])))

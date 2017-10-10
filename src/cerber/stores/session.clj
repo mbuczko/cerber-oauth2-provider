@@ -10,7 +10,7 @@
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defn default-valid-for []
-  (-> app-config :cerber :sessions :valid-for))
+  (-> app-config :sessions :valid-for))
 
 (declare ->map)
 
@@ -39,14 +39,14 @@
 (defmulti create-session-store identity)
 
 (defstate ^:dynamic *session-store*
-  :start (create-session-store (-> app-config :cerber :sessions :store))
+  :start (create-session-store (-> app-config :sessions :store))
   :stop  (helpers/stop-periodic *session-store*))
 
 (defmethod create-session-store :in-memory [_]
   (MemoryStore. "sessions" (atom {})))
 
 (defmethod create-session-store :redis [_]
-  (RedisStore. "sessions" (-> app-config :cerber :redis-spec)))
+  (RedisStore. "sessions" (:redis-spec app-config)))
 
 (defmethod create-session-store :sql [_]
   (helpers/with-periodic-fn

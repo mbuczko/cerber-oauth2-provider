@@ -65,4 +65,4 @@
   (c/create-client "test client" [redirect-uri] ["authorization_code" "token" "password" "client_credentials"] [scope] false))
 
 ;; start testing system
-(mount/start (mount/with-args {:env "test"}))
+(mount/start)

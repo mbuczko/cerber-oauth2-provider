@@ -28,13 +28,13 @@
 (defmulti create-client-store identity)
 
 (defstate ^:dynamic *client-store*
-  :start (create-client-store (-> app-config :cerber :clients :store)))
+  :start (create-client-store (-> app-config :clients :store)))
 
 (defmethod create-client-store :in-memory [_]
   (MemoryStore. "clients" (atom {})))
 
 (defmethod create-client-store :redis [_]
-  (RedisStore. "clients" (-> app-config :cerber :redis-spec)))
+  (RedisStore. "clients" (:redis-spec app-config)))
 
 (defmethod create-client-store :sql [_]
   (SqlClientStore.))

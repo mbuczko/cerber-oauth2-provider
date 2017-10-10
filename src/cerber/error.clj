@@ -74,12 +74,12 @@
 
         ;; oauth request
         {:status code
-         :headers {"WWW-Authenticate" (str "Bearer realm=\"" (get-in app-config [:cerber :realm])
+         :headers {"WWW-Authenticate" (str "Bearer realm=\"" (:realm app-config)
                                            "\",error=\"" error
                                            "\",error_description=\"" message "\"")}}
         ;; browser-based requested
         {:status 302
-         :headers {"Location" (get-in app-config [:cerber :endpoints :authentication])}
+         :headers {"Location" (get-in app-config [:endpoints :authentication])}
          :session {:landing-url uri}})
 
       ;; uups, something bad happened

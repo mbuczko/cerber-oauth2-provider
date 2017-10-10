@@ -1,0 +1,7 @@
+{:server {:host "localhost" :port 8090}
+ :authcodes  {:store :in-memory :valid-for 180}
+ :sessions   {:store :in-memory :valid-for 180}
+ :tokens     {:store :in-memory :valid-for 180}
+ :clients    {:store :in-memory}
+ :users      {:store :in-memory}
+ :landing-url "http://localhost/"}

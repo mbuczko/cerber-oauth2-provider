@@ -12,19 +12,16 @@
 
 (defn default-authenticator []
   (authentication-handler
-   (get-in app-config [:cerber :authenticator] :default)))
+   (:authenticator app-config :default)))
 
-(defn default-landing-url []
-  (get-in app-config [:cerber :landing-url] "/"))
+(defn authentication-endpoint []
+  (get-in app-config [:enpoints :authentication]))
 
-(defn default-authentication-endpoint []
-  (get-in app-config [:cerber :enpoints :authentication] "/login"))
+(defn approve-endpoint []
+  (get-in app-config [:enpoints :client-approve]))
 
-(defn default-approve-endpoint []
-  (get-in app-config [:cerber :enpoints :client-approve] "/approve"))
-
-(defn default-refuse-endpoint []
-  (get-in app-config [:cerber :enpoints :client-refuse] "/refuse"))
+(defn refuse-endpoint []
+  (get-in app-config [:enpoints :client-refuse]))
 
 (defn render-template [file kv]
   (-> (render-file file kv)
@@ -34,7 +31,7 @@
 (defn render-login-form [req]
   (let [session (:session req)]
     (-> (render-template "forms/login.html" {:csrf (anti-forgery-field)
-                                             :action (default-authentication-endpoint)
+                                             :action (authentication-endpoint)
                                              :failed? (boolean (:failed? req))})
 
         ;; clear up auth info if already existed
@@ -43,8 +40,8 @@
 (defn render-approval-form [client req]
   (render-template "forms/authorize.html" {:csrf (anti-forgery-field)
                                            :client client
-                                           :action-approve (str (default-approve-endpoint) "?" (:query-string req))
-                                           :action-refuse  (str (default-refuse-endpoint) "?" (:query-string req))}))
+                                           :action-approve (str (approve-endpoint) "?" (:query-string req))
+                                           :action-refuse  (str (refuse-endpoint) "?" (:query-string req))}))
 
 (defn handle-login-submit [req]
   (let [result (ctx/user-password-valid? req (default-authenticator))]
@@ -55,7 +52,7 @@
 
       ;; login succeeded. redirect either to session-stored or default landing url.
       (let [{:keys [login roles permissions]} (::ctx/user result)]
-        (-> (get-in req [:session :landing-url] (default-landing-url))
+        (-> (get-in req [:session :landing-url] (:landing-url app-config))
             (redirect)
             (assoc :session {:login login
                              :roles roles

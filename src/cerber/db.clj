@@ -13,12 +13,12 @@
     (conman/disconnect! db)))
 
 (defstate ^:dynamic *db*
-  :start (init-connection (get-in app-config [:cerber :jdbc-pool]))
+  :start (init-connection (:jdbc-pool app-config))
   :stop (close-connection *db*))
 
 (conman/bind-connection *db*
-                        "db/tokens.sql"
-                        "db/clients.sql"
-                        "db/authcodes.sql"
-                        "db/users.sql"
-                        "db/sessions.sql")
+                        "db/cerber/tokens.sql"
+                        "db/cerber/clients.sql"
+                        "db/cerber/authcodes.sql"
+                        "db/cerber/users.sql"
+                        "db/cerber/sessions.sql")

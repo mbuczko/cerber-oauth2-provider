@@ -1,4 +1,4 @@
-(ns cerber.oauth2.server
+(ns cerber.oauth2.standalone.server
   (:require [cerber
              [config :refer [app-config]]
              [handlers :as handlers]]
@@ -35,10 +35,6 @@
   "Initializes sample http server handling oauth2 endpoints."
   []
   (selmer/set-resource-path! (clojure.java.io/resource "templates"))
-
-  ;; no caching for dev environment, please.
-  (when (:is-dev? app-config) (selmer/cache-off!))
-
   (web/run-server app-handler (merge (:server app-config) (mount/args))))
 
 (defstate http-server

@@ -42,23 +42,23 @@ Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everyt
 specific for each environment (local / test / prod):
 
 ``` clojure
-{:cerber {:redis-spec {:spec {:host "localhost" :port 6379}}
-          :jdbc-pool  {:init-size  1
-                       :min-idle   1
-                       :max-idle   4
-                       :max-active 32
-                       :driver-class "org.h2.Driver"
-                       :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"}
-          :endpoints  {:authentication "/login"
-                       :client-approve "/approve"
-                       :client-refuse  "/refuse"}
-          :authcodes  {:store :sql :valid-for 180}
-          :sessions   {:store :sql :valid-for 180}
-          :tokens     {:store :sql :valid-for 180}
-          :users      {:store :sql}
-          :clients    {:store :sql}
-          :realm      "http://defunkt.pl"
-          :landing-url "/"}}
+{:authcodes   {:store :sql :valid-for 180}
+ :sessions    {:store :sql :valid-for 180}
+ :tokens      {:store :sql :valid-for 180}
+ :users       {:store :sql}
+ :clients     {:store :sql}
+ :landing-url "/"
+ :realm       "http://defunkt.pl"
+ :endpoints   {:authentication "/login"
+               :client-approve "/approve"
+               :client-refuse  "/refuse"}}
+ :redis-spec  {:spec {:host "localhost" :port 6379}}
+ :jdbc-pool   {:init-size  1
+               :min-idle   1
+               :max-idle   4
+               :max-active 32
+               :driver-class "org.h2.Driver"
+               :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"}}
 ```
 
 Words of explanation:
@@ -79,9 +79,8 @@ Configurations are hierarchical which means that both files will be read and mer
 Now, when all that boring stuff is done, time to run _mount_ machinery:
 
 ``` clojure
-(require '[mount.core :as m])
-
-(m/start-with-args {:env "local" :base-name "cerber"})
+(require '[mount.core :as mount])
+(mount/start)
 ```
 
 ## Architecture

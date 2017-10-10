@@ -2,24 +2,27 @@
   (:require [cprop
              [core :as cprop]
              [source :refer [from-resource from-system-props]]]
-            [mount.core :refer [defstate] :as mount]))
+            [failjure.core :as f]
+            [mount.core :as mount :refer [defstate]]))
+
+(defn load-resource
+  "Loads single configuration resource.
+  Returns empty map when resource was not found."
+
+  [resource]
+  (let [res (f/try* (from-resource resource))]
+    (if (f/failed? res) {} res)))
 
 (defn load-config
-  "Loads configuration file depending on environment"
-  [base-name env]
+  "Loads configuration file depending on environment."
 
-  (println "Loading\033[1;31m" env "\033[0mconfig...")
-  (merge-with conj
-              {:is-prod? (= env "prod")
-               :is-test? (= env "test")
-               :is-dev?  (or (= env "dev")
-                             (= env "local"))}
-              (cprop/load-config :resource (str base-name ".edn")
-                                 :merge [(from-resource (str base-name "-" env ".edn"))
-                                         (from-system-props)])))
+  [env]
+  (cprop/load-config :resource "cerber-default.edn"
+                     :merge [(load-resource "cerber.edn")
+                             (load-resource (str "cerber-" env ".edn"))]))
 
-(defn init-cerber [{:keys [base-name env]}]
-  (load-config (or base-name "cerber") (or env "local")))
+(defn init-cerber []
+  (load-config (or (System/getenv "ENV") "local")))
 
 (defstate app-config
-  :start (init-cerber (mount/args)))
+  :start (init-cerber))

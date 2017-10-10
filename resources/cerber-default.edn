@@ -1,0 +1,10 @@
+{:landing-url "/"
+ :realm       "http://foo.bar"
+ :authcodes   {:store :in-memory :valid-for 180}
+ :sessions    {:store :in-memory :valid-for 180}
+ :tokens      {:store :in-memory :valid-for 180}
+ :users       {:store :in-memory}
+ :clients     {:store :in-memory}
+ :endpoints   {:authentication "/login"
+               :client-approve "/approve"
+               :client-refuse  "/refuse"}}

@@ -11,7 +11,7 @@
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defn default-valid-for []
-  (-> app-config :cerber :authcodes :valid-for))
+  (-> app-config :authcodes :valid-for))
 
 (declare ->map)
 
@@ -31,14 +31,14 @@
 (defmulti create-authcode-store identity)
 
 (defstate ^:dynamic *authcode-store*
-  :start (create-authcode-store (-> app-config :cerber :authcodes :store))
+  :start (create-authcode-store (-> app-config :authcodes :store))
   :stop  (helpers/stop-periodic *authcode-store*))
 
 (defmethod create-authcode-store :in-memory [_]
   (MemoryStore. "authcodes" (atom {})))
 
 (defmethod create-authcode-store :redis [_]
-  (RedisStore. "authcodes" (-> app-config :cerber :redis-spec)))
+  (RedisStore. "authcodes" (:redis-spec app-config)))
 
 (defmethod create-authcode-store :sql [_]
   (helpers/with-periodic-fn

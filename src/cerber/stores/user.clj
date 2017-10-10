@@ -30,13 +30,13 @@
 (defmulti create-user-store identity)
 
 (defstate ^:dynamic *user-store*
-  :start (create-user-store (-> app-config :cerber :users :store)))
+  :start (create-user-store (-> app-config :users :store)))
 
 (defmethod create-user-store :in-memory [_]
   (MemoryStore. "users" (atom {})))
 
 (defmethod create-user-store :redis [_]
-  (RedisStore. "users" (-> app-config :cerber :redis-spec)))
+  (RedisStore. "users" (:redis-spec app-config)))
 
 (defmethod create-user-store :sql [_]
   (SqlUserStore.))

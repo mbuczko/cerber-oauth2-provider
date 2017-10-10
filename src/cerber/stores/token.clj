@@ -12,7 +12,7 @@
   (:import [cerber.store MemoryStore RedisStore]))
 
 (defn default-valid-for []
-  (-> app-config :cerber :tokens :valid-for))
+  (-> app-config :tokens :valid-for))
 
 (declare ->map)
 
@@ -43,14 +43,14 @@
 (defmulti create-token-store identity)
 
 (defstate ^:dynamic *token-store*
-  :start (create-token-store (-> app-config :cerber :tokens :store))
+  :start (create-token-store (-> app-config :tokens :store))
   :stop  (helpers/stop-periodic *token-store*))
 
 (defmethod create-token-store :in-memory [_]
   (MemoryStore. "tokens" (atom {})))
 
 (defmethod create-token-store :redis [_]
-  (RedisStore. "tokens" (-> app-config :cerber :redis-spec)))
+  (RedisStore. "tokens" (:redis-spec app-config)))
 
 (defmethod create-token-store :sql [_]
   (helpers/with-periodic-fn

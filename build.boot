@@ -2,38 +2,38 @@
  :source-paths   #{"src"}
  :resource-paths #{"resources"}
  :directories    #{"config"}
- :dependencies '[[org.clojure/clojure "1.8.0"]
-                 [com.taoensso/carmine "2.15.0"]
-                 [org.mindrot/jbcrypt "0.3m"]
-                 [mbuczko/boot-flyway "0.1.1"]
-                 [ring/ring-defaults "0.3.0-beta1"]
+ :dependencies '[[org.clojure/clojure "1.8.0" :scope "provided"]
+                 [com.taoensso/carmine "2.16.0"]
+                 [org.mindrot/jbcrypt "0.4"]
+                 [mbuczko/boot-flyway "0.1.1" :scope "test"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
                  [zilti/boot-midje "0.2.1-SNAPSHOT" :scope "test"]
                  [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
-                 [com.h2database/h2 "1.4.193" :scope "test"]
-                 [mysql/mysql-connector-java "6.0.5" :scope "test"]
-                 [org.postgresql/postgresql "9.4.1212" :scope "test"]
+                 [com.h2database/h2 "1.4.196" :scope "test"]
+                 [mysql/mysql-connector-java "6.0.6" :scope "test"]
+                 [org.postgresql/postgresql "42.1.4" :scope "test"]
+                 [ring/ring-defaults "0.3.1"]
                  [midje "1.8.3" :scope "test"]
-                 [peridot "0.4.4" :scope "test"]
-                 [compojure "1.6.0-beta1" :scope "test"]
+                 [peridot "0.5.0" :scope "test"]
+                 [compojure "1.6.0" :scope "test"]
                  [http-kit "2.2.0" :scope "test"]
-                 [cprop "0.1.10"]
-                 [conman "0.6.2"]
+                 [cprop "0.1.11"]
+                 [conman "0.6.8"]
                  [mount "0.1.11"]
                  [crypto-random "1.2.0"]
-                 [selmer "1.10.3"]
-                 [failjure "0.1.4"]
+                 [selmer "1.11.1"]
+                 [failjure "1.2.0"]
                  [ring-anti-forgery "0.3.0"]
-                 [ring-middleware-format "0.7.0"]
-                 [digest "1.4.5"]])
+                 [ring-middleware-format "0.7.2"]
+                 [digest "1.4.6"]])
 
-(def +version+ "0.1.8")
+(def +version+ "0.1.10")
 
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
 
 (require
- '[cerber.oauth2.system]
+ '[cerber.oauth2.standalone.system]
  '[cerber.migration]
  '[adzerk.bootlaces    :refer [bootlaces! build-jar push-release]]
  '[zilti.boot-midje    :refer [midje]])
@@ -45,10 +45,8 @@
 
 
 (deftask go
-  "Starts system initializing all defined states."
-  [e env ENVIRONMENT str "Environment to use while starting application up."]
-  (cerber.oauth2.system/go {:env (or env (get-env :env) "local")
-                            :base-name "cerber"}))
+  []
+  (cerber.oauth2.standalone.system/go))
 
 (deftask test
   "Environment for test-driven development."
@@ -61,7 +59,7 @@
 (deftask reset
   "Restarts system using local environment."
   []
-  (cerber.oauth2.system/reset))
+  (cerber.oauth2.standalone.system/reset))
 
 (deftask migrate
   "Applies pending migrations."

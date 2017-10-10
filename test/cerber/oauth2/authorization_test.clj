@@ -39,7 +39,7 @@
                                                  :password "alamakota"}))]
          ;; then
          (get-in state [:response :status]) => 302
-         (get-in state [:response :headers "Location"]) => (get-in app-config [:cerber :landing-url])))
+         (get-in state [:response :headers "Location"]) => (:landing-url app-config)))
 
  (fact "Enabled user with wrong credentials is redirected back to login page with failure info provided."
        (u/purge-users)
