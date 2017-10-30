@@ -1,12 +1,11 @@
 (ns cerber.oauth2.context
-  (:require [cerber
-             [error :as error]
-             [helpers :refer [expired?]]]
-            [cerber.stores
-             [authcode :as authcode]
-             [client :as client]
-             [token :as token]
-             [user :as user]]
+  (:require [cerber.error :as error]
+            [cerber.helpers :refer [expired?]]
+            [cerber.oauth2.scopes :as scopes]
+            [cerber.stores.authcode :as authcode]
+            [cerber.stores.client :as client]
+            [cerber.stores.token :as token]
+            [cerber.stores.user :as user]
             [failjure.core :as f])
   (:import org.apache.commons.codec.binary.Base64))
 
@@ -28,10 +27,12 @@
                                error/invalid-state)]
                    (assoc req ::state state))))
 
-(defn scope-allowed? [req]
+(defn scopes-allowed? [req allowed-scopes]
   (let [scope (get-in req [:params :scope])]
-    (f/attempt-all [valid? (or (client/scope-valid? (::client req) scope) error/invalid-scope)]
-                   (assoc req ::scope (and scope (set (.split scope " ")))))))
+    (f/attempt-all [scopes (client/scope->arr scope)
+                    valid? (or (client/scopes-valid? (::client req) scopes) error/invalid-scope)
+                    allowed? (or (scopes/allowed-scopes? scopes allowed-scopes) error/invalid-scope)]
+                   (assoc req ::scope (scopes/normalize-scopes scopes)))))
 
 (defn grant-allowed? [req grant]
   (f/attempt-all [allowed? (or (client/grant-allowed? (::client req) grant) error/unsupported-grant-type)]

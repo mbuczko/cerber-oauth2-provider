@@ -1,7 +1,12 @@
-{:server {:host "localhost" :port 8090}
- :authcodes  {:store :in-memory :valid-for 180}
- :sessions   {:store :in-memory :valid-for 180}
- :tokens     {:store :in-memory :valid-for 180}
- :clients    {:store :in-memory}
- :users      {:store :in-memory}
- :landing-url "http://localhost/"}
+{:landing-url "http://localhost/"
+ :server      {:host "localhost" :port 8090}
+ :authcodes   {:store :in-memory :valid-for 180}
+ :sessions    {:store :in-memory :valid-for 180}
+ :tokens      {:store :in-memory :valid-for 180}
+ :clients     {:store :in-memory}
+ :users       {:store :in-memory}
+ :scopes      {"user" {:description "Grants read/write access to User resource."}
+               "user:email" {:description "Grants read access to User's email address."}
+               "user:profile" {:description "Grants read access to User's profile."}
+               "user:photos:read" {:description "Grants read only access to user's photos"}
+               "user:photos:write" {:description "Grants add/delete access to user's photos"}}}

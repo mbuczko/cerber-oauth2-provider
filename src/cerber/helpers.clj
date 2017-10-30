@@ -64,7 +64,8 @@
   [str]
   (or (and str
            (> (.length str) 0)
-           (str/split str #" ")) []))
+           (str/split str #" "))
+      []))
 
 (defn array->str
   "Serializes array elements into string by joining them with space."

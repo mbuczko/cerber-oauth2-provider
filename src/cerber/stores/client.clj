@@ -104,13 +104,17 @@
   "Removes clients from store. Used for tests only."
   (purge! *client-store*))
 
-(defn scope-valid?
-  "Checks whether given (optional) scope is valid."
-  [client scope]
-  (let [scopes (str->array scope)
-        valids (:scopes client)]
+(defn scope->arr
+  "Decomposes scope string (scopes separated with space) into vector of scopes."
+  [scope-str]
+  (str->array scope-str))
+
+(defn scopes-valid?
+  "Checks whether given scopes are valid ones assigned to client."
+  [client scopes]
+  (let [client-scopes (:scopes client)]
     (or (empty? scopes)
-        (every? #(.contains valids %) scopes))))
+        (every? #(.contains client-scopes %) scopes))))
 
 (defn grant-allowed? [client grant]
   (let [grants (:grants client)]

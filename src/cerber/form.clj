@@ -15,13 +15,13 @@
    (:authenticator app-config :default)))
 
 (defn authentication-endpoint []
-  (get-in app-config [:enpoints :authentication]))
+  (get-in app-config [:endpoints :authentication]))
 
 (defn approve-endpoint []
-  (get-in app-config [:enpoints :client-approve]))
+  (get-in app-config [:endpoints :client-approve]))
 
 (defn refuse-endpoint []
-  (get-in app-config [:enpoints :client-refuse]))
+  (get-in app-config [:endpoints :client-refuse]))
 
 (defn render-template [file kv]
   (-> (render-file file kv)

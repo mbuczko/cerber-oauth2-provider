@@ -11,7 +11,7 @@
 
 (defn reset []
   (stop)
-  (tn/refresh :after 'cerber.oauth2.system/go))
+  (tn/refresh :after 'cerber.oauth2.standalone.system/go))
 
 (defn refresh []
   (stop)
@@ -20,9 +20,3 @@
 (defn refresh-all []
   (stop)
   (tn/refresh-all))
-
-(defn reset
-  "Stops all states defined by defstate, reloads modified source files, and selectively restarts the states."
-  []
-  (stop)
-  (tn/refresh :after 'cerber.oauth2.system/go))

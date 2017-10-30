@@ -11,17 +11,19 @@
             [mount.core :refer [defstate]]))
 
 (defmulti authorization-request-handler (comp :response_type :params))
+
 (defmulti token-request-handler (comp :grant_type :params))
 
 ;; authorization request handler for Authorization Code grant type
 
 (defmethod authorization-request-handler "code"
   [req]
-  (let [result (f/attempt-> req
+  (let [allowed-scopes (:scopes app-config)
+        result (f/attempt-> req
                             (ctx/client-valid?)
                             (ctx/redirect-allowed?)
                             (ctx/state-allowed?)
-                            (ctx/scope-allowed?)
+                            (ctx/scopes-allowed? allowed-scopes)
                             (ctx/user-authenticated?)
                             (ctx/request-auto-approved?))]
     (if (f/failed? result)
@@ -32,12 +34,13 @@
 
 (defmethod authorization-request-handler "token"
   [req]
-  (let [result (f/attempt-> req
+  (let [allowed-scopes (:scopes app-config)
+        result (f/attempt-> req
                             (ctx/client-valid?)
                             (ctx/redirect-allowed?)
                             (ctx/grant-allowed? "token")
                             (ctx/state-allowed?)
-                            (ctx/scope-allowed?)
+                            (ctx/scopes-allowed? allowed-scopes)
                             (ctx/user-authenticated?))]
     (if (f/failed? result)
       result
@@ -67,10 +70,11 @@
 
 (defmethod token-request-handler "password"
   [req]
-  (let [result (f/attempt-> req
+  (let [allowed-scopes (:scopes app-config)
+        result (f/attempt-> req
                             (ctx/client-authenticated?)
                             (ctx/grant-allowed? "password")
-                            (ctx/scope-allowed?)
+                            (ctx/scopes-allowed? allowed-scopes)
                             (ctx/user-password-valid? (form/default-authenticator)))]
     (if (f/failed? result)
       result
@@ -80,10 +84,11 @@
 
 (defmethod token-request-handler "client_credentials"
   [req]
-  (let [result (f/attempt-> req
+  (let [allowed-scopes (:scopes app-config)
+        result (f/attempt-> req
                             (ctx/client-authenticated?)
                             (ctx/grant-allowed? "client_credentials")
-                            (ctx/scope-allowed?))]
+                            (ctx/scopes-allowed? allowed-scopes))]
     (if (f/failed? result)
       result
       (response/access-token-response result))))
@@ -92,10 +97,11 @@
 
 (defmethod token-request-handler "refresh_token"
   [req]
-  (let [result (f/attempt-> req
+  (let [allowed-scopes (:scopes app-config)
+        result (f/attempt-> req
                             (ctx/client-authenticated?)
                             (ctx/refresh-token-valid?)
-                            (ctx/scope-allowed?))]
+                            (ctx/scopes-allowed? allowed-scopes))]
     (if (f/failed? result)
       result
       (response/refresh-token-response result))))
