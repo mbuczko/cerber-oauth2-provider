@@ -127,6 +127,45 @@
           token => (contains "expires_in")
           token => (contains "refresh_token"))))
 
+(fact "Client is redirected with error message when tries to get an access-token with undefined scope."
+      (u/purge-users)
+
+      ;; given
+      (u/create-user {:login "nioh" :enabled true} "alamakota")
+
+      ;; when
+      (let [scope "photo" ;; scope not defined in cerber-test.edn
+            state (-> (session (wrap-defaults oauth-routes api-defaults))
+                      (header "Accept" "text/html")
+                      (request (str "/authorize?response_type=code"
+                                    "&client_id=" (:id client)
+                                    "&scope=" scope
+                                    "&state=" state
+                                    "&redirect_uri=" redirect-uri)))]
+        ;; then
+        (let [{:keys [status headers]} (:response state), location (get headers "Location")]
+          status => 302
+          location => (contains "error=invalid_scope"))))
+
+(fact "Client may provide no scope at all (scope is optional)."
+      (u/purge-users)
+
+      ;; given
+      (u/create-user {:login "nioh" :enabled true} "alamakota")
+
+      ;; when
+      (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
+                      (header "Accept" "text/html")
+                      (request (str "/authorize?response_type=code"
+                                    "&client_id=" (:id client)
+                                    "&scope=" scope
+                                    "&state=" state
+                                    "&redirect_uri=" redirect-uri)))]
+        ;; then
+        (let [{:keys [status headers]} (:response state), location (get headers "Location")]
+          status => 302
+          location =not=> (contains "error=invalid_scope"))))
+
 (fact "Client may receive its token in Implict Grant scenario."
       (u/purge-users)
       (s/purge-sessions)
