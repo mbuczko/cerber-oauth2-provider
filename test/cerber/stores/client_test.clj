@@ -1,25 +1,25 @@
 (ns cerber.stores.client-test
-  (:require [cerber.common :refer :all]
+  (:require [cerber.common-test :refer :all]
             [cerber.stores.client :refer :all]
             [midje.sweet :refer :all])
   (:import cerber.error.HttpError
            cerber.stores.client.Client))
 
 (def redirects ["http://localhost" "http://defunkt.pl"])
+(def scope ["photo:read"])
 (def grants [])
-(def scopes ["photo"])
 (def info "testing client")
 
 (fact "New client is returned as Client record with secret filled in."
       (with-client-store (create-client-store :in-memory)
-        (let [client (create-client info redirects scopes grants false)]
+        (let [client (create-client info redirects scope grants false)]
           client => (instance-of Client)
           client => (has-secret :secret))))
 
 (tabular
  (fact "Redirect URIs must be a valid URLs with no forbidden characters."
        (with-client-store (create-client-store :in-memory)
-         (create-client info ?redirects scopes grants false) => ?expected))
+         (create-client info ?redirects scope grants false) => ?expected))
 
  ?redirects                       ?expected
  ["http://dupa.z.trupa"]          truthy
@@ -34,7 +34,7 @@
          (purge-clients)
 
          ;; given
-         (let [client (create-client info redirects scopes grants false)
+         (let [client (create-client info redirects scope grants false)
                found  (find-client (:id client))]
 
            ;; then
@@ -49,7 +49,7 @@
          (purge-clients)
 
          ;; given
-         (let [client (create-client info redirects scopes grants false)
+         (let [client (create-client info redirects scope grants false)
                id (:id client)]
 
            ;; and

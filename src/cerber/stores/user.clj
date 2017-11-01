@@ -5,8 +5,7 @@
              [helpers :as helpers]
              [config :refer [app-config]]
              [store :refer :all]])
-  (:import [cerber.store MemoryStore RedisStore]
-           [org.mindrot.jbcrypt BCrypt]))
+  (:import [org.mindrot.jbcrypt BCrypt]))
 
 (declare ->map)
 
@@ -33,13 +32,13 @@
   :start (create-user-store (-> app-config :users :store)))
 
 (defmethod create-user-store :in-memory [_]
-  (MemoryStore. "users" (atom {})))
+  (->MemoryStore "users" (atom {})))
 
 (defmethod create-user-store :redis [_]
-  (RedisStore. "users" (:redis-spec app-config)))
+  (->RedisStore "users" (:redis-spec app-config)))
 
 (defmethod create-user-store :sql [_]
-  (SqlUserStore.))
+  (->SqlUserStore))
 
 (defmacro with-user-store
   "Changes default binding to default users store."

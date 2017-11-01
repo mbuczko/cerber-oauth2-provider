@@ -13,7 +13,7 @@ Currently covers all scenarios described by spec:
 
 Tokens expiration and [refreshing](https://tools.ietf.org/html/rfc6749#section-6) are all in the box as well.
 
-To make all of this happen, Cerber sits on a shoulders of Stores.
+To make all of this happen, Cerber stands on a shoulders of Stores.
 
 ## Stores
 
@@ -34,11 +34,11 @@ All stores may use one of following implementations:
 To keep maximal flexibility, each store can use different store implementation. It's definitely recommended to use ```in-memory``` stores for development process and persistent ones for production.
 Typical configuration might use ```sql``` for users and clients and ```redis``` for sessions / tokens / authcodes.
 
-Now, when speaking of configuration...
+When speaking of configuration...
 
 ## Configuration
 
-Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everything it needs to operate. Instead of creating stores by hand it's pretty enough to adjust simple edn-based configuration file
+Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everything it needs to operate. Instead of creating stores by hand it's pretty enough to adjust edn-based configuration file
 specific for each environment (local / test / prod):
 
 ``` clojure
@@ -47,6 +47,7 @@ specific for each environment (local / test / prod):
  :tokens      {:store :sql :valid-for 180}
  :users       {:store :sql}
  :clients     {:store :sql}
+ :scopes      #{}
  :landing-url "/"
  :realm       "http://defunkt.pl"
  :endpoints   {:authentication "/login"
@@ -69,14 +70,23 @@ Words of explanation:
 
 ```endpoints``` (optional) any change in default OAuth authentication- and client acceptance/refusal paths need to be reflected here
 
+```scopes``` (required) set of scopes that client may choose to ask for
+
 ```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
 
 authcodes / sessions / tokens / users and clients are required stores configurations. Note that authcodes, sessions and tokens NEED to have life-time (in seconds) configured.
 
-Having all the bits and pieces adjusted, throw configuration file into your classpath (usually _resources_ folder) with descriptive name as ```name.edn``` (eg. cerber.edn) or ```name-environment.edn``` (eg. cerber-local.edn).
-Configurations are hierarchical which means that both files will be read and merged together (with precedence of -environment.edn entries).
+### Configuration files
 
-Now, when all that boring stuff is done, time to run _mount_ machinery:
+When cerber's system boots up, it tries to find its edn confgurations within a classpath. Specifically, it searches for ```cerber.edn``` resource and merges it with
+```cerber-[env].edn``` resource where [env] is taken from environmental variable ```ENV``` (or set as ```local``` when variable was not set). That gives a simple way
+to split configuration across multiple environments (dev/test/prod) while still maintain common defaults in single place (cerber.edn).
+
+### HTML resources
+
+(tbd)
+
+Having all the bits and pieces adjusted, it's time to run _mount_ machinery:
 
 ``` clojure
 (require '[mount.core :as mount])

@@ -1,7 +1,7 @@
 (ns cerber.config
   (:require [cprop
              [core :as cprop]
-             [source :refer [from-resource from-system-props]]]
+             [source :refer [from-resource from-system-props from-env]]]
             [failjure.core :as f]
             [mount.core :as mount :refer [defstate]]))
 
@@ -17,12 +17,13 @@
   "Loads configuration file depending on environment."
 
   [env]
-  (cprop/load-config :resource "cerber-default.edn"
-                     :merge [(load-resource "cerber.edn")
-                             (load-resource (str "cerber-" env ".edn"))]))
+  (println (str "Loading " env " environment..."))
+  (cprop/load-config :resource "cerber.edn"
+                     :merge [(load-resource (str "cerber-" env ".edn"))]))
 
 (defn init-cerber []
-  (load-config (or (System/getenv "ENV") "local")))
+  (let [envs (from-env)]
+    (load-config (or (:env envs) "local"))))
 
 (defstate app-config
   :start (init-cerber))

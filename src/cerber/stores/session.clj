@@ -6,8 +6,7 @@
              [store :refer :all]]
             [mount.core :refer [defstate]]
             [taoensso.nippy :as nippy]
-            [cerber.helpers :as helpers])
-  (:import [cerber.store MemoryStore RedisStore]))
+            [cerber.helpers :as helpers]))
 
 (defn default-valid-for []
   (-> app-config :sessions :valid-for))
@@ -43,14 +42,14 @@
   :stop  (helpers/stop-periodic *session-store*))
 
 (defmethod create-session-store :in-memory [_]
-  (MemoryStore. "sessions" (atom {})))
+  (->MemoryStore "sessions" (atom {})))
 
 (defmethod create-session-store :redis [_]
-  (RedisStore. "sessions" (:redis-spec app-config)))
+  (->RedisStore "sessions" (:redis-spec app-config)))
 
 (defmethod create-session-store :sql [_]
   (helpers/with-periodic-fn
-    (SqlSessionStore.) db/clear-expired-sessions 10000))
+    (->SqlSessionStore) db/clear-expired-sessions 10000))
 
 (defmacro with-session-store
   "Changes default binding to default session store."

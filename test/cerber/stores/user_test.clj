@@ -1,6 +1,6 @@
 (ns cerber.stores.user-test
   (:require [midje.sweet :refer :all]
-            [cerber.common :refer :all]
+            [cerber.common-test :refer :all]
             [cerber.stores.user :refer :all])
   (:import  [cerber.stores.user User]))
 

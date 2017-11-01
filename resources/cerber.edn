@@ -1,12 +1,11 @@
-{:landing-url "http://localhost/"
- :server      {:host "localhost" :port 8090}
- :authcodes   {:store :in-memory :valid-for 180}
- :sessions    {:store :in-memory :valid-for 180}
- :tokens      {:store :in-memory :valid-for 180}
- :clients     {:store :in-memory}
+{:landing-url "http://localhost"
+ :realm       "http://localhost"
+ :scopes      #{}
+ :authcodes   {:store :in-memory :valid-for 600}
+ :sessions    {:store :in-memory :valid-for 600}
+ :tokens      {:store :in-memory :valid-for 600}
  :users       {:store :in-memory}
- :scopes      {"user" {:description "Grants read/write access to User resource."}
-               "user:email" {:description "Grants read access to User's email address."}
-               "user:profile" {:description "Grants read access to User's profile."}
-               "user:photos:read" {:description "Grants read only access to user's photos"}
-               "user:photos:write" {:description "Grants add/delete access to user's photos"}}}
+ :clients     {:store :in-memory}
+ :endpoints   {:authentication "/login"
+               :client-approve "/approve"
+               :client-refuse  "/refuse"}}

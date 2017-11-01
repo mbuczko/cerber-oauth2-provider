@@ -8,8 +8,7 @@
             [failjure.core :as f]
             [cerber.stores.user :as user]
             [cerber.error :as error]
-            [cerber.helpers :as helpers])
-  (:import [cerber.store MemoryStore RedisStore]))
+            [cerber.helpers :as helpers]))
 
 (defn default-valid-for []
   (-> app-config :tokens :valid-for))
@@ -47,14 +46,14 @@
   :stop  (helpers/stop-periodic *token-store*))
 
 (defmethod create-token-store :in-memory [_]
-  (MemoryStore. "tokens" (atom {})))
+  (->MemoryStore "tokens" (atom {})))
 
 (defmethod create-token-store :redis [_]
-  (RedisStore. "tokens" (:redis-spec app-config)))
+  (->RedisStore "tokens" (:redis-spec app-config)))
 
 (defmethod create-token-store :sql [_]
   (helpers/with-periodic-fn
-    (SqlTokenStore.) db/clear-expired-tokens 60000))
+    (->SqlTokenStore) db/clear-expired-tokens 60000))
 
 (defmacro with-token-store
   "Changes default binding to default token store."

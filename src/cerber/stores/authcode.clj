@@ -7,8 +7,7 @@
              [store :refer :all]]
             [failjure.core :as f]
             [cerber.stores.user :as user]
-            [cerber.error :as error])
-  (:import [cerber.store MemoryStore RedisStore]))
+            [cerber.error :as error]))
 
 (defn default-valid-for []
   (-> app-config :authcodes :valid-for))
@@ -35,14 +34,14 @@
   :stop  (helpers/stop-periodic *authcode-store*))
 
 (defmethod create-authcode-store :in-memory [_]
-  (MemoryStore. "authcodes" (atom {})))
+  (->MemoryStore "authcodes" (atom {})))
 
 (defmethod create-authcode-store :redis [_]
-  (RedisStore. "authcodes" (:redis-spec app-config)))
+  (->RedisStore "authcodes" (:redis-spec app-config)))
 
 (defmethod create-authcode-store :sql [_]
   (helpers/with-periodic-fn
-    (SqlAuthCodeStore.) db/clear-expired-authcodes 8000))
+    (->SqlAuthCodeStore) db/clear-expired-authcodes 8000))
 
 (defmacro with-authcode-store
   "Changes default binding to default authcode store."

@@ -1,5 +1,5 @@
 (ns cerber.stores.session-test
-  (:require [cerber.common :refer :all]
+  (:require [cerber.common-test :refer :all]
             [cerber.stores.session :refer :all]
             [midje.sweet :refer :all])
   (:import cerber.stores.session.Session))

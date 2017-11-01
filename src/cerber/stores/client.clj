@@ -9,8 +9,7 @@
             [failjure.core :as f]
             [cerber.error :as error]
             [cerber.stores.token :as token]
-            [cerber.helpers :as helpers])
-  (:import [cerber.store MemoryStore RedisStore]))
+            [cerber.helpers :as helpers]))
 
 (defrecord Client [id secret info redirects grants scopes])
 
@@ -31,13 +30,13 @@
   :start (create-client-store (-> app-config :clients :store)))
 
 (defmethod create-client-store :in-memory [_]
-  (MemoryStore. "clients" (atom {})))
+  (->MemoryStore "clients" (atom {})))
 
 (defmethod create-client-store :redis [_]
-  (RedisStore. "clients" (:redis-spec app-config)))
+  (->RedisStore "clients" (:redis-spec app-config)))
 
 (defmethod create-client-store :sql [_]
-  (SqlClientStore.))
+  (->SqlClientStore))
 
 (defmacro with-client-store
   "Changes default binding to default client store."

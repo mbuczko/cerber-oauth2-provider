@@ -7,7 +7,7 @@
                  [org.mindrot/jbcrypt "0.4"]
                  [mbuczko/boot-flyway "0.1.1" :scope "test"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
-                 [zilti/boot-midje "0.2.1-SNAPSHOT" :scope "test"]
+                 [zilti/boot-midje "0.2.2-SNAPSHOT" :scope "test"]
                  [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
                  [com.h2database/h2 "1.4.196" :scope "test"]
                  [mysql/mysql-connector-java "6.0.6" :scope "test"]
@@ -35,31 +35,33 @@
 (require
  '[cerber.oauth2.standalone.system]
  '[cerber.migration]
- '[adzerk.bootlaces    :refer [bootlaces! build-jar push-release]]
- '[zilti.boot-midje    :refer [midje]])
+ '[adzerk.bootlaces :refer [bootlaces! build-jar push-release]]
+ '[zilti.boot-midje :refer [midje]])
 
 (bootlaces! +version+)
 
 ;; which source dirs should be monitored for changes when resetting app?
 (apply clojure.tools.namespace.repl/set-refresh-dirs (get-env :source-paths))
 
-
 (deftask go
   []
   (cerber.oauth2.standalone.system/go))
 
-(deftask test
+(deftask reset
+  []
+  (cerber.oauth2.standalone.system/reset))
+
+(deftask tests
   "Environment for test-driven development."
   []
-  (set-env! :env "test")
+
+  ;; start local redis server
+  (-> (redis.embedded.RedisServer. (Integer. 6380))
+      (.start))
+
   (comp (watch)
         (midje)
         (speak)))
-
-(deftask reset
-  "Restarts system using local environment."
-  []
-  (cerber.oauth2.standalone.system/reset))
 
 (deftask migrate
   "Applies pending migrations."
