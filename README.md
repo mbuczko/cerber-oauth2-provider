@@ -77,14 +77,18 @@ Words of explanation:
 
 ### Configuration files
 
-When cerber's system boots up, first it tries to find and load default edn-based confgurations which are simply resources available within a classpath.
+When Cerber's system boots up, first it tries to find and load default edn-based confgurations which are simply resources available within a classpath.
 Specifically, system searches for ```cerber.edn``` (described above) and merges it with optional ```cerber-ENV.edn```. Latter one is used to
 override default options (eg. stores definitions) based on environment controlled by ```ENV``` variable. When no environmental variable ENV is set,
 it immediately defaults to ```local```, so ```cerber-local.edn``` is loaded (if found) and merged with ```cerber.edn```.
 
 ### HTML resources
 
-(tbd)
+To complete some of OAuth2-flow actions, like web based authentication or access-grant dialog, Cerber tries to load HTML templates, fill them in
+and present to the end-user. In similar way how it goes with configuration, Cerber looks for 2 HTML templates:
+
+ * [forms/login.html](./config/templates/login.html) - used to render authentication form.
+ * [forms/authorize.html](./config/templates/authorize.html) - used to render user a form where user is asked to grant a permission.
 
 Having all the bits and pieces adjusted, it's time to run _mount_ machinery:
 
