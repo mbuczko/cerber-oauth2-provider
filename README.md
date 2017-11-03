@@ -84,6 +84,9 @@ a scope which groups all other scopes beginning with _photos:_.
 
 Cerber also normalizes scope requests, so when client asks for ```#{"photos" "photos:read"}``` scopes, it's been simplified to ```#{"photos"}``` only.
 
+Also, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec. On the other hand if any scopes have been defined,
+all client requests are validated against configuration.
+
 ### Configuration files
 
 When Cerber's system boots up, first it tries to find and load default edn-based confgurations which are simply resources available within a classpath.
