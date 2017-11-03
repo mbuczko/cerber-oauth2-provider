@@ -73,7 +73,16 @@ Words of explanation:
  * ```jdbc-pool``` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info) for sql-based stores.
  * ```endpoints``` (optional) should reflect cerber's routes to authentication and access approve/refuse endpoints.
  * ```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
- * ```scopes``` (required) available set of scopes for oauth2 clients.
+ * ```scopes``` (required) available set of [scopes](https://www.oauth.com/oauth2-servers/scope/defining-scopes/) for oauth2 clients.
+
+How are scopes defined?
+
+Scopes are configured as a set of unique strings like ```"user"```, ```"photos:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
+For example one can define scopes as ```#{"photos" "photos:read" "photos:write"}``` which gives any OAuth2 client (if configured so) a privilege to ask for
+_read_ and _write_ permission to imaginary photos resoure and a _photos_ permission which includes both _photos:read_ and _photos:write_. In other words, _photos_ is
+a scope which groups all other scopes beginning with _photos:_.
+
+Cerber also normalizes scope requests, so when client asks for ```#{"photos" "photos:read"}``` scopes, it's been simplified to ```#{"photos"}``` only.
 
 ### Configuration files
 
