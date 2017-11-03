@@ -64,23 +64,23 @@ specific for each environment (local / test / prod):
 
 Words of explanation:
 
-```redis-spec``` (optional) is a redis connection specification (look at [carmine](https://github.com/ptaoussanis/carmine) for more info)
-
-```jdbc-pool``` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info)
-
-```endpoints``` (optional) any change in default OAuth authentication- and client acceptance/refusal paths need to be reflected here
-
-```scopes``` (required) set of scopes that client may choose to ask for
-
-```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
-
-authcodes / sessions / tokens / users and clients are required stores configurations. Note that authcodes, sessions and tokens NEED to have life-time (in seconds) configured.
+ * ```authcodes``` auth-codes store definition, requires an auth-code life-time option (:valid-for) in seconds.
+ * ```sessions``` sessions store definition, requires a session life-time option (:valid-for) in seconds.
+ * ```tokens``` tokens store definition, requires a token life-time option (:valid-for) in seconds.
+ * ```users``` users store definition.
+ * ```clients``` oauth2 clients store definition.
+ * ```redis-spec``` (optional) is a redis connection specification (look at [carmine](https://github.com/ptaoussanis/carmine) for more info) for redis-based stores.
+ * ```jdbc-pool``` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info) for sql-based stores.
+ * ```endpoints``` (optional) should reflect cerber's routes to authentication and access approve/refuse endpoints.
+ * ```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
+ * ```scopes``` (required) available set of scopes for oauth2 clients.
 
 ### Configuration files
 
-When cerber's system boots up, it tries to find its edn confgurations within a classpath. Specifically, it searches for ```cerber.edn``` resource and merges it with
-```cerber-[env].edn``` resource where [env] is taken from environmental variable ```ENV``` (or set as ```local``` when variable was not set). That gives a simple way
-to split configuration across multiple environments (dev/test/prod) while still maintain common defaults in single place (cerber.edn).
+When cerber's system boots up, first it tries to find and load default edn-based confgurations which are simply resources available within a classpath.
+Specifically, system searches for ```cerber.edn``` (described above) and merges it with optional ```cerber-ENV.edn```. Latter one is used to
+override default options (eg. stores definitions) based on environment controlled by ```ENV``` variable. When no environmental variable ENV is set,
+it immediately defaults to ```local```, so ```cerber-local.edn``` is loaded (if found) and merged with ```cerber.edn```.
 
 ### HTML resources
 
