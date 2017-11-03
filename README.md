@@ -87,8 +87,8 @@ it immediately defaults to ```local```, so ```cerber-local.edn``` is loaded (if 
 To complete some of OAuth2-flow actions, like web based authentication or access-grant dialog, Cerber tries to load HTML templates, fill them in
 and present to the end-user. In similar way how it goes with configuration, Cerber looks for 2 HTML templates:
 
- * [forms/login.html](./config/templates/login.html) - used to render authentication form.
- * [forms/authorize.html](./config/templates/authorize.html) - used to render user a form where user is asked to grant a permission.
+ * [forms/login.html](./config/templates/forms/login.html) - used to render authentication form.
+ * [forms/authorize.html](./config/templates/forms/authorize.html) - used to render user a form where user is asked to grant a permission.
 
 Having all the bits and pieces adjusted, it's time to run _mount_ machinery:
 
