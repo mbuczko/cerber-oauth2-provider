@@ -34,14 +34,10 @@
   `(binding [*client-store* ~store] ~@body))
 
 (defstate ^:dynamic *client-store*
-  :start (let [clients (:clients app-config)
-               store (create-client-store (:store clients))]
+  :start (create-client-store (-> app-config :clients :store)))
 
-           ;; initialize clients (if any defined)
-           (with-client-store store
-             (init-clients (:defined clients)))
-
-           store))
+(defstate defined-clients
+  :start (init-clients (-> app-config :clients :defined)))
 
 (defmethod create-client-store :in-memory [_]
   (->MemoryStore "clients" (atom {})))
@@ -111,8 +107,11 @@
 (defn init-clients
   "Initializes configured clients."
   [clients]
-  (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
-    (create-client info redirects scopes grants approved? id secret)))
+  (f/try*
+   (reduce (fn [reduced {:keys [id secret info redirects grants scopes approved?]}]
+             (conj reduced (create-client info redirects scopes grants approved? id secret)))
+           {}
+           clients)))
 
 (defn scope->arr
   "Decomposes scope string (scopes separated with space) into vector of scopes."

@@ -4,7 +4,8 @@
              [db :as db]
              [helpers :as helpers]
              [config :refer [app-config]]
-             [store :refer :all]])
+             [store :refer :all]]
+            [failjure.core :as f])
   (:import [org.mindrot.jbcrypt BCrypt]))
 
 (declare ->map init-users)
@@ -34,14 +35,10 @@
   `(binding [*user-store* ~store] ~@body))
 
 (defstate ^:dynamic *user-store*
-  :start (let [users (:users app-config)
-               store (create-user-store (:store users))]
+  :start (create-user-store (-> app-config :users :store)))
 
-           ;; initialize users (if any defined)
-           (with-user-store store
-             (init-users (:defined users)))
-
-           store))
+(defstate defined-users
+  :start (init-users (-> app-config :users :defined)))
 
 (defmethod create-user-store :in-memory [_]
   (->MemoryStore "users" (atom {})))
@@ -106,12 +103,11 @@
 (defn init-users
   "Initializes configured users."
   [users]
-  (doseq [{:keys [login email name enabled? password]} users]
-    (create-user (map->User {:login login
-                             :email email
-                             :name name
-                             :enabled? enabled?})
-                 password)))
+  (f/try*
+   (reduce (fn [reduced {:keys [login email name enabled? password]}]
+             (conj reduced (create-user (map->User {:login login :email email :name name :enabled? enabled?}) password)))
+           {}
+           users)))
 
 (defn valid-password?
   "Verify that candidate password matches the hashed bcrypted password"
