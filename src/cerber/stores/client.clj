@@ -83,7 +83,7 @@
         client {:id (or id (generate-secret))
                 :secret (or secret (generate-secret))
                 :info info
-                :approved approved?
+                :approved? approved?
                 :scopes (array->str scopes)
                 :grants (array->str grants)
                 :redirects (array->str redirects)
@@ -100,12 +100,14 @@
 
 (defn find-client [client-id]
   (if-let [found (fetch-one *client-store* [client-id])]
-    (let [{:keys [scopes grants redirects]} found]
+    (let [{:keys [approved scopes grants redirects]} found]
       (map->Client
-       (assoc found
-              :scopes (str->array scopes)
-              :grants (str->array grants)
-              :redirects (str->array redirects))))))
+       (-> found
+           (dissoc :approved)
+           (assoc  :approved? approved
+                   :scopes (str->array scopes)
+                   :grants (str->array grants)
+                   :redirects (str->array redirects)))))))
 
 (defn purge-clients
   []
