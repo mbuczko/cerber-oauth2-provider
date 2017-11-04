@@ -12,6 +12,7 @@
                  [com.h2database/h2 "1.4.196" :scope "test"]
                  [mysql/mysql-connector-java "6.0.6" :scope "test"]
                  [org.postgresql/postgresql "42.1.4" :scope "test"]
+                 [funcool/boot-codeina "0.1.0-SNAPSHOT" :scope "test"]
                  [ring/ring-defaults "0.3.1"]
                  [midje "1.8.3" :scope "test"]
                  [peridot "0.5.0" :scope "test"]
@@ -35,6 +36,7 @@
 (require
  '[cerber.oauth2.standalone.system]
  '[cerber.migration]
+ '[funcool.boot-codeina :refer :all]
  '[adzerk.bootlaces :refer [bootlaces! build-jar push-release]]
  '[zilti.boot-midje :refer [midje]])
 
@@ -73,4 +75,16 @@
                       :version +version+
                       :description "OAuth2 provider"
                       :url "https://github.com/mbuczko/cerber-oauth2-provider"
-                      :scm {:url "https://github.com/mbuczko/cerber-oauth2-provider"}})
+                      :scm {:url "https://github.com/mbuczko/cerber-oauth2-provider"}}
+               apidoc {:version +version+
+                       :title "Cerber"
+                       :sources #{"src"}
+                       :description "OAuth2 provider for Clojure"
+                       :exclude ['cerber.config
+                                'cerber.db
+                                'cerber.error
+                                'cerber.form
+                                'cerber.handlers
+                                'cerber.helpers
+                                'cerber.middleware
+                                'cerber.migration]})
