@@ -97,9 +97,7 @@
 (defn user-logged? [req]
   (when-let [session (:session req)]
     (when-let [login (:login session)]
-      (assoc req ::user (user/map->User {:login login
-                                         :roles (:roles session)
-                                         :permissions (:permissions session)})))))
+      (assoc req ::user {:login login :permissions (:permissions session)}))))
 
 (defn user-password-valid? [req authenticator]
   (f/attempt-all [username (get-in req [:params :username] error/invalid-request)
