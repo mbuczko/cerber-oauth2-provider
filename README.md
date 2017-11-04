@@ -45,8 +45,10 @@ specific for each environment (local / test / prod):
 {:authcodes   {:store :sql :valid-for 180}
  :sessions    {:store :sql :valid-for 180}
  :tokens      {:store :sql :valid-for 180}
- :users       {:store :sql}
- :clients     {:store :sql}
+ :users       {:store :sql
+               :defined []}
+ :clients     {:store :sql
+               :defined []}
  :scopes      #{}
  :landing-url "/"
  :realm       "http://defunkt.pl"
@@ -75,7 +77,7 @@ Words of explanation:
  * ```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
  * ```scopes``` (required) available set of [scopes](https://www.oauth.com/oauth2-servers/scope/defining-scopes/) for oauth2 clients.
 
-How are scopes defined?
+### Scopes
 
 Scopes are configured as a set of unique strings like ```"user"```, ```"photos:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
 For example one can define scopes as ```#{"photos" "photos:read" "photos:write"}``` which gives any OAuth2 client (if configured so) a privilege to ask for
@@ -86,6 +88,28 @@ Cerber also normalizes scope requests, so when client asks for ```#{"photos" "ph
 
 Also, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec. On the other hand if any scopes have been defined,
 all client requests are validated against configuration.
+
+### Predefined users and clients
+
+It is possible to predefine users as well as clients in configuration file with ```:defined``` vector of maps as following:
+
+``` clojure
+{:users   {:store :in-memory
+           :defined [{:login "foo"
+                      :email "foo@bar.com"
+                      :name "Foo Bar"
+                      :enabled? true
+                      :password "pass"}]}
+
+ :clients {:store :in-memory
+           :defined [{:id "KEJ57AVGDWJA4YSEUBX3H3M2RBW53WLA"
+                      :secret "BOQUIIPBU5LDJ5BBZMZQYZZK2KTLHLBS"
+                      :info "Default client"
+                      :redirects ["http://localhost"]
+                      :grants ["authorization_code" "password"]
+                      :scopes ["photos:read" "photos:write"]
+                      :approved? true}]}}
+```
 
 ### Configuration files
 
