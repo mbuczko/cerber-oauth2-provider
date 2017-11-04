@@ -11,14 +11,14 @@
             [cerber.stores.token :as token]
             [cerber.helpers :as helpers]))
 
-(declare init-clients)
+(declare ->map init-clients)
 
 (defrecord Client [id secret info redirects grants scopes])
 
 (defrecord SqlClientStore []
   Store
   (fetch-one [this [client-id]]
-    (first (db/find-client {:id client-id})))
+    (->map (first (db/find-client {:id client-id}))))
   (revoke-one! [this [client-id]]
     (db/delete-client {:id client-id}))
   (store! [this k client]
@@ -99,15 +99,9 @@
       (first result))))
 
 (defn find-client [client-id]
-  (if-let [found (fetch-one *client-store* [client-id])]
+  (if-let [found (and client-id (fetch-one *client-store* [client-id]))]
     (let [{:keys [approved scopes grants redirects]} found]
-      (map->Client
-       (-> found
-           (dissoc :approved)
-           (assoc  :approved? approved
-                   :scopes (str->array scopes)
-                   :grants (str->array grants)
-                   :redirects (str->array redirects)))))))
+      (map->Client found))))
 
 (defn purge-clients
   []
@@ -139,3 +133,12 @@
 
 (defn redirect-uri-valid? [client redirect-uri]
   (.contains (:redirects client) redirect-uri))
+
+(defn ->map [result]
+  (when-let [{:keys [approved scopes grants redirects]} result]
+    (-> result
+        (assoc  :approved? approved
+                :scopes (str->array scopes)
+                :grants (str->array grants)
+                :redirects (str->array redirects))
+        (dissoc :approved))))
