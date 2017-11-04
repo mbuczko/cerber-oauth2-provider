@@ -37,6 +37,11 @@
 
 (defmulti create-session-store identity)
 
+(defmacro with-session-store
+  "Changes default binding to default session store."
+  [store & body]
+  `(binding [*session-store* ~store] ~@body))
+
 (defstate ^:dynamic *session-store*
   :start (create-session-store (-> app-config :sessions :store))
   :stop  (helpers/stop-periodic *session-store*))
@@ -50,11 +55,6 @@
 (defmethod create-session-store :sql [_]
   (helpers/with-periodic-fn
     (->SqlSessionStore) db/clear-expired-sessions 10000))
-
-(defmacro with-session-store
-  "Changes default binding to default session store."
-  [store & body]
-  `(binding [*session-store* ~store] ~@body))
 
 (defn create-session
   "Creates new session"

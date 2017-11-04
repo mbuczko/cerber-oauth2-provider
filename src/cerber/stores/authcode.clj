@@ -29,6 +29,11 @@
 
 (defmulti create-authcode-store identity)
 
+(defmacro with-authcode-store
+  "Changes default binding to default authcode store."
+  [store & body]
+  `(binding [*authcode-store* ~store] ~@body))
+
 (defstate ^:dynamic *authcode-store*
   :start (create-authcode-store (-> app-config :authcodes :store))
   :stop  (helpers/stop-periodic *authcode-store*))
@@ -42,11 +47,6 @@
 (defmethod create-authcode-store :sql [_]
   (helpers/with-periodic-fn
     (->SqlAuthCodeStore) db/clear-expired-authcodes 8000))
-
-(defmacro with-authcode-store
-  "Changes default binding to default authcode store."
-  [store & body]
-  `(binding [*authcode-store* ~store] ~@body))
 
 (defn revoke-authcode
   "Revokes previously generated authcode."

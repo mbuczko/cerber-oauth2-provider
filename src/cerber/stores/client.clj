@@ -11,6 +11,8 @@
             [cerber.stores.token :as token]
             [cerber.helpers :as helpers]))
 
+(declare init-clients)
+
 (defrecord Client [id secret info redirects grants scopes])
 
 (defrecord SqlClientStore []
@@ -26,8 +28,20 @@
 
 (defmulti create-client-store identity)
 
+(defmacro with-client-store
+  "Changes default binding to default client store."
+  [store & body]
+  `(binding [*client-store* ~store] ~@body))
+
 (defstate ^:dynamic *client-store*
-  :start (create-client-store (-> app-config :clients :store)))
+  :start (let [clients (:clients app-config)
+               store (create-client-store (:store clients))]
+
+           ;; initialize clients (if any defined)
+           (with-client-store store
+             (init-clients (:defined clients)))
+
+           store))
 
 (defmethod create-client-store :in-memory [_]
   (->MemoryStore "clients" (atom {})))
@@ -37,11 +51,6 @@
 
 (defmethod create-client-store :sql [_]
   (->SqlClientStore))
-
-(defmacro with-client-store
-  "Changes default binding to default client store."
-  [store & body]
-  `(binding [*client-store* ~store] ~@body))
 
 (defn validate-uri
   "Returns java.net.URL instance of given uri or failure info in case of error."
@@ -69,10 +78,10 @@
 
 (defn create-client
   "Creates new client"
-  [info redirects grants scopes approved?]
+  [info redirects grants scopes approved? & [id secret]]
   (let [result (validate-redirects redirects)
-        client {:id (generate-secret)
-                :secret (generate-secret)
+        client {:id (or id (generate-secret))
+                :secret (or secret (generate-secret))
                 :info info
                 :approved approved?
                 :scopes (array->str scopes)
@@ -102,6 +111,12 @@
   []
   "Removes clients from store. Used for tests only."
   (purge! *client-store*))
+
+(defn init-clients
+  "Initializes configured clients."
+  [clients]
+  (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
+    (create-client info redirects scopes grants approved? id secret)))
 
 (defn scope->arr
   "Decomposes scope string (scopes separated with space) into vector of scopes."

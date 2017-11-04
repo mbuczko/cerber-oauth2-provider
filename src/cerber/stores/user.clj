@@ -7,7 +7,7 @@
              [store :refer :all]])
   (:import [org.mindrot.jbcrypt BCrypt]))
 
-(declare ->map)
+(declare ->map init-users)
 
 (defrecord User [id login email name password roles permissions enabled created-at activated-at blocked-at])
 
@@ -28,8 +28,20 @@
 
 (defmulti create-user-store identity)
 
+(defmacro with-user-store
+  "Changes default binding to default users store."
+  [store & body]
+  `(binding [*user-store* ~store] ~@body))
+
 (defstate ^:dynamic *user-store*
-  :start (create-user-store (-> app-config :users :store)))
+  :start (let [users (:users app-config)
+               store (create-user-store (:store users))]
+
+           ;; initialize users (if any defined)
+           (with-user-store store
+             (init-users (:defined users)))
+
+           store))
 
 (defmethod create-user-store :in-memory [_]
   (->MemoryStore "users" (atom {})))
@@ -39,11 +51,6 @@
 
 (defmethod create-user-store :sql [_]
   (->SqlUserStore))
-
-(defmacro with-user-store
-  "Changes default binding to default users store."
-  [store & body]
-  `(binding [*user-store* ~store] ~@body))
 
 (defn bcrypt
   "Performs BCrypt hashing of password."
@@ -95,6 +102,16 @@
   "Removes users from store. Used for tests only."
   []
   (purge! *user-store*))
+
+(defn init-users
+  "Initializes configured users."
+  [users]
+  (doseq [{:keys [login email name enabled? password]} users]
+    (create-user (map->User {:login login
+                             :email email
+                             :name name
+                             :enabled enabled?})
+                 password)))
 
 (defn valid-password?
   "Verify that candidate password matches the hashed bcrypted password"

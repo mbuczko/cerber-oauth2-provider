@@ -1,7 +1,6 @@
 (ns cerber.config
-  (:require [cprop
-             [core :as cprop]
-             [source :refer [from-resource from-system-props from-env]]]
+  (:require [cprop.core :as cprop]
+            [cprop.source :refer [from-env from-resource]]
             [failjure.core :as f]
             [mount.core :as mount :refer [defstate]]))
 

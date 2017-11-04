@@ -41,6 +41,11 @@
 
 (defmulti create-token-store identity)
 
+(defmacro with-token-store
+  "Changes default binding to default token store."
+  [store & body]
+  `(binding [*token-store* ~store] ~@body))
+
 (defstate ^:dynamic *token-store*
   :start (create-token-store (-> app-config :tokens :store))
   :stop  (helpers/stop-periodic *token-store*))
@@ -54,11 +59,6 @@
 (defmethod create-token-store :sql [_]
   (helpers/with-periodic-fn
     (->SqlTokenStore) db/clear-expired-tokens 60000))
-
-(defmacro with-token-store
-  "Changes default binding to default token store."
-  [store & body]
-  `(binding [*token-store* ~store] ~@body))
 
 (defn create-token
   "Creates new token."
