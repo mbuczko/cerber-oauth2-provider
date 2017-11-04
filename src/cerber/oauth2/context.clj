@@ -75,7 +75,7 @@
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
     (f/attempt-all [user   (or (user/find-user login) error/invalid-request)
-                    valid? (or (:enabled user) error/unauthorized)]
+                    valid? (or (:enabled? user) error/unauthorized)]
                    (assoc req ::user user))))
 
 (defn client-valid? [req]

@@ -24,17 +24,17 @@
           ;; hashed passwords should be the same
           (valid-password? pass (:password user)) => true)))
 
-(fact "Newly created user is enabled by default if no :enabled property was set."
+(fact "Newly created user is enabled by default if no :enabled? property was set."
       (with-user-store (create-user-store :in-memory)
 
         ;; given
         (let [user1 (create-user {:login "foo"} "aa")
               user2 (create-user {:login "bar"
-                                  :enabled false} "bb")]
+                                  :enabled? false} "bb")]
 
           ;; then
-          (:enabled user1) => true
-          (:enabled user2) => false)))
+          (:enabled? user1) => true
+          (:enabled? user2) => false)))
 
 (tabular
  (fact "User found in a store is returned with details filled in."

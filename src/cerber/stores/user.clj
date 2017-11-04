@@ -9,7 +9,7 @@
 
 (declare ->map init-users)
 
-(defrecord User [id login email name password roles permissions enabled created-at activated-at blocked-at])
+(defrecord User [id login email name password roles permissions enabled? created-at activated-at blocked-at])
 
 (defrecord SqlUserStore []
   Store
@@ -20,7 +20,7 @@
   (store! [this k user]
     (when (= 1 (db/insert-user user)) user))
   (modify! [this k user]
-    (if (:enabled user)
+    (if (:enabled? user)
       (db/enable-user user)
       (db/disable-user user)))
   (purge! [this]
@@ -62,14 +62,14 @@
   ([user password]
    (create-user user password nil nil))
   ([user password roles permissions]
-   (let [enabled (:enabled user true)
+   (let [enabled (:enabled? user true)
          merged  (merge-with
                   #(or %2 %1)
                   user
                   {:id (helpers/uuid)
                    :name nil
                    :email nil
-                   :enabled enabled
+                   :enabled? enabled
                    :password (and password (bcrypt password))
                    :roles roles
                    :permissions permissions
@@ -91,12 +91,12 @@
 (defn enable-user
   "Enables user. Returns true if user has been enabled successfully or false otherwise."
   [user]
-  (= 1 (modify! *user-store* [:login] (assoc user :enabled true :activated-at (helpers/now)))))
+  (= 1 (modify! *user-store* [:login] (assoc user :enabled? true :activated-at (helpers/now)))))
 
 (defn disable-user
   "Disables user. Returns true if user has been disabled successfully or false otherwise."
   [user]
-  (= 1 (modify! *user-store* [:login] (assoc user :enabled false :blocked-at (helpers/now)))))
+  (= 1 (modify! *user-store* [:login] (assoc user :enabled? false :blocked-at (helpers/now)))))
 
 (defn purge-users
   "Removes users from store. Used for tests only."
@@ -110,7 +110,7 @@
     (create-user (map->User {:login login
                              :email email
                              :name name
-                             :enabled enabled?})
+                             :enabled? enabled?})
                  password)))
 
 (defn valid-password?
@@ -119,7 +119,7 @@
   (and candidate hashed (BCrypt/checkpw candidate hashed)))
 
 (defn ->map [result]
-  (when-let [{:keys [created_at modified_at activated_at blocked_at]} result]
+  (when-let [{:keys [created_at modified_at activated_at blocked_at enabled]} result]
     (-> result
-        (assoc  :created-at created_at :modified-at modified_at :activated-at activated_at :blocked-at blocked_at)
-        (dissoc :created_at :modified_at :confirmed_at :activated_at :blocked_at))))
+        (assoc  :enabled? enabled :created-at created_at :modified-at modified_at :activated-at activated_at :blocked-at blocked_at)
+        (dissoc :enabled :created_at :modified_at :confirmed_at :activated_at :blocked_at))))

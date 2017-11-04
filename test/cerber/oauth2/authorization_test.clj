@@ -67,7 +67,7 @@
       (s/purge-sessions)
 
       ;; given
-      (u/create-user {:login "nioh" :enabled false} "alamakota")
+      (u/create-user {:login "nioh" :enabled? false} "alamakota")
 
       ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -87,7 +87,7 @@
       (s/purge-sessions)
 
       ;; given
-      (u/create-user {:login "nioh" :enabled true} "alamakota")
+      (u/create-user {:login "nioh" :enabled? true} "alamakota")
 
       ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -131,7 +131,7 @@
       (u/purge-users)
 
       ;; given
-      (u/create-user {:login "nioh" :enabled true} "alamakota")
+      (u/create-user {:login "nioh" :enabled? true} "alamakota")
 
       ;; when
       (let [scope "photo" ;; scope not defined in cerber-test.edn
@@ -151,7 +151,7 @@
       (u/purge-users)
 
       ;; given
-      (u/create-user {:login "nioh" :enabled true} "alamakota")
+      (u/create-user {:login "nioh" :enabled? true} "alamakota")
 
       ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -171,7 +171,7 @@
       (s/purge-sessions)
 
       ;; given
-      (u/create-user {:login "nioh" :enabled true} "alamakota")
+      (u/create-user {:login "nioh" :enabled? true} "alamakota")
 
       ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -203,7 +203,7 @@
       (u/purge-users)
 
       ;; given
-      (u/create-user {:login "nioh" :enabled true} "alamakota")
+      (u/create-user {:login "nioh" :enabled? true} "alamakota")
 
       ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -226,7 +226,7 @@
       (u/purge-users)
 
       ;; given
-      (u/create-user {:login "niah" :enabled false} "alamakota")
+      (u/create-user {:login "niah" :enabled? false} "alamakota")
 
       ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
