@@ -109,21 +109,9 @@
   [clients]
   (f/try*
    (reduce (fn [reduced {:keys [id secret info redirects grants scopes approved?]}]
-             (conj reduced (create-client info redirects scopes grants approved? id secret)))
+             (conj reduced (create-client info redirects grants scopes approved? id secret)))
            {}
            clients)))
-
-(defn scope->arr
-  "Decomposes scope string (scopes separated with space) into vector of scopes."
-  [scope-str]
-  (str->array scope-str))
-
-(defn scopes-valid?
-  "Checks whether given scopes are valid ones assigned to client."
-  [client scopes]
-  (let [client-scopes (:scopes client)]
-    (or (empty? scopes)
-        (every? #(.contains client-scopes %) scopes))))
 
 (defn grant-allowed? [client grant]
   (let [grants (:grants client)]
@@ -132,6 +120,18 @@
 
 (defn redirect-uri-valid? [client redirect-uri]
   (.contains (:redirects client) redirect-uri))
+
+(defn scopes-valid?
+  "Checks whether given scopes are valid ones assigned to client."
+  [client scopes]
+  (let [client-scopes (:scopes client)]
+    (or (empty? scopes)
+        (every? #(.contains client-scopes %) scopes))))
+
+(defn scope->arr
+  "Decomposes scope string (scopes separated with space) into vector of scopes."
+  [scope-str]
+  (str->array scope-str))
 
 (defn ->map [result]
   (when-let [{:keys [approved scopes grants redirects]} result]
