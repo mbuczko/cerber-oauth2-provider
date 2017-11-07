@@ -67,8 +67,12 @@
 
 (deftask migrate
   "Applies pending migrations."
-  [j jdbc-url URL str "JDBC url"]
-  (cerber.migration/migrate jdbc-url))
+  [j jdbc-url URL     str  "the jdbc url"
+   a action   ACTION  str  "the action to perform (info, clean or migrate by default)"]
+  (cerber.migration/migrate jdbc-url (condp = action
+                                       "clean" "-c"
+                                       "info"  "-i"
+                                       "-m")))
 
 (task-options! midje {:test-paths #{"test"}}
                pom   {:project 'cerber/cerber-oauth2-provider
@@ -81,10 +85,11 @@
                        :sources #{"src"}
                        :description "OAuth2 provider for Clojure"
                        :exclude ['cerber.config
-                                'cerber.db
-                                'cerber.error
-                                'cerber.form
-                                'cerber.handlers
-                                'cerber.helpers
-                                'cerber.middleware
-                                'cerber.migration]})
+                                 'cerber.db
+                                 'cerber.error
+                                 'cerber.form
+                                 'cerber.handlers
+                                 'cerber.helpers
+                                 'cerber.middleware
+                                 'cerber.migration]}
+               migrate {:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres"})
