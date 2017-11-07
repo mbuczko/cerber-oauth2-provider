@@ -8,7 +8,8 @@
             [failjure.core :as f]
             [cerber.stores.user :as user]
             [cerber.error :as error]
-            [cerber.helpers :as helpers]))
+            [cerber.helpers :as helpers]
+            [clojure.string :refer [join split]]))
 
 (defn default-valid-for []
   (-> app-config :tokens :valid-for))
@@ -34,7 +35,8 @@
                    (db/delete-tokens-by-login  {:client-id client-id :login login})
                    (db/delete-tokens-by-client {:client-id client-id}))))
   (store! [this k token]
-    (when (= 1 (db/insert-token token)) token))
+    (let [scope (join " " (:scope token))]
+      (when (= 1 (db/insert-token (assoc token :scope scope))) token)))
   (purge! [this]
     (db/clear-tokens)))
 
@@ -171,7 +173,7 @@
     {:client-id client_id
      :user-id user_id
      :login login
-     :scope scope
+     :scope (set (split scope #" "))
      :secret secret
      :created-at created_at
      :expires-at expires_at}))
