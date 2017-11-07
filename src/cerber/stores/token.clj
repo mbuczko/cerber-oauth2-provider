@@ -9,7 +9,7 @@
             [cerber.stores.user :as user]
             [cerber.error :as error]
             [cerber.helpers :as helpers]
-            [clojure.string :refer [join]]))
+            [clojure.string :refer [join split]]))
 
 (defn default-valid-for []
   (-> app-config :tokens :valid-for))
@@ -173,7 +173,7 @@
     {:client-id client_id
      :user-id user_id
      :login login
-     :scope scope
+     :scope (set (split scope #" "))
      :secret secret
      :created-at created_at
      :expires-at expires_at}))
