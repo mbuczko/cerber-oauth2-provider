@@ -7,7 +7,8 @@
              [store :refer :all]]
             [failjure.core :as f]
             [cerber.stores.user :as user]
-            [cerber.error :as error]))
+            [cerber.error :as error]
+            [clojure.string :refer [join split]]))
 
 (defn default-valid-for []
   (-> app-config :authcodes :valid-for))
@@ -23,7 +24,8 @@
   (revoke-one! [this [code]]
     (db/delete-authcode {:code code}))
   (store! [this k authcode]
-    (when (= 1 (db/insert-authcode authcode)) authcode))
+    (let [scope (join " " (:scope authcode))]
+      (when (= 1 (db/insert-authcode (assoc authcode :scope scope))) authcode)))
   (purge! [this]
     (db/clear-authcodes)))
 
@@ -84,7 +86,7 @@
     {:client-id client_id
      :login login
      :code code
-     :scope scope
+     :scope (set (split scope #" "))
      :redirect-uri redirect_uri
      :expires-at expires_at
      :created-at created_at}))
