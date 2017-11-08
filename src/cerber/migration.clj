@@ -1,13 +1,17 @@
 (ns cerber.migration
-  (:require [mbuczko.boot-flyway :refer [flyway]]))
+  (:require [mbuczko.boot-flyway :refer [flyway]]
+            [clojure.string :as str]))
 
-(def mysql-opts
-  ["-d" "com.mysql.cj.jdbc.Driver" "-o" "locations=db/migrations/mysql" "-j"])
 
-(def pgsql-opts
-  ["-d" "org.postgresql.Driver" "-o" "locations=db/migrations/postgres" "-j"])
+(def ^:const opts
+  {"postgresql" ["-d" "org.postgresql.Driver" "-o" "locations=db/migrations/postgres" "-j"]
+   "mysql"      ["-d" "com.mysql.cj.jdbc.Driver" "-o" "locations=db/migrations/mysql" "-j"]})
 
-(defn migrate [jdbc-url]
-  (apply flyway (if-not jdbc-url ["-i"] (conj (if (.startsWith jdbc-url "jdbc:postgresql")
-                                                pgsql-opts
-                                                mysql-opts) jdbc-url "-m"))))
+(defn db-opts [jdbc-url]
+  (let [db-type (second (str/split jdbc-url #":"))]
+    (println (str "Migrating database: " db-type))
+    (or (get opts db-type)
+        (throw (Exception. "Unsupported database. Check jdbc-url.")))))
+
+(defn migrate [jdbc-url action]
+  (apply flyway (conj (db-opts jdbc-url) jdbc-url (or action "-m"))))

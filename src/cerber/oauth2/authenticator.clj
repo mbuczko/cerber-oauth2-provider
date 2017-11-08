@@ -8,7 +8,9 @@
   Authenticator
   (authenticate [this username password]
     (if-let [user (user/find-user username)]
-      (and (user/valid-password? password (:password user)) (:enabled? user) user))))
+      (and (user/valid-password? password (:password user))
+           (:enabled? user)
+           user))))
 
 (defmulti authentication-handler identity)
 
