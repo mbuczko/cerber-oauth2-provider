@@ -30,7 +30,7 @@
 
 (defn create-client
   [info redirects & [grants scopes approved?]]
-  (client/create-client info redirects scopes grants approved?))
+  (client/create-client info redirects grants scopes approved?))
 
 (defn modify-client
   [client])
