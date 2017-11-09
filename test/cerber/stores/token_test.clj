@@ -23,7 +23,6 @@
                               :login "nioh"
                               :scope scope}))))
 
-
 (tabular
  (fact "Token found in a store is returned with user/client ids and secret filled in."
        (with-token-store (create-token-store ?store)

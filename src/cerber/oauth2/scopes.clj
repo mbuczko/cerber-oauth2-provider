@@ -1,5 +1,6 @@
 (ns cerber.oauth2.scopes
-  (:require [clojure.string :as str]))
+  (:require [cerber.helpers :refer [str->vec]]
+            [clojure.string :as str]))
 
 (defn distinct-scope
   "Returns nil if scopes contain given scope itself or any of its parents.
@@ -13,11 +14,12 @@
         (when-not (contains? scopes (str/join ":" s))
           (recur (drop-last s)))))))
 
-(defn normalize-scopes
-  "Normalizes set of scopes by removing duplicates and overlapping entries."
+(defn normalize-scope
+  "Normalizes scope string by removing duplicated and overlapping scopes."
 
-  [scopes]
-  (->> scopes
+  [scope]
+  (->> scope
+       (str->vec)
        (sort-by #(count (re-seq #":" %)))
        (reduce (fn [reduced scope]
                  (if-let [s (distinct-scope reduced scope)]

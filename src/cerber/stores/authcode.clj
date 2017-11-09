@@ -24,8 +24,7 @@
   (revoke-one! [this [code]]
     (db/delete-authcode {:code code}))
   (store! [this k authcode]
-    (let [scope (join " " (:scope authcode))]
-      (when (= 1 (db/insert-authcode (assoc authcode :scope scope))) authcode)))
+    (when (= 1 (db/insert-authcode authcode)) authcode))
   (purge! [this]
     (db/clear-authcodes)))
 
@@ -86,7 +85,7 @@
     {:client-id client_id
      :login login
      :code code
-     :scope (set (split scope #" "))
+     :scope scope
      :redirect-uri redirect_uri
      :expires-at expires_at
      :created-at created_at}))

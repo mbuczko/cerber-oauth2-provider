@@ -50,4 +50,5 @@
   (c/create-client "test client" [redirect-uri] ["authorization_code" "token" "password" "client_credentials"] [scope] false))
 
 ;; boot up testing system
+(println "Starting testing system")
 (mount/start)

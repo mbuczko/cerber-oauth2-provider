@@ -3,7 +3,6 @@
             [cerber
              [config :refer [app-config]]
              [db :as db]
-             [helpers :refer :all]
              [store :refer :all]]
             [clojure.string :as str]
             [failjure.core :as f]
@@ -76,13 +75,13 @@
   "Creates new client"
   [info redirects grants scopes approved? & [id secret]]
   (let [result (validate-redirects redirects)
-        client {:id (or id (generate-secret))
-                :secret (or secret (generate-secret))
+        client {:id (or id (helpers/generate-secret))
+                :secret (or secret (helpers/generate-secret))
                 :info info
                 :approved? approved?
-                :scopes (array->str scopes)
-                :grants (array->str grants)
-                :redirects (array->str redirects)
+                :scopes (helpers/vec->str scopes)
+                :grants (helpers/vec->str grants)
+                :redirects (helpers/vec->str redirects)
                 :created-at (helpers/now)}]
 
     (if (empty? result)
@@ -128,16 +127,11 @@
     (or (empty? scopes)
         (every? #(.contains client-scopes %) scopes))))
 
-(defn scope->arr
-  "Decomposes scope string (scopes separated with space) into vector of scopes."
-  [scope-str]
-  (str->array scope-str))
-
 (defn ->map [result]
   (when-let [{:keys [approved scopes grants redirects]} result]
     (-> result
         (assoc  :approved? approved
-                :scopes (str->array scopes)
-                :grants (str->array grants)
-                :redirects (str->array redirects))
+                :scopes (helpers/str->vec scopes)
+                :grants (helpers/str->vec grants)
+                :redirects (helpers/str->vec redirects))
         (dissoc :approved))))

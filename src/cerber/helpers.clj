@@ -57,9 +57,9 @@
   [item ttl]
   (assoc item :expires-at (now-plus-seconds ttl)))
 
-(defn str->array
-  "Decomposes space separated string into array.
-  Returns empty array if string was either null or empty."
+(defn str->vec
+  "Decomposes string into vector of space separated substrings.
+  Returns empty vector if string was either null or empty."
 
   [str]
   (or (and str
@@ -67,11 +67,11 @@
            (str/split str #" "))
       []))
 
-(defn array->str
-  "Serializes array elements into string by joining them with space."
+(defn vec->str
+  "Serializes vector of strings into single (space-separated) string."
 
-  [arr]
-  (str/join " " arr))
+  [vec]
+  (str/join " " vec))
 
 (defn expires->ttl
   "Returns number of seconds between now and expires-at."

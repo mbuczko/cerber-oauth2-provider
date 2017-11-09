@@ -29,10 +29,10 @@
 
 (defn scopes-allowed? [req allowed-scopes]
   (let [scope (get-in req [:params :scope])]
-    (f/attempt-all [scopes (client/scope->arr scope)
+    (f/attempt-all [scopes (scopes/normalize-scope scope)
                     valid? (or (client/scopes-valid? (::client req) scopes) error/invalid-scope)
                     allowed? (or (scopes/allowed-scopes? scopes allowed-scopes) error/invalid-scope)]
-                   (assoc req ::scope (scopes/normalize-scopes scopes)))))
+                   (assoc req ::scopes scopes))))
 
 (defn grant-allowed? [req grant]
   (f/attempt-all [allowed? (or (client/grant-allowed? (::client req) grant) error/unsupported-grant-type)]
@@ -107,7 +107,7 @@
 
 (defn request-auto-approved? [req]
   (if (or (::approved? req)
-          (:approved (::client req)))
+          (:approved? (::client req)))
     req
     (assoc error/unapproved :client (::client req))))
 

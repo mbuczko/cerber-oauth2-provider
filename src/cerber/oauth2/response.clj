@@ -10,7 +10,9 @@
             [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
             [ring.util
              [request :refer [request-url]]
-             [response :as response]]))
+             [response :as response]]
+            [cerber.stores.client :as client]
+            [cerber.helpers :as helpers]))
 
 
 (defn redirect-to
@@ -23,26 +25,29 @@
   (-> (redirect-to url)
       (assoc :session session)))
 
-(defn redirect-with-code [{:keys [params ::ctx/user ::ctx/client ::ctx/scope ::ctx/state ::ctx/redirect-uri]}]
-  (f/attempt-all [authcode (or (authcode/create-authcode client user scope redirect-uri) error/server-error)
-                  redirect (str redirect-uri
-                                "?code=" (:code authcode)
-                                (when state (str "&state=" state)))]
+(defn redirect-with-code [{:keys [params ::ctx/user ::ctx/client ::ctx/scopes ::ctx/state ::ctx/redirect-uri]}]
+  (f/attempt-all [access-scope (helpers/vec->str scopes)
+                  authcode     (or (authcode/create-authcode client user access-scope redirect-uri) error/server-error)
+                  redirect     (str redirect-uri
+                                    "?code=" (:code authcode)
+                                    (when state (str "&state=" state)))]
                  (redirect-to redirect)))
 
-(defn redirect-with-token [{:keys [params ::ctx/user ::ctx/client ::ctx/scope ::ctx/state ::ctx/redirect-uri]}]
-  (f/attempt-all [access-token (token/generate-access-token client user scope)
+(defn redirect-with-token [{:keys [params ::ctx/user ::ctx/client ::ctx/scopes ::ctx/state ::ctx/redirect-uri]}]
+  (f/attempt-all [access-scope (helpers/vec->str scopes)
+                  access-token (token/generate-access-token client user access-scope)
                   redirect (str redirect-uri
                                 "?access_token=" (:access_token access-token)
                                 "&expires_in=" (:expires_in access-token)
-                                (when scope (str "&scope=" scope))
+                                (when access-scope (str "&scope=" access-scope))
                                 (when state (str "&state=" state)))]
                  (redirect-to redirect)))
 
-(defn access-token-response [{:keys [::ctx/client ::ctx/scope ::ctx/user ::ctx/authcode]}]
+(defn access-token-response [{:keys [::ctx/client ::ctx/scopes ::ctx/user ::ctx/authcode]}]
   (when authcode
     (authcode/revoke-authcode authcode))
-  (f/attempt-all [access-token (token/generate-access-token client user (or scope (:scope authcode)) {:refresh? (boolean user)})]
+  (f/attempt-all [access-scope (and scopes (helpers/vec->str scopes)) ;; scope won't exist in authorization_code scenario as it should be taken from authcode
+                  access-token (token/generate-access-token client user (or access-scope (:scope authcode)) {:refresh? (boolean user)})]
                  {:status 200
                   :body access-token}))
 

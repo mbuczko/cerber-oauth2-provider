@@ -35,8 +35,7 @@
                    (db/delete-tokens-by-login  {:client-id client-id :login login})
                    (db/delete-tokens-by-client {:client-id client-id}))))
   (store! [this k token]
-    (let [scope (join " " (:scope token))]
-      (when (= 1 (db/insert-token (assoc token :scope scope))) token)))
+    (when (= 1 (db/insert-token token)) token))
   (purge! [this]
     (db/clear-tokens)))
 
@@ -173,7 +172,7 @@
     {:client-id client_id
      :user-id user_id
      :login login
-     :scope (set (split scope #" "))
+     :scope scope
      :secret secret
      :created-at created_at
      :expires-at expires_at}))
