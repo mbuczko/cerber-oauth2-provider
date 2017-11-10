@@ -1,15 +1,18 @@
 (ns cerber.stores.user-test
-  (:require [midje.sweet :refer :all]
-            [cerber.common-test :refer :all]
-            [cerber.stores.user :refer :all])
-  (:import  [cerber.stores.user User]))
+  (:require [cerber.stores.user :refer :all]
+            [cerber.test-utils :refer [has-secret instance-of]]
+            [midje.sweet :refer :all])
+  (:import cerber.stores.user.User))
+
+(def login "foo")
+(def password "pass")
 
 (fact "Newly created user is returned with auto-generated id and crypted password filled in."
       (with-user-store (create-user-store :in-memory)
+        (purge-users)
 
         ;; given
-        (let [pass "alamakota"
-              user (create-user {:login "foo"} pass)]
+        (let [user (create-user {:login login} password)]
 
           ;; then
           user => (instance-of User)
@@ -19,18 +22,18 @@
           (:id user) => truthy
 
           ;; password must be encrypted!
-          (= pass (:password user)) => false
+          (= password (:password user)) => false
 
           ;; hashed passwords should be the same
-          (valid-password? pass (:password user)) => true)))
+          (valid-password? password (:password user)) => true)))
 
 (fact "Newly created user is enabled by default if no :enabled? property was set."
       (with-user-store (create-user-store :in-memory)
+        (purge-users)
 
         ;; given
-        (let [user1 (create-user {:login "foo"} "aa")
-              user2 (create-user {:login "bar"
-                                  :enabled? false} "bb")]
+        (let [user1 (create-user {:login login} password)
+              user2 (create-user {:login "bazz" :enabled? false} password)]
 
           ;; then
           (:enabled? user1) => true
@@ -42,10 +45,10 @@
          (purge-users)
 
          ;; given
-         (create-user {:login "foo"} "alamakota")
+         (create-user {:login login} password)
 
          ;; when
-         (let [user (find-user "foo")]
+         (let [user (find-user login)]
 
            ;; then
            user => (instance-of User)
@@ -59,13 +62,13 @@
          (purge-users)
 
          ;; given
-         (let [user (create-user {:login "foo"} "alamakota")]
-           (find-user "foo") => (instance-of User)
+         (let [user (create-user {:login login} password)]
+           (find-user login) => (instance-of User)
 
            ;; when
-           (revoke-user "foo")
+           (revoke-user login)
 
            ;; then
-           (find-user "foo") => nil)))
+           (find-user login) => nil)))
 
  ?store :in-memory :sql :redis)

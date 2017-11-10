@@ -1,16 +1,19 @@
 (ns cerber.stores.token-test
-  (:require [cerber.stores.token :refer :all]
-            [cerber.common-test :refer :all]
-            [cerber.helpers :as helpers]
+  (:require [cerber.helpers :as helpers]
+            [cerber.stores.token :refer :all]
+            [cerber.test-utils :refer [has-secret instance-of create-test-user create-test-client]]
             [midje.sweet :refer :all])
-  (:import  [cerber.stores.token Token]))
+  (:import cerber.stores.token.Token))
 
+(def redirect-uri "http://localhost")
 (def scope "photo:read")
-(def user (create-test-user "nioh" "alamakota"))
-(def client (create-test-client scope "http://localhost"))
+
+(def client (create-test-client scope redirect-uri))
+(def user   (create-test-user ""))
 
 (fact "Newly created token is returned with user/client ids and secret filled in."
       (with-token-store (create-token-store :in-memory)
+        (purge-tokens)
 
         ;; given
         (let [token (create-token :access client user scope)]
@@ -20,7 +23,7 @@
           token => (has-secret :secret)
           token => (contains {:client-id (:id client)
                               :user-id (:id user)
-                              :login "nioh"
+                              :login (:login user)
                               :scope scope}))))
 
 (tabular
@@ -37,7 +40,7 @@
            found => (has-secret :secret)
            found => (contains {:client-id (:id client)
                                :user-id (:id user)
-                               :login "nioh"
+                               :login (:login user)
                                :scope scope}))))
 
  ?store :in-memory :sql :redis)
@@ -48,7 +51,7 @@
          (purge-tokens)
 
          ;; given
-         (let [token (create-token :access client user scope)
+         (let [token  (create-token :access client user scope)
                secret (:secret token)]
 
            ;; then
@@ -81,5 +84,6 @@
 
 (fact "Tokens with expires-at date in the past are considered as expired ones."
       (with-token-store (create-token-store :in-memory)
-        (helpers/expired?
-         (create-token :access client user scope -10)) => true))
+        (let []
+          (helpers/expired?
+           (create-token :access client user scope -10))) => true))

@@ -1,12 +1,13 @@
 (ns cerber.stores.authcode-test
   (:require [cerber.stores.authcode :refer :all]
-            [cerber.common-test :refer :all]
+            [cerber.test-utils :refer [instance-of has-secret create-test-user create-test-client]]
             [midje.sweet :refer :all])
   (:import cerber.stores.authcode.AuthCode))
 
 (def redirect-uri "http://localhost")
 (def scope "photo:read")
-(def user (create-test-user "nioh" "alamakota"))
+
+(def user   (create-test-user ""))
 (def client (create-test-client scope redirect-uri))
 
 (fact "Newly created authcode is returned with secret code filled in."
@@ -22,11 +23,10 @@
 (tabular
  (fact "Authcode found in a store is returned with secret code filled in."
        (with-authcode-store (create-authcode-store ?store)
-         (purge-authcodes)
 
          ;; given
          (let [authcode (create-authcode client user scope redirect-uri)
-               found (find-authcode (:code authcode))]
+               found    (find-authcode (:code authcode))]
 
            ;; then
            found => (instance-of AuthCode)
@@ -37,7 +37,6 @@
 (tabular
  (fact "Revoked authcode is not returned from store."
        (with-authcode-store (create-authcode-store ?store)
-         (purge-authcodes)
 
          ;; given
          (let [authcode (create-authcode client user scope redirect-uri)]
@@ -52,7 +51,6 @@
 (tabular
  (fact "Expired authcodes are removed from store."
        (with-authcode-store (create-authcode-store ?store)
-         (purge-authcodes)
 
          ;; given
          (let [authcode (create-authcode client user scope redirect-uri -1)]

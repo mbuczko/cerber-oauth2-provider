@@ -1,19 +1,25 @@
 (ns cerber.oauth2.authorization-test
   (:require [cerber
-             [common-test :refer :all]
+             [test-utils :as utils]
              [config :refer [app-config]]
              [handlers :as handlers]]
-            [cerber.stores
-             [user :as u]
-             [session :as s]]
-            [compojure.core :refer [defroutes GET POST]]
+            [cerber.oauth2.context :as ctx]
+            [compojure.core :refer [defroutes routes wrap-routes GET POST]]
             [midje.sweet :refer :all]
             [peridot.core :refer :all]
-            [ring.middleware.defaults :refer [api-defaults wrap-defaults]]))
+            [ring.middleware.defaults :refer [api-defaults wrap-defaults]]
+            [cheshire.core :as json]))
 
 (def redirect-uri "http://localhost")
 (def scope "photo:read")
-(def client (create-test-client scope redirect-uri))
+(def state "123ABC")
+
+(def client (utils/create-test-client scope redirect-uri))
+
+(def user-active   (utils/create-test-user "pass"))
+(def user-inactive (utils/create-test-user {:login (utils/random-string 12)
+                                            :enabled? false}
+                                           "pass"))
 
 (defroutes oauth-routes
   (GET  "/authorize" [] handlers/authorization-handler)
@@ -23,73 +29,52 @@
   (GET  "/login"     [] handlers/login-form-handler)
   (POST "/login"     [] handlers/login-submit-handler))
 
+(defroutes restricted-routes
+  (GET "/users/me" [] (fn [req]
+                        {:status 200
+                         :body (select-keys (::ctx/user req) [:login :name :email :roles :permissions])})))
+
+(def app (-> restricted-routes
+             (wrap-routes handlers/wrap-authorized)
+             (wrap-defaults api-defaults)))
+
 (fact "Enabled user with valid password is redirected to langing page when successfully logged in."
-      (u/purge-users)
-      (s/purge-sessions)
-
-      ;; given
-      (u/create-user {:login "nioh"} "alamakota")
-
-      ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "text/html")
                       (request "/login") ;; get csrf
-                      (request-secured "/login"
-                                       :request-method :post
-                                       :params {:username "nioh"
-                                                :password "alamakota"}))]
-        ;; then
+                      (utils/request-secured "/login"
+                                             :request-method :post
+                                             :params {:username (:login user-active)
+                                                      :password "pass"}))]
+
         (get-in state [:response :status]) => 302
         (get-in state [:response :headers "Location"]) => (:landing-url app-config)))
 
 (fact "Enabled user with wrong credentials is redirected back to login page with failure info provided."
-      (u/purge-users)
-      (s/purge-sessions)
-
-      ;; given
-      (u/create-user {:login "nioh"} "alamakota")
-
-      ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "text/html")
                       (request "/login")
-                      (request-secured "/login"
-                                       :request-method :post
-                                       :params {:username "nioh"
-                                                :password ""}))]
+                      (utils/request-secured "/login"
+                                             :request-method :post
+                                             :params {:username (:login user-active)
+                                                      :password ""}))]
 
-        ;; then
         (get-in state [:response :status]) => 200
         (get-in state [:response :body]) => (contains "failed")))
 
 (fact "Inactive user is not able to log in."
-      (u/purge-users)
-      (s/purge-sessions)
-
-      ;; given
-      (u/create-user {:login "nioh" :enabled? false} "alamakota")
-
-      ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "text/html")
                       (request "/login")
-                      (request-secured "/login"
-                                       :request-method :post
-                                       :params {:username "nioh"
-                                                :password "alamakota"}))]
+                      (utils/request-secured "/login"
+                                             :request-method :post
+                                             :params {:username (:login user-inactive)
+                                                      :password "pass"}))]
 
-        ;; then
         (get-in state [:response :status]) => 200
         (get-in state [:response :body]) => (contains "failed")))
 
 (fact "Client may receive its token in Authorization Code Grant scenario."
-      (u/purge-users)
-      (s/purge-sessions)
-
-      ;; given
-      (u/create-user {:login "nioh" :enabled? true} "alamakota")
-
-      ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "text/html")
                       (request (str "/authorize?response_type=code"
@@ -100,80 +85,67 @@
 
                       ;; login window
                       (follow-redirect)
-                      (request-secured "/login"
-                                       :request-method :post
-                                       :params {:username "nioh"
-                                                :password "alamakota"})
+                      (utils/request-secured "/login"
+                                             :request-method :post
+                                             :params {:username (:login user-active)
+                                                      :password "pass"})
 
                       ;; authorization prompt
                       (follow-redirect)
-                      (request-secured "/approve"
-                                       :request-method :post
-                                       :params {:client_id (:id client)
-                                                :response_type "code"
-                                                :redirect_uri redirect-uri})
+                      (utils/request-secured "/approve"
+                                             :request-method :post
+                                             :params {:client_id (:id client)
+                                                      :response_type "code"
+                                                      :redirect_uri redirect-uri})
 
                       ;; having access code received - final request for acess-token
-                      (header "Authorization" (str "Basic " (base64-auth client)))
+                      (header "Authorization" (str "Basic " (utils/base64-auth client)))
                       ((fn [s] (request s "/token"
                                         :request-method :post
                                         :params {:grant_type "authorization_code"
-                                                 :code (extract-access-code s)
+                                                 :code (utils/extract-access-code s)
                                                  :redirect_uri redirect-uri}))))]
-        ;; then
-        (let [{:keys [status body]} (:response state), token (slurp body)]
-          status => 200
-          token => (contains "access_token")
-          token => (contains "expires_in")
-          token => (contains "refresh_token"))))
+
+        (let [{:keys [status body]} (:response state)
+              {:keys [access_token expires_in refresh_token]} (json/parse-string (slurp body) true)]
+
+          status        => 200
+          access_token  => truthy
+          refresh_token => truthy
+          expires_in    => truthy
+
+          ;; authorized request to /users/me should contain user's login
+          (utils/request-authorized (session app) "/users/me" access_token) => (contains (:login user-active)))))
 
 (fact "Client is redirected with error message when tries to get an access-token with undefined scope."
-      (u/purge-users)
+      (let [scope  "profile" ;; scope not defined in cerber-test.edn
+            client (utils/create-test-client scope redirect-uri)
+            state  (-> (session (wrap-defaults oauth-routes api-defaults))
+                       (header "Accept" "text/html")
+                       (request (str "/authorize?response_type=code"
+                                     "&client_id=" (:id client)
+                                     "&scope=" scope
+                                     "&state=" state
+                                     "&redirect_uri=" redirect-uri)))]
 
-      ;; given
-      (u/create-user {:login "nioh" :enabled? true} "alamakota")
-
-      ;; when
-      (let [scope "photo" ;; scope not defined in cerber-test.edn
-            state (-> (session (wrap-defaults oauth-routes api-defaults))
-                      (header "Accept" "text/html")
-                      (request (str "/authorize?response_type=code"
-                                    "&client_id=" (:id client)
-                                    "&scope=" scope
-                                    "&state=" state
-                                    "&redirect_uri=" redirect-uri)))]
-        ;; then
         (let [{:keys [status headers]} (:response state), location (get headers "Location")]
           status => 302
           location => (contains "error=invalid_scope"))))
 
 (fact "Client may provide no scope at all (scope is optional)."
-      (u/purge-users)
+      (let [client (utils/create-test-client "" redirect-uri)
+            state  (-> (session (wrap-defaults oauth-routes api-defaults))
+                       (header "Accept" "text/html")
+                       (request (str "/authorize?response_type=code"
+                                     "&client_id=" (:id client)
+                                     "&state=" state
+                                     "&redirect_uri=" redirect-uri)))]
 
-      ;; given
-      (u/create-user {:login "nioh" :enabled? true} "alamakota")
-
-      ;; when
-      (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
-                      (header "Accept" "text/html")
-                      (request (str "/authorize?response_type=code"
-                                    "&client_id=" (:id client)
-                                    "&scope=" scope
-                                    "&state=" state
-                                    "&redirect_uri=" redirect-uri)))]
-        ;; then
         (let [{:keys [status headers]} (:response state), location (get headers "Location")]
           status => 302
           location =not=> (contains "error=invalid_scope"))))
 
 (fact "Client may receive its token in Implict Grant scenario."
-      (u/purge-users)
-      (s/purge-sessions)
-
-      ;; given
-      (u/create-user {:login "nioh" :enabled? true} "alamakota")
-
-      ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "text/html")
                       (request (str "/authorize?response_type=token"
@@ -184,76 +156,75 @@
 
                       ;; login window
                       (follow-redirect)
-                      (request-secured "/login"
-                                       :request-method :post
-                                       :params {:username "nioh"
-                                                :password "alamakota"})
+                      (utils/request-secured "/login"
+                                             :request-method :post
+                                             :params {:username (:login user-active)
+                                                      :password "pass"})
 
                       ;; response with token
                       (follow-redirect))]
 
-        ;; then
         (let [{:keys [status headers]} (:response state), location (get headers "Location")]
-          status => 302
+
+          status   => 302
           location => (contains "access_token")
           location => (contains "expires_in")
-          location =not=> (contains "refresh_token"))))
+          location =not=> (contains "refresh_token")
+
+          ;; authorized request to /users/me should contain user's login
+          (let [token (second (re-find #"access_token=([^\&]+)" location))
+                login (:login user-active)]
+
+            (utils/request-authorized (session app) "/users/me" token) => (contains login)))))
 
 (fact "Client may receive its token in Resource Owner Password Credentials Grant scenario for enabled user."
-      (u/purge-users)
-
-      ;; given
-      (u/create-user {:login "nioh" :enabled? true} "alamakota")
-
-      ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "application/json")
-                      (header "Authorization" (str "Basic " (base64-auth client)))
+                      (header "Authorization" (str "Basic " (utils/base64-auth client)))
                       (request "/token"
                                :request-method :post
-                               :params {:username "nioh"
-                                        :password "alamakota"
+                               :params {:username (:login user-active)
+                                        :password "pass"
                                         :grant_type "password"}))]
 
-        ;; then
-        (let [{:keys [status body]} (:response state), token (slurp body)]
-          status => 200
-          token => (contains "access_token")
-          token => (contains "expires_in")
-          token => (contains "refresh_token"))))
+        (let [{:keys [status body]} (:response state)
+              {:keys [access_token expires_in refresh_token]} (json/parse-string (slurp body) true)]
+
+          status        => 200
+          access_token  => truthy
+          refresh_token => truthy
+          expires_in    => truthy
+
+          ;; authorized request to /users/me should contain user's login
+          (utils/request-authorized (session app) "/users/me" access_token) => (contains (:login user-active)))))
 
 (fact "Client cannot receive token in Resource Owner Password Credentials Grant scenario for disabled user."
-      (u/purge-users)
-
-      ;; given
-      (u/create-user {:login "niah" :enabled? false} "alamakota")
-
-      ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "application/json")
-                      (header "Authorization" (str "Basic " (base64-auth client)))
+                      (header "Authorization" (str "Basic " (utils/base64-auth client)))
                       (request "/token"
                                :request-method :post
-                               :params {:username "nioh"
-                                        :password "alamakota"
+                               :params {:username (:login user-inactive)
+                                        :password "pass"
                                         :grant_type "password"}))]
 
-        ;; then
         (get-in state [:response :status]) => 401))
 
 (fact "Client may receive its token in Client Credentials Grant."
-
-      ;; when
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "application/json")
-                      (header "Authorization" (str "Basic " (base64-auth client)))
+                      (header "Authorization" (str "Basic " (utils/base64-auth client)))
                       (request "/token"
                                :request-method :post
                                :params {:grant_type "client_credentials"}))]
 
-        ;; then
-        (let [{:keys [status body]} (:response state), token (slurp body)]
-          status => 200
-          token => (contains "access_token")
-          token => (contains "expires_in")
-          token =not=> (contains "refresh_token"))))
+        (let [{:keys [status body]} (:response state)
+              {:keys [access_token expires_in refresh_token]} (json/parse-string (slurp body) true)]
+
+          status        => 200
+          access_token  => truthy
+          refresh_token => falsey
+          expires_in    => truthy
+
+          ;; authorized request to /users/me should not reveal user's info
+          (utils/request-authorized (session app) "/users/me" access_token) => (contains "\"login\":null"))))
