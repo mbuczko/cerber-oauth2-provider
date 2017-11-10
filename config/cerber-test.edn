@@ -5,10 +5,10 @@
               :driver-class "org.h2.Driver"
               :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"}
  :redis-spec {:spec {:host "localhost" :port 6380}}
- :authcodes  {:store :in-memory :valid-for 180}
- :sessions   {:store :in-memory :valid-for 180}
- :tokens     {:store :in-memory :valid-for 180}
- :clients    {:store :in-memory}
- :users      {:store :in-memory}
+ :authcodes  {:store :sql :valid-for 180}
+ :sessions   {:store :sql :valid-for 180}
+ :tokens     {:store :sql :valid-for 180}
+ :clients    {:store :sql}
+ :users      {:store :sql}
  :scopes     {"photo:read" "photo:write"}
  :landing-url "http://localhost/"}
