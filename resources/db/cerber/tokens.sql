@@ -20,11 +20,11 @@ delete from tokens where secret=:secret
 
 -- :name delete-tokens-by-login :! :1
 -- :doc Deletes access token
-delete from tokens where client_id=:client-id and login=:login
+delete from tokens where client_id=:client-id and login=:login and tag=:tag
 
 -- :name delete-tokens-by-client :! :1
 -- :doc Deletes access token
-delete from tokens where client_id=:client-id
+delete from tokens where client_id=:client-id and tag=:tag
 
 -- :name clear-tokens :! :1
 -- :doc Purges tokens table
