@@ -41,6 +41,20 @@
   []
   (random/base32 20))
 
+(defmulti is-before class)
+
+(defmethod is-before org.joda.time.DateTime [date-time]
+  (.isBefore (.toLocalDateTime date-time)
+             (org.joda.time.LocalDateTime/now)))
+
+(defmethod is-before java.time.chrono.ChronoZonedDateTime [date-time]
+  (.isBefore (.toLocalDateTime date-time)
+             (java.time.LocalDateTime/now)))
+
+(defmethod is-before java.sql.Timestamp [date-time]
+  (.isBefore (.toLocalDateTime date-time)
+             (java.time.LocalDateTime/now)))
+
 (defn expired?
   "Returns true if given item (more specifically its :expires-at value)
   is expired or falsey otherwise. Item with no expires-at is non-expirable."
@@ -48,8 +62,7 @@
   [item]
   (let [expires-at (:expires-at item)]
     (and expires-at
-         (.isBefore (.toLocalDateTime expires-at)
-                    (java.time.LocalDateTime/now)))))
+         (is-before expires-at))))
 
 (defn reset-ttl
   "Extends time to live of given item by ttl seconds."
