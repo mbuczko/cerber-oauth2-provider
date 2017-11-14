@@ -32,8 +32,8 @@
     (db/delete-token-by-secret {:secret secret}))
   (revoke-all! [this [client-id tag secret login]]
     (map ->Token (if login
-                   (db/delete-tokens-by-login  {:client-id client-id :login login})
-                   (db/delete-tokens-by-client {:client-id client-id}))))
+      (db/delete-tokens-by-login  {:client-id client-id :login login :tag tag})
+      (db/delete-tokens-by-client {:client-id client-id :tag tag}))))
   (store! [this k token]
     (when (= 1 (db/insert-token token)) token))
   (purge! [this]
@@ -138,7 +138,8 @@
   generated refresh-token for given client/user pair."
 
   [client user scope & [opts]]
-  (let [access-token (create-token :access client user scope)
+  (let [access-token (and (nil? (revoke-by-pattern [(:id client) "access" nil (:login user)]))
+                          (create-token :access client user scope))
         {:keys [client-id secret created-at expires-at login]} access-token
         {:keys [type refresh?] :or {type "Bearer"}} opts]
 
