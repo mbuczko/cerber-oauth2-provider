@@ -1,6 +1,6 @@
 (ns cerber.config
   (:require [cprop.core :as cprop]
-            [cprop.source :refer [from-env from-resource]]
+            [cprop.source :refer [from-env from-resource from-system-props]]
             [failjure.core :as f]
             [mount.core :as mount :refer [defstate]]))
 
@@ -21,8 +21,9 @@
                      :merge [(load-resource (str "cerber-" env ".edn"))]))
 
 (defn init-cerber []
-  (let [envs (from-env)]
-    (load-config (or (:env envs) "local"))))
+  (load-config (or (:env (from-env))
+                   (:env (from-system-props))
+                   "local")))
 
 (defstate app-config
   :start (init-cerber))

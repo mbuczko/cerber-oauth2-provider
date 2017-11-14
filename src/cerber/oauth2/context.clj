@@ -16,7 +16,7 @@
    If it exists it returns a vector of username and password. Returns nil otherwise."
   [req]
   (when-let [auth-string ((req :headers {}) "authorization")]
-    (when-let [basic-token (last (re-find #"^Basic (.*)$" auth-string))]
+    (when-let [^String basic-token (last (re-find #"^Basic (.*)$" auth-string))]
       (when-let [credentials (String. (Base64/decodeBase64 basic-token))]
         (.split credentials ":")))))
 
@@ -41,12 +41,12 @@
 (defn redirect-allowed? [req]
   (f/attempt-all [redirect-uri (get-in req [:params :redirect_uri] error/invalid-request)
                   allowed? (or (client/redirect-uri-valid? (::client req) redirect-uri) error/invalid-redirect-uri)]
-                 (assoc req ::redirect-uri (.replaceAll redirect-uri "/\\z" ""))))
+                 (assoc req ::redirect-uri (.replaceAll ^String redirect-uri "/\\z" ""))))
 
 (defn redirect-valid? [req]
   (f/attempt-all [redirect-uri (get-in req [:params :redirect_uri] error/invalid-request)
                   valid? (or (= redirect-uri (:redirect-uri (::authcode req))) error/invalid-request)]
-                 (assoc req ::redirect-uri (.replaceAll redirect-uri "/\\z" ""))))
+                 (assoc req ::redirect-uri (.replaceAll ^String redirect-uri "/\\z" ""))))
 
 (defn authcode-valid? [req]
   (f/attempt-all [code (get-in req [:params :code] error/invalid-request)
@@ -64,7 +64,7 @@
 
 (defn bearer-valid? [req]
   (f/attempt-all [authorization (get-in req [:headers "authorization"] error/unauthorized)
-                  bearer (or (second (.split authorization  " ")) error/unauthorized)
+                  bearer (or (second (.split ^String authorization  " ")) error/unauthorized)
                   token  (or (token/find-access-token bearer) error/invalid-token)
                   valid? (or (not (expired? token)) error/invalid-token)]
                  (assoc req ::user (user/map->User {:id (:user-id token)
@@ -99,7 +99,7 @@
     (when-let [login (:login session)]
       (assoc req ::user {:login login :permissions (:permissions session)}))))
 
-(defn user-password-valid? [req authenticator]
+(defn user-password-valid? [req ^cerber.oauth2.authenticator.Authenticator authenticator]
   (f/attempt-all [username (get-in req [:params :username] error/invalid-request)
                   password (get-in req [:params :password] error/invalid-request)
                   user     (or (.authenticate authenticator username password) error/unauthorized)]

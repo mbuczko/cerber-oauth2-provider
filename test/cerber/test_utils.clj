@@ -6,7 +6,8 @@
             [peridot.core :refer [request header]]
             [clojure.data.codec.base64 :as b64]))
 
-(def system (system/go))
+(defonce test-system
+  (system/go))
 
 ;; some additional midje checkers
 

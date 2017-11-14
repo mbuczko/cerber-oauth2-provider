@@ -8,7 +8,6 @@
                  [mbuczko/boot-flyway "0.1.1" :scope "test"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
                  [zilti/boot-midje "0.2.2-SNAPSHOT" :scope "test"]
-                 [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
                  [com.h2database/h2 "1.4.196" :scope "test"]
                  [mysql/mysql-connector-java "6.0.6" :scope "test"]
                  [org.postgresql/postgresql "42.1.4" :scope "test"]
@@ -56,11 +55,7 @@
 (deftask tests
   "Environment for test-driven development."
   []
-
-  ;; start local redis server
-  (-> (redis.embedded.RedisServer. (Integer. 6380))
-      (.start))
-
+  (System/setProperty "env" "test")
   (comp (watch)
         (midje)
         (speak)))
@@ -69,10 +64,7 @@
   "Applies pending migrations."
   [j jdbc-url URL     str  "the jdbc url"
    a action   ACTION  str  "the action to perform (info, clean or migrate by default)"]
-  (cerber.migration/migrate jdbc-url (condp = action
-                                       "clean" "-c"
-                                       "info"  "-i"
-                                       "-m")))
+  (cerber.migration/migrate jdbc-url action))
 
 (task-options! midje {:test-paths #{"test"}}
                pom   {:project 'cerber/cerber-oauth2-provider

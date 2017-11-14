@@ -80,18 +80,34 @@ Words of explanation:
 ### Scopes
 
 Scopes are configured as a set of unique strings like ```"user"```, ```"photos:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
-For example one can define scopes as ```#{"photos" "photos:read" "photos:write"}``` which gives any OAuth2 client (if configured so) a privilege to ask for
-_read_ and _write_ permission to imaginary photos resoure and a _photos_ permission which includes both _photos:read_ and _photos:write_. In other words, _photos_ is
-a scope which groups all other scopes beginning with _photos:_.
+For example one can define scopes as ```#{"photos" "photos:read" "photos:write"}``` which grants _read_ and _write_ permission to imaginary photos resoure and
+a _photos_ permission which is a parent of _photos:read_ and _photos:write_ and implicitly includes both permissions.
 
 Cerber also normalizes scope requests, so when client asks for ```#{"photos" "photos:read"}``` scopes, it's been simplified to ```#{"photos"}``` only.
 
-Also, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec. On the other hand if any scopes have been defined,
-all client requests are validated against configuration.
+Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec. 
 
-### Predefined users and clients
+### Configuration files
 
-It is possible to predefine users as well as clients in configuration file with ```:defined``` vector of maps as following:
+When Cerber's system boots up, first it tries to find and load default edn-based confgurations which are simply resources available within a classpath.
+Specifically, system searches for ```cerber.edn``` (described above) and merges it with optional ```cerber-ENV.edn```. Latter one is used to
+override default options (eg. stores definitions) based on environment controlled by ```ENV``` variable. When no environmental variable ENV is set,
+it immediately defaults to ```local```, so ```cerber-local.edn``` is loaded (if found) and merged with ```cerber.edn```.
+
+### HTML resources
+
+To complete some of OAuth2-flow actions, like web based authentication or access-grant dialog, Cerber tries to load HTML templates, fill them in
+and present to the end-user. In similar way how it goes with configuration, Cerber looks for 2 HTML templates:
+
+ * [forms/login.html](./config/templates/forms/login.html) - used to render authentication form.
+ * [forms/authorize.html](./config/templates/forms/authorize.html) - used to render user a form where user is asked to grant a permission.
+
+### Users and clients
+
+Cerber has its own abstraction of User ([resource owner](https://tools.ietf.org/html/rfc6749#section-1.1)) and Client (application which requests on behalf of User).
+Instances of both can be predefined in configuration or created in runtime using API functions. 
+
+To configure users and/or clients as a part of environment, it's enough to list them in ```:defined``` vector in corresponding store:
 
 ``` clojure
 {:users   {:store :in-memory
@@ -109,28 +125,6 @@ It is possible to predefine users as well as clients in configuration file with 
                       :grants ["authorization_code" "password"]
                       :scopes ["photos:read" "photos:write"]
                       :approved? true}]}}
-```
-
-### Configuration files
-
-When Cerber's system boots up, first it tries to find and load default edn-based confgurations which are simply resources available within a classpath.
-Specifically, system searches for ```cerber.edn``` (described above) and merges it with optional ```cerber-ENV.edn```. Latter one is used to
-override default options (eg. stores definitions) based on environment controlled by ```ENV``` variable. When no environmental variable ENV is set,
-it immediately defaults to ```local```, so ```cerber-local.edn``` is loaded (if found) and merged with ```cerber.edn```.
-
-### HTML resources
-
-To complete some of OAuth2-flow actions, like web based authentication or access-grant dialog, Cerber tries to load HTML templates, fill them in
-and present to the end-user. In similar way how it goes with configuration, Cerber looks for 2 HTML templates:
-
- * [forms/login.html](./config/templates/forms/login.html) - used to render authentication form.
- * [forms/authorize.html](./config/templates/forms/authorize.html) - used to render user a form where user is asked to grant a permission.
-
-Having all the bits and pieces adjusted, it's time to run _mount_ machinery:
-
-``` clojure
-(require '[mount.core :as mount])
-(mount/start)
 ```
 
 ## Architecture
@@ -184,33 +178,39 @@ To recall, any change in default /login, /approve or /refuse paths should be ref
 Having OAuth Authentication Server paths set up, next step is to configure restricted resources:
 
 ``` clojure
-(defroutes restricted-routes
-  (GET "/user/info" [] user-info-handler))
-```
-
-Let's define ```user-info-handler``` to return user's details:
-
-``` clojure
 (require '[cerber.oauth2.context :as ctx])
 
-(defn user-info-handler [req]
-  {:status 200
-   :body (::ctx/user req)})
+(defroutes restricted-routes
+  (GET "/user/info" [] (fn [req] {:status 200
+                                  :body (::ctx/user req)})))
 ```
 
-Almost there. To verify tokens as an OAuth Resource Server Cerber bases on a single ring wrapper - ```handlers/wrap-authorized```.
-It's responsible for looking for a token in HTTP ```Authorization``` header and checking whether token matches one issued by Authorization Server.
+Almost there. One missing part not mentioned yet is authorization and the way how token is validated.
+
+All this magic happens inside ```handlers/wrap-authorized``` handler which scans ```Authorization``` header for a token issued by Authorization Server.
+Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
 
 ``` clojure
-(require '[compojure.core :refer [routes wrap-routes]
+(require '[org.httpkit.server :as web]
+          [compojure.core :refer [routes wrap-routes]
           [ring.middleware.defaults :refer [api-defaults wrap-defaults]]])
 
-(def app
-  (wrap-defaults
-   (routes
-    oauth-routes
-    (wrap-routes restricted-routes handlers/wrap-authorized))
-   api-defaults))
+(def api-routes
+  (routes oauth-routes
+          (wrap-routes restricted-routes handlers/wrap-authorized))
+
+;; final handler passed to HTTP server
+(def app-handler (wrap-defaults api-routes api-defaults))
+
+;; for HTTP-Kit
+(web/run-server app-handler {:host "localhost" :port 8080}})
+```
+
+Having all the bits and pieces adjusted, it's time to run _mount_ machinery:
+
+``` clojure
+(require '[mount.core :as mount])
+(mount/start)
 ```
 
 ## API
@@ -271,18 +271,43 @@ Revokes all access- and refresh-tokens bound with given client (and optional use
 
 ## FAQ
 
-#### I've chosen SQL engine for some of my stores. How to determine what the database schema is?
+#### I've chosen SQL engine for some of my stores. How to apply database schema?
 
-Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema. All migrations live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations). You may either apply them by hand or use task which will migrate schema changes for supported SQL databases:
+Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema.
+All migrations live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations). 
+You may either apply them by hand (not recommended) or use `cerber.migration/migrate` which applies missing changes on database of your choice:
 
-``` shell
+``` clojure
 
-$ boot -d cerber/cerber-oauth2-provider migrate -j <jdbc-url>
+# for MySQL
+cerber.migration> (migrate "jdbc:mysql://localhost:3306/template1?user=root&password=secret")
 
-$ boot -d cerber/cerber-oauth2-provider migrate -j "jdbc:mysql://localhost:3306/template1?user=root&password=secret"
+# for PostgreSQL
+cerber.migration> (migrate "jdbc:postgresql://localhost:5432/template1?user=postgres&password=secret")
 
+# use optional 2nd argument "info" to display migration status
+cerber.migration> (migrate "jdbc:postgresql://localhost:5432/template1?user=postgres&password=secret" "info")
+
++----------------+-------------+---------------------+---------+
+| Version        | Description | Installed on        | State   |
++----------------+-------------+---------------------+---------+
+| 20161007012907 | init schema | 2017-11-07 23:33:22 | Success |
++----------------+-------------+---------------------+---------+
 ```
 
 ### What SQL databases are supported?
 
 Currently MySQL and Postgres are supported out of the box and recognized based on jdbc-url.
+
+## Development
+
+Cerber can be comfortably developed in [TDD](https://en.wikipedia.org/wiki/Test-driven_development) mode. Underlaying [midje](https://github.com/marick/Midje) testing framework has been configured to watch for changes and run automatically as a boot task:
+
+``` shell
+$ boot tests
+```
+
+Important thing is that tests go through all possible store types (including sql and redis) which means a running redis instance is expected.
+For sql-based stores an HSQL database is used so no other running SQL databases are required.
+
+As usual, PRs nicely welcomed :) Be sure first that your changes pass the tests or simply add your own tests if you found no ones covering your code yet.

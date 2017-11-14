@@ -6,7 +6,7 @@
   "Returns nil if scopes contain given scope itself or any of its parents.
    Returns scope otherwise."
 
-  [scopes scope]
+  [scopes ^String scope]
   (let [v (.split scope ":")]
     (loop [s v]
       (if (empty? s)

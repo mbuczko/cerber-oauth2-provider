@@ -19,7 +19,7 @@
 
   [f interval]
   (let [runnable (proxy [Runnable] [] (run [] (f {:date (now)})))]
-    (.scheduleAtFixedRate scheduler runnable 0 interval java.util.concurrent.TimeUnit/MILLISECONDS)))
+    (.scheduleAtFixedRate scheduler ^Runnable runnable 0 interval java.util.concurrent.TimeUnit/MILLISECONDS)))
 
 (defn with-periodic-fn
   "Initializes periodically run function and associates it to given store."
@@ -31,7 +31,7 @@
   "Stops periodically run funciton attached to store."
 
   [store]
-  (when-let [periodic (:periodic store)]
+  (when-let [^java.util.concurrent.ScheduledFuture periodic (:periodic store)]
     (.cancel periodic false)))
 
 
@@ -46,7 +46,7 @@
   is expired or falsey otherwise. Item with no expires-at is non-expirable."
 
   [item]
-  (let [expires-at (:expires-at item)]
+  (let [^java.sql.Timestamp expires-at (:expires-at item)]
     (and expires-at
          (.isBefore (.toLocalDateTime expires-at)
                     (java.time.LocalDateTime/now)))))
@@ -61,7 +61,7 @@
   "Decomposes string into vector of space separated substrings.
   Returns empty vector if string was either null or empty."
 
-  [str]
+  [^String str]
   (or (and str
            (> (.length str) 0)
            (str/split str #" "))
@@ -76,7 +76,7 @@
 (defn expires->ttl
   "Returns number of seconds between now and expires-at."
 
-  [expires-at]
+  [^java.sql.Timestamp expires-at]
   (when expires-at
     (.between (java.time.temporal.ChronoUnit/SECONDS)
               (java.time.LocalDateTime/now)

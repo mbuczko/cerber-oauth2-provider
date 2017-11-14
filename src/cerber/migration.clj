@@ -13,5 +13,8 @@
     (or (get opts db-type)
         (throw (Exception. "Unsupported database. Check jdbc-url.")))))
 
-(defn migrate [jdbc-url action]
-  (apply flyway (conj (db-opts jdbc-url) jdbc-url (or action "-m"))))
+(defn migrate [jdbc-url & [action]]
+  (apply flyway (conj (db-opts jdbc-url) jdbc-url (condp = action
+                                                    "clean" "-c"
+                                                    "info"  "-i"
+                                                    "-m"))))
