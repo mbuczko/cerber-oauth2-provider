@@ -105,7 +105,7 @@
                   user     (or (.authenticate authenticator username password) error/unauthorized)]
                  (assoc req ::user user)))
 
-(defn request-auto-approved? [req]
+(defn request-approved? [req]
   (if (or (::approved? req)
           (:approved? (::client req)))
     req

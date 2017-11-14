@@ -25,7 +25,7 @@
                             (ctx/state-allowed?)
                             (ctx/scopes-allowed? allowed-scopes)
                             (ctx/user-authenticated?)
-                            (ctx/request-auto-approved?))]
+                            (ctx/request-approved?))]
     (if (f/failed? result)
       result
       (response/redirect-with-code result))))

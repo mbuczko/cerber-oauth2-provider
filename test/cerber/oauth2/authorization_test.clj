@@ -14,7 +14,8 @@
 (def scope "photo:read")
 (def state "123ABC")
 
-(def client (utils/create-test-client scope redirect-uri))
+(def client-unapproved (utils/create-test-client scope redirect-uri false))
+(def client-approved   (utils/create-test-client scope redirect-uri true))
 
 (def user-active   (utils/create-test-user "pass"))
 (def user-inactive (utils/create-test-user {:login (utils/random-string 12)
@@ -74,11 +75,11 @@
         (get-in state [:response :status]) => 200
         (get-in state [:response :body]) => (contains "failed")))
 
-(fact "Client may receive its token in Authorization Code Grant scenario."
+(fact "Unapproved client may receive its token in Authorization Code Grant scenario. Needs user's approval."
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "text/html")
                       (request (str "/authorize?response_type=code"
-                                    "&client_id=" (:id client)
+                                    "&client_id=" (:id client-unapproved)
                                     "&scope=" scope
                                     "&state=" state
                                     "&redirect_uri=" redirect-uri))
@@ -94,12 +95,49 @@
                       (follow-redirect)
                       (utils/request-secured "/approve"
                                              :request-method :post
-                                             :params {:client_id (:id client)
+                                             :params {:client_id (:id client-unapproved)
                                                       :response_type "code"
                                                       :redirect_uri redirect-uri})
 
                       ;; having access code received - final request for acess-token
-                      (header "Authorization" (str "Basic " (utils/base64-auth client)))
+                      (header "Authorization" (str "Basic " (utils/base64-auth client-unapproved)))
+                      ((fn [s] (request s "/token"
+                                        :request-method :post
+                                        :params {:grant_type "authorization_code"
+                                                 :code (utils/extract-access-code s)
+                                                 :redirect_uri redirect-uri}))))]
+
+        (let [{:keys [status body]} (:response state)
+              {:keys [access_token expires_in refresh_token]} (json/parse-string (slurp body) true)]
+
+          status        => 200
+          access_token  => truthy
+          refresh_token => truthy
+          expires_in    => truthy
+
+          ;; authorized request to /users/me should contain user's login
+          (utils/request-authorized (session app) "/users/me" access_token) => (contains (:login user-active)))))
+
+(fact "Approved client may receive its token in Authorization Code Grant scenario. Doesn't need user's approval."
+      (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
+                      (header "Accept" "text/html")
+                      (request (str "/authorize?response_type=code"
+                                    "&client_id=" (:id client-approved)
+                                    "&scope=" scope
+                                    "&state=" state
+                                    "&redirect_uri=" redirect-uri))
+
+                      ;; login window
+                      (follow-redirect)
+                      (utils/request-secured "/login"
+                                             :request-method :post
+                                             :params {:username (:login user-active)
+                                                      :password "pass"})
+                      ;; follow authorization link
+                      (follow-redirect)
+
+                      ;; having access code received - final request for acess-token
+                      (header "Authorization" (str "Basic " (utils/base64-auth client-approved)))
                       ((fn [s] (request s "/token"
                                         :request-method :post
                                         :params {:grant_type "authorization_code"
@@ -123,7 +161,7 @@
             state  (-> (session (wrap-defaults oauth-routes api-defaults))
                        (header "Accept" "text/html")
                        (request (str "/authorize?response_type=code"
-                                     "&client_id=" (:id client)
+                                     "&client_id=" (:id client-unapproved)
                                      "&scope=" scope
                                      "&state=" state
                                      "&redirect_uri=" redirect-uri)))]
@@ -137,7 +175,7 @@
             state  (-> (session (wrap-defaults oauth-routes api-defaults))
                        (header "Accept" "text/html")
                        (request (str "/authorize?response_type=code"
-                                     "&client_id=" (:id client)
+                                     "&client_id=" (:id client-unapproved)
                                      "&state=" state
                                      "&redirect_uri=" redirect-uri)))]
 
@@ -149,7 +187,7 @@
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "text/html")
                       (request (str "/authorize?response_type=token"
-                                    "&client_id=" (:id client)
+                                    "&client_id=" (:id client-unapproved)
                                     "&scope=" scope
                                     "&state=" state
                                     "&redirect_uri=" redirect-uri))
@@ -180,7 +218,7 @@
 (fact "Client may receive its token in Resource Owner Password Credentials Grant scenario for enabled user."
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "application/json")
-                      (header "Authorization" (str "Basic " (utils/base64-auth client)))
+                      (header "Authorization" (str "Basic " (utils/base64-auth client-unapproved)))
                       (request "/token"
                                :request-method :post
                                :params {:username (:login user-active)
@@ -201,7 +239,7 @@
 (fact "Client cannot receive token in Resource Owner Password Credentials Grant scenario for disabled user."
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "application/json")
-                      (header "Authorization" (str "Basic " (utils/base64-auth client)))
+                      (header "Authorization" (str "Basic " (utils/base64-auth client-unapproved)))
                       (request "/token"
                                :request-method :post
                                :params {:username (:login user-inactive)
@@ -213,7 +251,7 @@
 (fact "Client may receive its token in Client Credentials Grant."
       (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
                       (header "Accept" "application/json")
-                      (header "Authorization" (str "Basic " (utils/base64-auth client)))
+                      (header "Authorization" (str "Basic " (utils/base64-auth client-unapproved)))
                       (request "/token"
                                :request-method :post
                                :params {:grant_type "client_credentials"}))]

@@ -55,5 +55,9 @@
   ([user password]
    (u/create-user (or user {:login (random-string 12)}) password)))
 
-(defn create-test-client [scope redirect-uri & [id secret]]
-  (c/create-client "test client" [redirect-uri] ["authorization_code" "token" "password" "client_credentials"] [scope] false id secret))
+(defn create-test-client
+  "Creates test client - unapproved by default."
+  ([scope redirect-uri]
+   (create-test-client scope redirect-uri false))
+  ([scope redirect-uri approved?]
+   (c/create-client "test client" [redirect-uri] ["authorization_code" "token" "password" "client_credentials"] [scope] approved?)))
