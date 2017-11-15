@@ -4,9 +4,7 @@
 
 [Architecture][arch] | [Usage][use] | [API][api] | [FAQ][faq] | [Development][dev]
 
-This is a work-in-progress of Clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
-
-Currently covers all scenarios described by spec:
+This is a work-in-progress of Clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749). Currently covers all scenarios described by spec:
 
 * [Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-4.1)
 * [Implict Grant](https://tools.ietf.org/html/rfc6749#section-4.2)
@@ -100,7 +98,7 @@ Note, it's perfectly valid to have an empty set of scopes as they are optional i
 #### Users and clients
 
 Cerber has its own abstraction of User ([resource owner](https://tools.ietf.org/html/rfc6749#section-1.1)) and Client (application which requests on behalf of User).
-Instances of both can be predefined in configuration or created in runtime using [api] functions. 
+Instances of both can be predefined in configuration or created in runtime using [API] functions. 
 
 To configure users and/or clients as a part of environment, it's enough to list them in ```:defined``` vector in corresponding store:
 
