@@ -2,7 +2,7 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/cerber/cerber-oauth2-provider.svg)](https://clojars.org/cerber/cerber-oauth2-provider)
 
-[Architecture][#architecture] | [Usage][#usage] | [API][#api] | [FAQ][#faq] | [Development][#development]
+[Architecture][arch] | [Usage][use] | [API][api] | [FAQ][faq] | [Development][dev]
 
 This is a work-in-progress of Clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
 
@@ -100,7 +100,7 @@ Note, it's perfectly valid to have an empty set of scopes as they are optional i
 #### Users and clients
 
 Cerber has its own abstraction of User ([resource owner](https://tools.ietf.org/html/rfc6749#section-1.1)) and Client (application which requests on behalf of User).
-Instances of both can be predefined in configuration or created in runtime using [API] functions. 
+Instances of both can be predefined in configuration or created in runtime using [api] functions. 
 
 To configure users and/or clients as a part of environment, it's enough to list them in ```:defined``` vector in corresponding store:
 
@@ -343,3 +343,9 @@ Important thing is that tests go through all possible store types (including sql
 For sql-based stores an HSQL database is used so no other running SQL databases are required.
 
 As usual, PRs nicely welcomed :) Be sure first that your changes pass the tests or simply add your own tests if you found no ones covering your code yet.
+
+[arch]: #architecture
+[use]: #usage
+[api]: #api
+[faq]: #faq
+[dev]: #development
