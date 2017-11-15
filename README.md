@@ -2,7 +2,7 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/cerber/cerber-oauth2-provider.svg)](https://clojars.org/cerber/cerber-oauth2-provider)
 
-[Architecture][##architecture] | [Usage][##usage] | [API][##api] | [FAQ][##faq] | [Development][##development]
+[Architecture][#architecture] | [Usage][#usage] | [API][#api] | [FAQ][#faq] | [Development][#development]
 
 This is a work-in-progress of Clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
 
