@@ -1,4 +1,4 @@
-# cerber / OAuth2 provider
+# Cerber - OAuth2 Provider
 
 [![Clojars Project](https://img.shields.io/clojars/v/cerber/cerber-oauth2-provider.svg)](https://clojars.org/cerber/cerber-oauth2-provider)
 
