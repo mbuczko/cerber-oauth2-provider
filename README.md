@@ -234,7 +234,7 @@ API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to
 
 ```(create-client [info redirects & [grants scopes approved?]])```
 
-used to create new OAuth client, where:
+Used to create new OAuth client, where:
 - info is a non-validated info string (typically client's app name or URL to client's homepage)
 - redirects is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
 - grants is an optional vector of allowed grants: "authorization_code", "token", "password" or "client_credentials". if nil - all grants are allowed.
@@ -264,6 +264,26 @@ Looks up for client with given identifier.
 ```(delete-client [client])```
 
 Removes client from store. Note that together with client all its access- and refresh-tokens are revoked as well.
+
+### users
+
+```(create-user [login name email password roles permissions enabled?])```
+
+Creates new user with given login, descriptive name, user's email, password (stored as hash), roles and permissions.
+```enabled?``` argument decides whether users is enabled by default (can authenticate) or not.
+
+```(find-user [login])```
+
+Looks up for a user with given login.
+
+```(delete-user [login])```
+
+Removes from store user with given login.
+
+```(modify-user-status [login enabled?])```
+
+Decides whether to enable or disable user with given login.
+
 
 ### tokens
 

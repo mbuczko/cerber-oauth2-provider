@@ -1,6 +1,7 @@
 (ns cerber.oauth2.core
   (:require [cerber.stores.client :as client]
-            [cerber.stores.token :as token]))
+            [cerber.stores.token :as token]
+            [cerber.stores.user :as user]))
 
 ;; tokens
 
@@ -37,4 +38,32 @@
 
 (defn delete-client
   [client]
-  (client/revoke-client (:id client)))
+  (= 1 (client/revoke-client (:id client))))
+
+;; users
+
+(defn find-user
+  [login]
+  (user/find-user login))
+
+(defn create-user
+  [login name email password roles permissions enabled?]
+  (user/create-user (user/map->User {:login login
+                                     :name  name
+                                     :email email
+                                     :enabled? enabled?})
+                    password
+                    roles
+                    permissions))
+
+(defn delete-user
+  [login]
+  (= 1 (user/revoke-user login)))
+
+(defn modify-user-status
+  [login enabled?]
+  (when-let [user (find-user login)]
+    (if enabled?
+      (user/enable-user user)
+      (user/disable-user user))
+    (assoc user :enabled? enabled?)))
