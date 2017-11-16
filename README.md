@@ -26,7 +26,7 @@ _(todo)_ introduce JWT tokens
 
 ### Stores
 
-_Store_ is a base abstraction of storage which, through protocol, exposes simple API to read and write entities (user, client, session, token or authentication code) that all the logic operates on.
+_Store_ is a base abstraction of storage which, through protocol, exposes simple API to read and write entities (user, client, session, token or authorization code) that all the logic operates on.
 Cerber stands on a shoulders of 5 stores:
 
 * users - keeps users details (along with encoded password)
@@ -281,7 +281,7 @@ Returns list of non-expirable refresh-tokens generated for clients operating on 
 
 Revokes all access- and refresh-tokens bound with given client (and optional user's login).
 
-### Errors
+### errors
 
 Any errors returned in a response body are formed according to specification as following json:
 
