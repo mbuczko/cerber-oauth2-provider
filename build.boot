@@ -3,7 +3,7 @@
  :resource-paths #{"resources"}
  :directories    #{"config"}
  :dependencies '[[org.clojure/clojure "1.8.0" :scope "provided"]
-                 [com.taoensso/carmine "2.16.0"]
+                 [com.taoensso/carmine "2.16.0" :scope "test"]
                  [org.mindrot/jbcrypt "0.4"]
                  [mbuczko/boot-flyway "0.1.1" :scope "test"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
