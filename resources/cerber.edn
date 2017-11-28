@@ -8,4 +8,8 @@
  :clients     {:store :in-memory}
  :endpoints   {:authentication "/login"
                :client-approve "/approve"
-               :client-refuse  "/refuse"}}
+               :client-refuse  "/refuse"}
+
+ ;; default scope to role/permissions mapping
+ :scope->roles "client/default"
+ :scope->permisssions #{}}

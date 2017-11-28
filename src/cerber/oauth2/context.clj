@@ -67,10 +67,11 @@
                   bearer (or (second (.split ^String authorization  " ")) error/unauthorized)
                   token  (or (token/find-access-token bearer) error/invalid-token)
                   valid? (or (not (expired? token)) error/invalid-token)]
-                 (assoc req ::user (user/map->User {:id (:user-id token)
-                                                    :login (:login token)
-                                                    :roles nil
-                                                    :permissions (:scope token)}))))
+                 (let [scope (:scope token)]
+                   (assoc req ::user (user/map->User {:id (:user-id token)
+                                                      :login (:login token)
+                                                      :roles (scopes/scope->roles scope)
+                                                      :permissions (scopes/scope->permissions scope)})))))
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]

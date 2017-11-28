@@ -1,6 +1,26 @@
 (ns cerber.oauth2.scopes
-  (:require [cerber.helpers :refer [str->vec]]
+  (:require [cerber.config :refer [app-config]]
+            [cerber.helpers :refer [str->vec]]
             [clojure.string :as str]))
+
+(defn ^:private defined-fn? [sym]
+  (when-let [dfn (and (symbol? sym) (resolve sym))]
+    (and (fn? dfn) dfn)))
+
+(defn ^:private mapper-fn [sym arg]
+  (if (defined-fn? sym)
+    (sym arg)
+    (if (string? sym)
+      (hash-set sym)
+      (when (set? sym) sym))))
+
+(defn scope->roles [scope]
+  (mapper-fn (:scope->roles app-config)
+             (str->vec scope)))
+
+(defn scope->permissions [scope]
+  (mapper-fn (:scope->permisssions app-config)
+             (str->vec scope)))
 
 (defn distinct-scope
   "Returns nil if scopes contain given scope itself or any of its parents.

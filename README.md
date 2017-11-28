@@ -87,11 +87,11 @@ Words of explanation:
 
 #### Scopes
 
-Scopes are configured as a set of unique strings like ```"user"```, ```"photos:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
-For example one can define scopes as ```#{"photos" "photos:read" "photos:write"}``` which grants _read_ and _write_ permission to imaginary photos resoure and
-a _photos_ permission which is a parent of _photos:read_ and _photos:write_ and implicitly includes both permissions.
+Scopes are configured as a set of unique strings like ```"user"```, ```"photo:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
+For example one can define scopes as ```#{"photo" "photo:read" "photo:write"}``` which grants _read_ and _write_ permission to imaginary photo resoure and
+a _photo_ permission which is a parent of _photo:read_ and _photo:write_ and implicitly includes both permissions.
 
-Cerber also normalizes scope requests, so when client asks for ```#{"photos" "photos:read"}``` scopes, it's been simplified to ```#{"photos"}``` only.
+Cerber also normalizes scope requests, so when client asks for ```#{"photo" "photo:read"}``` scopes, it's been simplified to ```#{"photo"}``` only.
 
 Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec. 
 
@@ -116,7 +116,7 @@ To configure users and/or clients as a part of environment, it's enough to list 
                       :info "Default client"
                       :redirects ["http://localhost"]
                       :grants ["authorization_code" "password"]
-                      :scopes ["photos:read" "photos:write"]
+                      :scopes ["photo:read" "photo:write"]
                       :approved? true}]}}
 ```
 
@@ -249,7 +249,7 @@ Example:
     (c/create-client "http://defunkt.pl"
                      ["http://defunkt.pl/callback"]
                      ["authorization_code" "password"]
-                     ["photos:read" "photos:list"]
+                     ["photo:read" "photo:list"]
                      true)
 ```
 
