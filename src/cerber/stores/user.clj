@@ -27,7 +27,7 @@
   (purge! [this]
     (db/clear-users)))
 
-(defmulti create-user-store identity)
+(defmulti ^:no-doc create-user-store identity)
 
 (defmacro with-user-store
   "Changes default binding to default users store."
@@ -37,7 +37,7 @@
 (defstate ^:dynamic *user-store*
   :start (create-user-store (-> app-config :users :store)))
 
-(defstate defined-users
+(defstate ^:no-doc defined-users
   :start (init-users (-> app-config :users :defined)))
 
 (defmethod create-user-store :in-memory [_]
@@ -119,3 +119,5 @@
     (-> result
         (assoc  :enabled? enabled :created-at created_at :modified-at modified_at :activated-at activated_at :blocked-at blocked_at)
         (dissoc :enabled :created_at :modified_at :confirmed_at :activated_at :blocked_at))))
+
+(alter-meta! #'map->SqlUserStore assoc :private true)

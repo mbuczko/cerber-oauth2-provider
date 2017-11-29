@@ -270,7 +270,7 @@ Removes client from store. Note that together with client all its access- and re
 ```(create-user [login name email password roles permissions enabled?])```
 
 Creates new user with given login, descriptive name, user's email, password (stored as hash), roles and permissions.
-```enabled?``` argument decides whether users is enabled by default (can authenticate) or not.
+```enabled?``` argument indicates whether user should be enabled by default (to be able to authenticate) or not.
 
 ```(find-user [login])```
 

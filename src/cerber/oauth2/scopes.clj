@@ -3,28 +3,20 @@
             [cerber.helpers :refer [str->vec]]
             [clojure.string :as str]))
 
-(defn ^:private defined-fn? [sym]
+(defn- defined-fn? [sym]
   (when-let [dfn (and (symbol? sym) (resolve sym))]
     (and (fn? dfn) dfn)))
 
-(defn ^:private mapper-fn [sym arg]
+(defn- mapper-fn [sym arg]
   (if (defined-fn? sym)
     (sym arg)
     (if (string? sym)
       (hash-set sym)
       (when (set? sym) sym))))
 
-(defn scope->roles [scope]
-  (mapper-fn (:scope->roles app-config)
-             (str->vec scope)))
-
-(defn scope->permissions [scope]
-  (mapper-fn (:scope->permisssions app-config)
-             (str->vec scope)))
-
-(defn distinct-scope
-  "Returns nil if scopes contain given scope itself or any of its parents.
-   Returns scope otherwise."
+(defn- distinct-scope
+  "Returns falsey if scopes contain given scope or any of its parents.
+  Returns scope otherwise."
 
   [scopes ^String scope]
   (let [v (.split scope ":")]
@@ -33,6 +25,14 @@
         scope
         (when-not (contains? scopes (str/join ":" s))
           (recur (drop-last s)))))))
+
+(defn scope->roles [scope]
+  (mapper-fn (:scope->roles app-config)
+             (str->vec scope)))
+
+(defn scope->permissions [scope]
+  (mapper-fn (:scope->permisssions app-config)
+             (str->vec scope)))
 
 (defn normalize-scope
   "Normalizes scope string by removing duplicated and overlapping scopes."
