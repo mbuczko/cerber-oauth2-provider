@@ -9,7 +9,13 @@
             [failjure.core :as f])
   (:import org.apache.commons.codec.binary.Base64))
 
-(def state-pattern #"\p{Alnum}+")
+;; default client roles
+(def ^:const client-roles #{"client/default"})
+
+;; default client permissions
+(def ^:const client-permissions #{})
+
+(def ^:const state-pattern #"\p{Alnum}+")
 
 (defn basic-authentication-credentials
   "Decodes basic authentication credentials.
@@ -70,8 +76,8 @@
                  (let [scope (:scope token)]
                    (assoc req ::user (user/map->User {:id (:user-id token)
                                                       :login (:login token)
-                                                      :roles (scopes/scope->roles scope)
-                                                      :permissions (scopes/scope->permissions scope)})))))
+                                                      :roles client-roles
+                                                      :permissions client-permissions})))))
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
