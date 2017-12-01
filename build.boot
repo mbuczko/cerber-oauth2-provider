@@ -3,7 +3,7 @@
  :resource-paths #{"resources"}
  :directories    #{"config"}
  :dependencies '[[org.clojure/clojure "1.8.0" :scope "provided"]
-                 [com.taoensso/carmine "2.16.0" :scope "test"]
+                 [com.taoensso/carmine "2.16.0"]
                  [org.mindrot/jbcrypt "0.4"]
                  [mbuczko/boot-flyway "0.1.1" :scope "test"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
@@ -27,7 +27,7 @@
                  [ring-middleware-format "0.7.2"]
                  [digest "1.4.6"]])
 
-(def +version+ "0.2.0")
+(def +version+ "0.3.0")
 
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
