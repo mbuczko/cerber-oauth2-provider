@@ -1,6 +1,6 @@
 (ns cerber.oauth2.scopes
   (:require [cerber.config :refer [app-config]]
-            [cerber.helpers :refer [str->vec]]
+            [cerber.helpers :refer [str->coll]]
             [clojure.string :as str]))
 
 (defn- distinct-scope
@@ -20,7 +20,7 @@
 
   [scope]
   (->> scope
-       (str->vec)
+       (str->coll [])
        (sort-by #(count (re-seq #":" %)))
        (reduce (fn [reduced scope]
                  (if-let [s (distinct-scope reduced scope)]

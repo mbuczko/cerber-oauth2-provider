@@ -104,8 +104,14 @@
   "Initializes configured users."
   [users]
   (f/try*
-   (reduce (fn [reduced {:keys [login email name enabled? password]}]
-             (conj reduced (create-user (map->User {:login login :email email :name name :enabled? enabled?}) password)))
+   (reduce (fn [reduced {:keys [login email name permissions roles enabled? password]}]
+             (conj reduced (create-user (map->User {:login login
+                                                    :email email
+                                                    :name name
+                                                    :enabled? enabled?})
+                                        password
+                                        roles
+                                        permissions)))
            {}
            users)))
 
@@ -115,9 +121,11 @@
   (and candidate hashed (BCrypt/checkpw candidate hashed)))
 
 (defn ->map [result]
-  (when-let [{:keys [created_at modified_at activated_at blocked_at enabled]} result]
+  (when-let [{:keys [roles permissions created_at modified_at activated_at blocked_at enabled]} result]
     (-> result
         (assoc  :enabled? enabled :created-at created_at :modified-at modified_at :activated-at activated_at :blocked-at blocked_at)
-        (dissoc :enabled :created_at :modified_at :confirmed_at :activated_at :blocked_at))))
+        (dissoc :enabled :created_at :modified_at :confirmed_at :activated_at :blocked_at)
+        (assoc  :permissions (helpers/str->coll #{} permissions))
+        (assoc  :roles (helpers/str->coll #{} roles)))))
 
 (alter-meta! #'map->SqlUserStore assoc :private true)

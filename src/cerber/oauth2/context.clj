@@ -6,14 +6,11 @@
             [cerber.stores.client :as client]
             [cerber.stores.token :as token]
             [cerber.stores.user :as user]
-            [failjure.core :as f])
+            [failjure.core :as f]
+            [clojure.string :as str])
   (:import org.apache.commons.codec.binary.Base64))
 
-;; default client roles
-(def ^:const client-roles #{"client/default"})
-
-;; default client permissions
-(def ^:const client-permissions #{})
+(def ^:const default-client-roles #{"client/default"})
 
 (def ^:const state-pattern #"\p{Alnum}+")
 
@@ -70,19 +67,23 @@
 
 (defn bearer-valid? [req]
   (f/attempt-all [authorization (get-in req [:headers "authorization"] error/unauthorized)
-                  bearer (or (second (.split ^String authorization  " ")) error/unauthorized)
-                  token  (or (token/find-access-token bearer) error/invalid-token)
-                  valid? (or (not (expired? token)) error/invalid-token)]
+                  bearer   (or (second (.split ^String authorization  " ")) error/unauthorized)
+                  token    (or (token/find-access-token bearer) error/invalid-token)
+                  valid?   (or (not (expired? token)) error/invalid-token)
+                  user     (or (user/find-user (:login token)) error/invalid-token)
+                  enabled? (or (:enabled? user) error/unauthorized)]
                  (let [scope (:scope token)]
-                   (assoc req ::user (user/map->User {:id (:user-id token)
-                                                      :login (:login token)
-                                                      :roles client-roles
-                                                      :permissions client-permissions})))))
+                   (assoc req
+                          ::client {:scopes (str/split scope #" ")}
+                          ::user   {:id (:user-id token)
+                                    :login (:login token)
+                                    :email (:email user)
+                                    :roles default-client-roles}))))
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
-    (f/attempt-all [user   (or (user/find-user login) error/invalid-request)
-                    valid? (or (:enabled? user) error/unauthorized)]
+    (f/attempt-all [user     (or (user/find-user login) error/invalid-request)
+                    enabled? (or (:enabled? user) error/unauthorized)]
                    (assoc req ::user user))))
 
 (defn client-valid? [req]
@@ -97,14 +98,10 @@
                  (assoc req ::client client)))
 
 (defn user-authenticated? [req]
-  (if-let [user (user/find-user (-> req :session :login))]
-    (assoc req ::user user)
-    error/unauthorized))
-
-(defn user-logged? [req]
-  (when-let [session (:session req)]
-    (when-let [login (:login session)]
-      (assoc req ::user {:login login :permissions (:permissions session)}))))
+  (let [user (user/find-user (-> req :session :login))]
+    (or (and (:enabled? user)
+             (assoc req ::user (select-keys user [:id :login :email :roles :permissions])))
+        error/unauthorized)))
 
 (defn user-password-valid? [req ^cerber.oauth2.authenticator.Authenticator authenticator]
   (f/attempt-all [username (get-in req [:params :username] error/invalid-request)

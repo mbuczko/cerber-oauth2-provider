@@ -79,9 +79,9 @@
                 :secret (or secret (helpers/generate-secret))
                 :info info
                 :approved? approved?
-                :scopes (helpers/vec->str scopes)
-                :grants (helpers/vec->str grants)
-                :redirects (helpers/vec->str redirects)
+                :scopes (helpers/coll->str scopes)
+                :grants (helpers/coll->str grants)
+                :redirects (helpers/coll->str redirects)
                 :created-at (helpers/now)}]
 
     (if (empty? result)
@@ -131,7 +131,7 @@
   (when-let [{:keys [approved scopes grants redirects]} result]
     (-> result
         (assoc  :approved? approved
-                :scopes (helpers/str->vec scopes)
-                :grants (helpers/str->vec grants)
-                :redirects (helpers/str->vec redirects))
+                :scopes (helpers/str->coll [] scopes)
+                :grants (helpers/str->coll [] grants)
+                :redirects (helpers/str->coll [] redirects))
         (dissoc :approved))))
