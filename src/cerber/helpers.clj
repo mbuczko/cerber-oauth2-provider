@@ -57,21 +57,21 @@
   [item ttl]
   (assoc item :expires-at (now-plus-seconds ttl)))
 
-(defn str->vec
-  "Decomposes string into vector of space separated substrings.
-  Returns empty vector if string was either null or empty."
+(defn str->coll
+  "Decomposes string into collection of space separated substrings.
+  Returns given collection if string was either null or empty."
 
-  [^String str]
+  [coll ^String str]
   (or (and str
            (> (.length str) 0)
-           (str/split str #" "))
-      []))
+           (into coll (str/split str #" ")))
+      coll))
 
-(defn vec->str
-  "Serializes vector of strings into single (space-separated) string."
+(defn coll->str
+  "Serializes collection of strings into single (space-separated) string."
 
-  [vec]
-  (str/join " " vec))
+  [coll]
+  (str/join " " coll))
 
 (defn expires->ttl
   "Returns number of seconds between now and expires-at."

@@ -26,7 +26,7 @@
       (assoc :session session)))
 
 (defn redirect-with-code [{:keys [params ::ctx/user ::ctx/client ::ctx/scopes ::ctx/state ::ctx/redirect-uri]}]
-  (f/attempt-all [access-scope (helpers/vec->str scopes)
+  (f/attempt-all [access-scope (helpers/coll->str scopes)
                   authcode     (or (authcode/create-authcode client user access-scope redirect-uri) error/server-error)
                   redirect     (str redirect-uri
                                     "?code=" (:code authcode)
@@ -34,7 +34,7 @@
                  (redirect-to redirect)))
 
 (defn redirect-with-token [{:keys [params ::ctx/user ::ctx/client ::ctx/scopes ::ctx/state ::ctx/redirect-uri]}]
-  (f/attempt-all [access-scope (helpers/vec->str scopes)
+  (f/attempt-all [access-scope (helpers/coll->str scopes)
                   access-token (token/generate-access-token client user access-scope)
                   redirect (str redirect-uri
                                 "?access_token=" (:access_token access-token)
@@ -51,7 +51,7 @@
 
   ;; generate access & refresh token (if requested)
   ;; note that scope won't exist in authorization_code scenario as it should be taken straight from authcode
-  (f/attempt-all [access-scope (and scopes (helpers/vec->str scopes))
+  (f/attempt-all [access-scope (and scopes (helpers/coll->str scopes))
                   access-token (token/generate-access-token client
                                                             user
                                                             (or access-scope (:scope authcode))

@@ -6,10 +6,12 @@
             [cerber.oauth2
              [authorization :as auth]
              [context :as ctx]]
+            [ring.util.request :refer [request-url]]
             [ring.middleware
              [anti-forgery :refer [wrap-anti-forgery]]
              [format :refer [wrap-restful-format]]
-             [session :refer [wrap-session]]]))
+             [session :refer [wrap-session]]]
+            [failjure.core :as f]))
 
 (def custom-store (session-store))
 
@@ -19,15 +21,15 @@
       (if-let [error (:error response)]
         (if (= (:code response) 302)
           (error/error->redirect response (:state params) (:redirect_uri params))
-          (error/error->json response (:state params) (:headers req) (:uri req)))
+          (error/error->json response (:state params) (:headers req) (request-url req)))
         response))))
 
 (defn wrap-authorization [handler]
   (fn [req]
-    (let [result (or (ctx/user-logged? req)
+    (let [result (or (and (-> req :session :login)
+                          (ctx/user-authenticated? req))
                      (ctx/bearer-valid? req))]
-
-      (if (:error result)
+      (if (f/failed? result)
         result
         (handler result)))))
 

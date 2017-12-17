@@ -61,3 +61,9 @@
    (create-test-client scope redirect-uri false))
   ([scope redirect-uri approved?]
    (c/create-client "test client" [redirect-uri] ["authorization_code" "token" "password" "client_credentials"] [scope] approved?)))
+
+(defn disable-test-user [user]
+  (u/disable-user user))
+
+(defn enable-test-user [user]
+  (u/enable-user user))
