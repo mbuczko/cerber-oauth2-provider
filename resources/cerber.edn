@@ -1,6 +1,5 @@
 {:landing-url "http://localhost"
  :realm       "http://localhost"
- :scopes      #{}
  :authcodes   {:store :in-memory :valid-for 600}
  :sessions    {:store :in-memory :valid-for 600}
  :tokens      {:store :in-memory :valid-for 600}

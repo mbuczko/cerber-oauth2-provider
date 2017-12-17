@@ -27,13 +27,3 @@
                    (conj reduced s)
                    reduced))
                #{})))
-
-(defn allowed-scopes?
-  "Checks whether all given scopes appear in a set of allowed-scopes."
-  [scopes allowed-scopes]
-  (let [filtered (->> scopes
-                      (map #(contains? allowed-scopes %))
-                      (filter true?))]
-
-    (= (count filtered)
-       (count scopes))))

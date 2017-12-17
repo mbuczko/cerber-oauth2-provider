@@ -57,7 +57,6 @@ Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everyt
                :defined []}
  :clients     {:store :sql
                :defined []}
- :scopes      #{}
  :landing-url "/"
  :realm       "http://defunkt.pl"
  :endpoints   {:authentication "/login"
@@ -83,17 +82,6 @@ Words of explanation:
  * ```jdbc-pool``` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info) for sql-based stores.
  * ```endpoints``` (optional) should reflect cerber's routes to authentication and access approve/refuse endpoints.
  * ```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
- * ```scopes``` (required) available set of [scopes](https://www.oauth.com/oauth2-servers/scope/defining-scopes/) for oauth2 clients.
-
-#### Scopes
-
-Scopes are configured as a set of unique strings like ```"user"```, ```"photo:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
-For example one can define scopes as ```#{"photo" "photo:read" "photo:write"}``` which grants _read_ and _write_ permission to imaginary photo resoure and
-a _photo_ permission which is a parent of _photo:read_ and _photo:write_ and implicitly includes both permissions.
-
-Cerber also normalizes scope requests, so when client asks for ```#{"photo" "photo:read"}``` scopes, it's been simplified to ```#{"photo"}``` only.
-
-Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec. 
 
 #### Users and clients
 
@@ -120,10 +108,24 @@ To configure users and/or clients as a part of environment, it's enough to list 
                       :approved? true}]}}
 ```
 
+#### Authorization Grant Types
 
-Configuration may be a global one or specific to given environment (local / test / prod). 
+Grant types allowed:
 
-When speaking of environments...
+* ```authorization_code``` for [Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-4.1)
+* ```token``` for [Implict Code Grant](https://tools.ietf.org/html/rfc6749#section-4.2)
+* ```password``` for [Resource Owner Password Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.3)
+* ```client_credentials``` for [Client Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.4)
+
+#### Scopes
+
+Client scopes are configured as a vector of unique strings like ```"user"```, ```"photo:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
+For example one can define scopes as ```#{"photo" "photo:read" "photo:write"}``` which grants _read_ and _write_ permission to imaginary photo resoure and
+a _photo_ permission which is a parent of _photo:read_ and _photo:write_ and implicitly includes both permissions.
+
+Cerber also normalizes scope requests, so when client asks for ```#{"photo" "photo:read"}``` scopes, it's been simplified to ```#{"photo"}``` only.
+
+Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec.
 
 ### Environments
 
