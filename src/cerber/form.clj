@@ -51,7 +51,7 @@
       (render-login-form (assoc req :failed? true))
 
       ;; login succeeded. redirect either to session-stored or default landing url.
-      (let [{:keys [login]} (::ctx/user result)]
+      (let [{:keys [id login]} (::ctx/user result)]
         (-> (get-in req [:session :landing-url] (:landing-url app-config))
             (redirect)
-            (assoc :session {:login login}))))))
+            (assoc :session {:id id :login login}))))))
