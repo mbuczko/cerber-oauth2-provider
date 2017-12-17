@@ -282,10 +282,6 @@ Looks up for a user with given login.
 
 Removes from store user with given login.
 
-```(modify-user-status [login enabled?])```
-
-Decides whether to enable or disable user with given login.
-
 
 ### tokens
 

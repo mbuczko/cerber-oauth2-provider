@@ -3,32 +3,6 @@
             [cerber.stores.token :as token]
             [cerber.stores.user :as user]))
 
-;; tokens
-
-(defn find-tokens-by-client
-  "Returns list of non-expirable refresh-tokens generated for given client."
-
-  [client]
-  (when-let [client-id (:id client)]
-    (token/find-by-pattern [client-id "refresh" nil])))
-
-(defn find-tokens-by-user
-  "Returns list of non-expirable refresh-tokens generated for clients operating on behalf of given user."
-
-  [user]
-  (when-let [login (:login user)]
-    (token/find-by-pattern [nil "refresh" nil login])))
-
-(defn revoke-tokens
-  "Revokes all access- and refresh-tokens bound with given client (and optional user)."
-
-  ([client]
-   (when-let [client-id (:id client)]
-     (token/revoke-by-pattern [client-id nil])))
-  ([client login]
-   (when-let [client-id (:id client)]
-     (token/revoke-by-pattern [client-id nil nil login]))))
-
 ;; clients
 
 (defn find-client
@@ -53,14 +27,32 @@
   [info redirects & [grants scopes approved?]]
   (client/create-client info redirects grants scopes approved?))
 
-(defn modify-client
-  [client])
-
 (defn delete-client
   "Removes client from store along with all its access- and refresh-tokens."
 
-  [client]
-  (= 1 (client/revoke-client (:id client))))
+  [client-id]
+  (when-let [client (find-client client-id)]
+    (= 1 (client/revoke-client client))))
+
+(defn disable-client
+  "Disables client.
+
+  Revokes all client's tokens and prevents from gaining new ones.
+  When disabled client is no longer able to request permissions to any resource."
+
+  [client-id]
+  (when-let [client (find-client client-id)]
+    (client/disable-client client)))
+
+(defn enable-client
+  "Enables client.
+
+  When enabled, client is able to request access to user's resource and (when accepted)
+  get corresponding access-token in response."
+
+  [client-id]
+  (when-let [client (find-client client-id)]
+    (client/enable-client client)))
 
 ;; users
 
@@ -85,14 +77,17 @@
                     permissions))
 
 (defn delete-user
-  "Removes from store user with given login."
+  "Removes user from store."
 
   [login]
-  (= 1 (user/revoke-user login)))
+  (when-let [user (find-user login)]
+    (= 1 (user/revoke-user user))))
 
 (defn disable-user
   "Disables user.
-  Disabled user is not able to authenticate and all user related tokens become invalid."
+
+  Disabled user is no longer able to authenticate and all access tokens created
+  based on his grants become immediately invalid."
 
   [login]
   (when-let [user (find-user login)]
@@ -100,18 +95,41 @@
 
 (defn enable-user
   "Enables user.
-  Enabled user is able to authenticate and all user related tokens become valid."
+
+  Enabled user is able to authenticate and approve or deny access to
+  resources requested by OAuth clients."
 
   [login]
   (when-let [user (find-user login)]
     (and (user/enable-user user) user)))
 
-(defn modify-user-status
-  "Decides whether to enable or disable user with given login."
 
-  [login enabled?]
-  (when-let [user (find-user login)]
-    (if enabled?
-      (user/enable-user user)
-      (user/disable-user user))
-    (assoc user :enabled? enabled?)))
+;; tokens
+
+(defn find-tokens-by-client
+  "Returns list of \"access\" or \"refresh\" tokens generated for given client."
+
+  [client-id token-type]
+  (token/find-by-pattern [client-id token-type nil]))
+
+(defn find-tokens-by-user
+  "Returns list of \"access\" or \"refresh\" tokens generated for clients operating on behalf of given user."
+
+  [login token-type]
+  (token/find-by-pattern [nil token-type nil login]))
+
+(defn revoke-access-token
+  "Revokes single access-token."
+
+  [secret]
+  (when-let [token (token/find-access-token secret)]
+    (token/revoke-access-token token)))
+
+(defn revoke-tokens
+  "Revokes all access- and refresh-tokens bound with given client (and optional user)."
+
+  ([client-id]
+   (revoke-tokens client-id nil))
+  ([client-id login]
+   (when-let [client (find-client client-id)]
+     (token/revoke-client-tokens client login))))

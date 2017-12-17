@@ -12,7 +12,7 @@
 
 (declare ->map init-clients)
 
-(defrecord Client [id secret info redirects grants scopes])
+(defrecord Client [id secret info redirects grants scopes approved? enabled? created-at modified-at activated-at blocked-at])
 
 (defrecord SqlClientStore []
   Store
@@ -22,6 +22,10 @@
     (db/delete-client {:id client-id}))
   (store! [this k client]
     (when (= 1 (db/insert-client client)) client))
+  (modify! [this k client]
+    (if (:enabled? client)
+      (db/enable-client client)
+      (db/disable-client client)))
   (purge! [this]
     (db/clear-clients)))
 
@@ -67,9 +71,21 @@
 
 (defn revoke-client
   "Revokes previously generated client and all tokens generated to this client so far."
-  [client-id]
-  (revoke-one! *client-store* [client-id])
-  (token/revoke-by-pattern [client-id "*"]))
+  [client]
+  (let [id (:id client)]
+    (revoke-one! *client-store* [id])
+    (token/revoke-client-tokens client)))
+
+(defn enable-client
+  "Enabled client. Returns true if client has been enabled successfully or false otherwise."
+  [client]
+  (= 1 (modify! *client-store* [:id] (assoc client :enabled? true :activated-at (helpers/now)))))
+
+(defn disable-client
+  "Disables client. Returns true if client has been disabled successfully or false otherwise."
+  [client]
+  (token/revoke-client-tokens client)
+  (= 1 (modify! *client-store* [:id] (assoc client :enabled? false :blocked-at (helpers/now)))))
 
 (defn create-client
   "Creates new client"
@@ -79,9 +95,11 @@
                 :secret (or secret (helpers/generate-secret))
                 :info info
                 :approved? approved?
+                :enabled? true
                 :scopes (helpers/coll->str scopes)
                 :grants (helpers/coll->str grants)
                 :redirects (helpers/coll->str redirects)
+                :activated-at (helpers/now)
                 :created-at (helpers/now)}]
 
     (if (empty? result)
@@ -93,7 +111,9 @@
         (error/internal-error "Cannot store client"))
       (first result))))
 
-(defn find-client [client-id]
+(defn find-client
+  "Returns client with given id, if found or nil otherwise."
+  [client-id]
   (if-let [found (and client-id (fetch-one *client-store* [client-id]))]
     (let [{:keys [approved scopes grants redirects]} found]
       (map->Client found))))
@@ -128,10 +148,20 @@
         (every? #(.contains client-scopes %) scopes))))
 
 (defn ->map [result]
-  (when-let [{:keys [approved scopes grants redirects]} result]
+  (when-let [{:keys [approved scopes grants redirects enabled created_at modified_at activated_at blocked_at]} result]
     (-> result
         (assoc  :approved? approved
+                :enabled? enabled
                 :scopes (helpers/str->coll [] scopes)
                 :grants (helpers/str->coll [] grants)
-                :redirects (helpers/str->coll [] redirects))
-        (dissoc :approved))))
+                :redirects (helpers/str->coll [] redirects)
+                :created-at created_at
+                :modified-at modified_at
+                :activated-at activated_at
+                :blocked-at blocked_at)
+        (dissoc :approved
+                :enabled
+                :created_at
+                :modified_at
+                :activated_at
+                :blocked_at))))

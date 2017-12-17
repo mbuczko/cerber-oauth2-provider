@@ -54,7 +54,7 @@
            (find-client id) => (instance-of Client)
 
            ;; when
-           (revoke-client id)
+           (revoke-client client)
 
            ;; then
            (find-client id) => nil)))
