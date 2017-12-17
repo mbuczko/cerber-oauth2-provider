@@ -90,6 +90,22 @@
   [login]
   (= 1 (user/revoke-user login)))
 
+(defn disable-user
+  "Disables user.
+  Disabled user is not able to authenticate and all user related tokens become invalid."
+
+  [login]
+  (when-let [user (find-user login)]
+    (and (user/disable-user user) user)))
+
+(defn enable-user
+  "Enables user.
+  Enabled user is able to authenticate and all user related tokens become valid."
+
+  [login]
+  (when-let [user (find-user login)]
+    (and (user/enable-user user) user)))
+
 (defn modify-user-status
   "Decides whether to enable or disable user with given login."
 
