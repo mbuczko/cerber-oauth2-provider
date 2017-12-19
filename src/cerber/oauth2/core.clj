@@ -22,7 +22,15 @@
 
   `scopes` is an optional vector of OAuth scopes that client may request an access to
 
-  `approved?` is an optional parameter deciding whether client should be auto-approved or not."
+  `approved?` decides whether client should be auto-approved or not. Set to false by default.
+
+  Example:
+
+      (c/create-client \"http://defunkt.pl\"
+                       [\"http://defunkt.pl/callback\"]
+                       [\"authorization_code\" \"password\"]
+                       [\"photo:read\" \"photo:list\"]
+                       true)"
 
   [info redirects & [grants scopes approved?]]
   (client/create-client info redirects grants scopes approved?))
@@ -38,7 +46,7 @@
   "Disables client.
 
   Revokes all client's tokens and prevents from gaining new ones.
-  When disabled client is no longer able to request permissions to any resource."
+  When disabled, client is no longer able to request permissions to any resource."
 
   [client-id]
   (when-let [client (find-client client-id)]
@@ -65,7 +73,20 @@
 (defn create-user
   "Creates new user with given login, descriptive name, user's email, password (stored as hash), roles and permissions.
 
-  `enabled?` argument indicates whether user should be enabled by default (to be able to authenticate) or not."
+  `roles` set of user's roles
+
+  `permissions` set of user's permissions
+
+  `enabled?` decides whether user should be enabled or not. Set to true by default.
+
+  Example:
+
+      (c/create-user \"foobar\"
+                     \"Foo Bar\"
+                     \"foo@bar.bazz\"
+                     \"secret\"
+                     #{\"user/admin\"}
+                     #{\"photos:read\"})"
 
   [login name email password roles permissions enabled?]
   (user/create-user (user/map->User {:login login

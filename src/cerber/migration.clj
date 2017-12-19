@@ -14,9 +14,21 @@
         (throw (Exception. "Unsupported database. Check jdbc-url.")))))
 
 (defn migrate
-  "Migrates changes to database."
+  "Migrates schema changes to database.
+
+  Database and corresponding migration files are chosen based on `jdbc-url`, eg. following jdbc-url
+  launches migration of postgres schema:
+
+      jdbc:postgresql://localhost:5432/template1?user=postgres
+
+  `action` may be either \"start\" which immediately starts migration, \"clear\" which clears entire
+  schema (use with caution!) or \"info\" which displays the status of all migrations proceeded so far.
+
+  No action assumes \"start\" by default and starts the migration process."
+
   [jdbc-url & [action]]
   (apply flyway (conj (db-opts jdbc-url) jdbc-url (condp = action
-                                                    "clean" "-c"
+                                                    "clear" "-c"
                                                     "info"  "-i"
+                                                    "start" "-m"
                                                     "-m"))))

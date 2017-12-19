@@ -230,74 +230,9 @@ This simply starts the Cerber system by mounting all stores and populates them w
 
 ## API
 
-API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to manipulate with clients and tokens at higher level.
+API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to manipulate with clients, users and tokens at higher level.
 
-### clients
-
-```(create-client [info redirects & [grants scopes approved?]])```
-
-Used to create new OAuth client, where:
-- info is a non-validated info string (typically client's app name or URL to client's homepage)
-- redirects is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
-- grants is an optional vector of allowed grants: "authorization_code", "token", "password" or "client_credentials". if nil - all grants are allowed.
-- scopes is an optional vector of OAuth scopes that client may request an access to
-- approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.
-
-Example:
-
-```clojure
-    (require '[cerber.oauth2.core :as c])
-
-    (c/create-client "http://defunkt.pl"
-                     ["http://defunkt.pl/callback"]
-                     ["authorization_code" "password"]
-                     ["photo:read" "photo:list"]
-                     true)
-```
-
-Each generated client has its own random client-id and a secret which both are used in OAuth flow.
-Important thing is to keep the secret codes _really_ secret! Both client-id and secret authorize
-client instance and it might be harmful to let attacker know what's your client's secret code is.
-
-```(find-client [client-id])```
-
-Looks up for client with given identifier.
-
-```(delete-client [client])```
-
-Removes client from store. Note that together with client all its access- and refresh-tokens are revoked as well.
-
-### users
-
-```(create-user [login name email password roles permissions enabled?])```
-
-Creates new user with given login, descriptive name, user's email, password (stored as hash), roles and permissions.
-```enabled?``` argument indicates whether user should be enabled by default (to be able to authenticate) or not.
-
-```(find-user [login])```
-
-Looks up for a user with given login.
-
-```(delete-user [login])```
-
-Removes from store user with given login.
-
-
-### tokens
-
-```(find-tokens-by-client [client])```
-
-Returns list of non-expirable refresh-tokens generated for given client.
-
-```(find-tokens-by-user [user])```
-
-Returns list of non-expirable refresh-tokens generated for clients operating on behalf of given user.
-
-```(revoke-tokens [client])```
-
-```(revoke-tokens [client login])```
-
-Revokes all access- and refresh-tokens bound with given client (and optional user's login).
+Full documentation can be found [here](http://api.defunkt.pl/cerber/api/cerber.oauth2.core.html).
 
 ### errors
 
