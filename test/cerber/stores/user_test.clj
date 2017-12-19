@@ -66,7 +66,7 @@
            (find-user login) => (instance-of User)
 
            ;; when
-           (revoke-user login)
+           (revoke-user user)
 
            ;; then
            (find-user login) => nil)))

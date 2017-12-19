@@ -32,7 +32,8 @@
    api-defaults))
 
 (defn init-server
-  "Initializes standalone http server handling default OAuth2 endpoints."
+  "Initializes standalone HTTP server handling default OAuth2 endpoints."
+
   []
   (when-let [http-config (:server app-config)]
     (selmer/set-resource-path! (clojure.java.io/resource "templates"))

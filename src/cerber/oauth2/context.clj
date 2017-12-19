@@ -93,7 +93,8 @@
 
 (defn client-valid? [req]
   (f/attempt-all [client-id (get-in req [:params :client_id] error/invalid-request)
-                  client (or (client/find-client client-id) error/invalid-request)]
+                  client (or (client/find-client client-id) error/invalid-request)
+                  valid? (or (:enabled? client) error/invalid-request)]
                  (assoc req ::client client)))
 
 (defn client-authenticated? [req]

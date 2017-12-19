@@ -10,7 +10,7 @@
 
 (declare ->map init-users)
 
-(defrecord User [id login email name password roles permissions enabled? created-at activated-at blocked-at])
+(defrecord User [id login email name password roles permissions enabled? created-at modified-at activated-at blocked-at])
 
 (defrecord SqlUserStore []
   Store
@@ -76,14 +76,16 @@
      (when (store! *user-store* [:login] merged)
        (map->User merged)))))
 
-(defn find-user [login]
+(defn find-user
+  "Returns users with given login, if found or nil otherwise."
+  [login]
   (if-let [found (and login (fetch-one *user-store* [login]))]
     (map->User found)))
 
 (defn revoke-user
   "Removes user from store"
-  [login]
-  (revoke-one! *user-store* [login]))
+  [user]
+  (revoke-one! *user-store* [(:login user)]))
 
 (defn enable-user
   "Enables user. Returns true if user has been enabled successfully or false otherwise."
@@ -123,9 +125,18 @@
 (defn ->map [result]
   (when-let [{:keys [roles permissions created_at modified_at activated_at blocked_at enabled]} result]
     (-> result
-        (assoc  :enabled? enabled :created-at created_at :modified-at modified_at :activated-at activated_at :blocked-at blocked_at)
-        (dissoc :enabled :created_at :modified_at :confirmed_at :activated_at :blocked_at)
-        (assoc  :permissions (helpers/str->coll #{} permissions))
-        (assoc  :roles (helpers/str->coll #{} roles)))))
+        (assoc  :enabled? enabled
+                :created-at created_at
+                :modified-at modified_at
+                :activated-at activated_at
+                :blocked-at blocked_at
+                :roles (helpers/str->coll #{} roles)
+                :permissions (helpers/str->coll #{} permissions))
+        (dissoc :enabled
+                :created_at
+                :modified_at
+                :confirmed_at
+                :activated_at
+                :blocked_at))))
 
 (alter-meta! #'map->SqlUserStore assoc :private true)

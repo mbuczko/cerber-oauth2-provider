@@ -84,13 +84,20 @@
 
 ;; revocation
 
-(defn revoke-by-pattern [key] (revoke-all! *token-store* key) nil)
-(defn revoke-by-key [key] (revoke-one! *token-store* key) nil)
+(defn- revoke-by-pattern [pattern] (revoke-all! *token-store* pattern) nil)
+(defn- revoke-by-key [key] (revoke-one! *token-store* key) nil)
 
 (defn revoke-access-token
   [token]
   (when-let [secret (:secret token)]
     (revoke-by-key [nil "access" (helpers/digest (:secret token)) nil])))
+
+(defn revoke-client-tokens
+  ([client]
+   (revoke-client-tokens client nil))
+  ([client login]
+   (revoke-by-pattern [(:id client) "access" nil login])
+   (revoke-by-pattern [(:id client) "refresh" nil login])))
 
 ;; retrieval
 

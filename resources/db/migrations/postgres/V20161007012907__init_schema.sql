@@ -22,6 +22,7 @@ create table users (
   permissions varchar(1024),
   enabled boolean not null default true,
   created_at timestamp not null,
+  modified_at timestamp,
   activated_at timestamp,
   blocked_at timestamp
 );
@@ -50,8 +51,12 @@ create table clients (
   secret varchar(32) not null,
   info varchar(255),
   approved boolean not null default false,
+  enabled boolean not null default true,
   scopes varchar(1024),
   grants varchar(255),
   redirects varchar(512) not null,
-  created_at timestamp not null
+  created_at timestamp not null,
+  modified_at timestamp,
+  activated_at timestamp,
+  blocked_at timestamp
 );
