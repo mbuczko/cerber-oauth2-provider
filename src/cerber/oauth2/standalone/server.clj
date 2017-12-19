@@ -25,19 +25,20 @@
 (defroutes restricted-routes
   (GET "/users/me" [] user-info-handler))
 
-(def app-handler
+(def ^:no-doc app-handler
   (wrap-defaults
    (routes oauth2-routes (-> restricted-routes
                              (wrap-routes handlers/wrap-authorized)))
    api-defaults))
 
 (defn init-server
-  "Initializes sample http server handling oauth2 endpoints."
+  "Initializes standalone HTTP server handling default OAuth2 endpoints."
+
   []
   (when-let [http-config (:server app-config)]
     (selmer/set-resource-path! (clojure.java.io/resource "templates"))
     (web/run-server app-handler http-config)))
 
-(defstate http-server
+(defstate ^:no-doc http-server
   :start (init-server)
   :stop  (when http-server (http-server)))

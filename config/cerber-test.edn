@@ -10,5 +10,4 @@
  :tokens     {:store :sql :valid-for 180}
  :clients    {:store :sql}
  :users      {:store :sql}
- :scopes     {"photo:read" "photo:write"}
  :landing-url "http://localhost/"}

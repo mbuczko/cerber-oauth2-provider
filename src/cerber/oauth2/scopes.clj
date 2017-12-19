@@ -1,10 +1,11 @@
 (ns cerber.oauth2.scopes
-  (:require [cerber.helpers :refer [str->vec]]
+  (:require [cerber.config :refer [app-config]]
+            [cerber.helpers :refer [str->coll]]
             [clojure.string :as str]))
 
-(defn distinct-scope
-  "Returns nil if scopes contain given scope itself or any of its parents.
-   Returns scope otherwise."
+(defn- distinct-scope
+  "Returns falsey if scopes contain given scope or any of its parents.
+  Returns scope otherwise."
 
   [scopes ^String scope]
   (let [v (.split scope ":")]
@@ -19,20 +20,10 @@
 
   [scope]
   (->> scope
-       (str->vec)
+       (str->coll [])
        (sort-by #(count (re-seq #":" %)))
        (reduce (fn [reduced scope]
                  (if-let [s (distinct-scope reduced scope)]
                    (conj reduced s)
                    reduced))
                #{})))
-
-(defn allowed-scopes?
-  "Checks whether all given scopes appear in a set of allowed-scopes."
-  [scopes allowed-scopes]
-  (let [filtered (->> scopes
-                      (map #(contains? allowed-scopes %))
-                      (filter true?))]
-
-    (= (count filtered)
-       (count scopes))))

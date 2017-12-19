@@ -33,7 +33,7 @@
 (defroutes restricted-routes
   (GET "/users/me" [] (fn [req]
                         {:status 200
-                         :body (select-keys (::ctx/user req) [:login :name :email :roles :permissions])})))
+                         :body (::ctx/user req)})))
 
 (def app (-> restricted-routes
              (wrap-routes handlers/wrap-authorized)
@@ -266,3 +266,29 @@
 
           ;; authorized request to /users/me should not reveal user's info
           (utils/request-authorized (session app) "/users/me" access_token) => (contains "\"login\":null"))))
+
+(fact "Active token should be rejected for disabled user."
+      (let [state (-> (session (wrap-defaults oauth-routes api-defaults))
+                      (header "Accept" "application/json")
+                      (header "Authorization" (str "Basic " (utils/base64-auth client-unapproved)))
+                      (request "/token"
+                               :request-method :post
+                               :params {:username (:login user-active)
+                                        :password "pass"
+                                        :grant_type "password"}))]
+
+        (let [{:keys [status body]} (:response state)
+              {:keys [access_token expires_in refresh_token]} (json/parse-string (slurp body) true)]
+
+          status        => 200
+          access_token  => truthy
+          refresh_token => truthy
+          expires_in    => truthy
+
+          (utils/disable-test-user user-active)
+
+          (-> (session app)
+              (header "Authorization" (str "Bearer " access_token))
+              (request "/users/me")
+              :response
+              :status) => 401)))

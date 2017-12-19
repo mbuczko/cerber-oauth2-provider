@@ -57,7 +57,6 @@ Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everyt
                :defined []}
  :clients     {:store :sql
                :defined []}
- :scopes      #{}
  :landing-url "/"
  :realm       "http://defunkt.pl"
  :endpoints   {:authentication "/login"
@@ -83,17 +82,6 @@ Words of explanation:
  * ```jdbc-pool``` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info) for sql-based stores.
  * ```endpoints``` (optional) should reflect cerber's routes to authentication and access approve/refuse endpoints.
  * ```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
- * ```scopes``` (required) available set of [scopes](https://www.oauth.com/oauth2-servers/scope/defining-scopes/) for oauth2 clients.
-
-#### Scopes
-
-Scopes are configured as a set of unique strings like ```"user"```, ```"photos:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
-For example one can define scopes as ```#{"photos" "photos:read" "photos:write"}``` which grants _read_ and _write_ permission to imaginary photos resoure and
-a _photos_ permission which is a parent of _photos:read_ and _photos:write_ and implicitly includes both permissions.
-
-Cerber also normalizes scope requests, so when client asks for ```#{"photos" "photos:read"}``` scopes, it's been simplified to ```#{"photos"}``` only.
-
-Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec. 
 
 #### Users and clients
 
@@ -116,14 +104,28 @@ To configure users and/or clients as a part of environment, it's enough to list 
                       :info "Default client"
                       :redirects ["http://localhost"]
                       :grants ["authorization_code" "password"]
-                      :scopes ["photos:read" "photos:write"]
+                      :scopes ["photo:read" "photo:write"]
                       :approved? true}]}}
 ```
 
+#### Authorization Grant Types
 
-Configuration may be a global one or specific to given environment (local / test / prod). 
+Grant types allowed:
 
-When speaking of environments...
+* ```authorization_code``` for [Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-4.1)
+* ```token``` for [Implict Code Grant](https://tools.ietf.org/html/rfc6749#section-4.2)
+* ```password``` for [Resource Owner Password Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.3)
+* ```client_credentials``` for [Client Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.4)
+
+#### Scopes
+
+Client scopes are configured as a vector of unique strings like ```"user"```, ```"photo:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
+For example one can define scopes as ```#{"photo" "photo:read" "photo:write"}``` which grants _read_ and _write_ permission to imaginary photo resoure and
+a _photo_ permission which is a parent of _photo:read_ and _photo:write_ and implicitly includes both permissions.
+
+Cerber also normalizes scope requests, so when client asks for ```#{"photo" "photo:read"}``` scopes, it's been simplified to ```#{"photo"}``` only.
+
+Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec.
 
 ### Environments
 
@@ -228,78 +230,9 @@ This simply starts the Cerber system by mounting all stores and populates them w
 
 ## API
 
-API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to manipulate with clients and tokens at higher level.
+API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to manipulate with clients, users and tokens at higher level.
 
-### clients
-
-```(create-client [info redirects & [grants scopes approved?]])```
-
-Used to create new OAuth client, where:
-- info is a non-validated info string (typically client's app name or URL to client's homepage)
-- redirects is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
-- grants is an optional vector of allowed grants: "authorization_code", "token", "password" or "client_credentials". if nil - all grants are allowed.
-- scopes is an optional vector of OAuth scopes that client may request an access to
-- approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.
-
-Example:
-
-```clojure
-    (require '[cerber.oauth2.core :as c])
-
-    (c/create-client "http://defunkt.pl"
-                     ["http://defunkt.pl/callback"]
-                     ["authorization_code" "password"]
-                     ["photos:read" "photos:list"]
-                     true)
-```
-
-Each generated client has its own random client-id and a secret which both are used in OAuth flow.
-Important thing is to keep the secret codes _really_ secret! Both client-id and secret authorize
-client instance and it might be harmful to let attacker know what's your client's secret code is.
-
-```(find-client [client-id])```
-
-Looks up for client with given identifier.
-
-```(delete-client [client])```
-
-Removes client from store. Note that together with client all its access- and refresh-tokens are revoked as well.
-
-### users
-
-```(create-user [login name email password roles permissions enabled?])```
-
-Creates new user with given login, descriptive name, user's email, password (stored as hash), roles and permissions.
-```enabled?``` argument decides whether users is enabled by default (can authenticate) or not.
-
-```(find-user [login])```
-
-Looks up for a user with given login.
-
-```(delete-user [login])```
-
-Removes from store user with given login.
-
-```(modify-user-status [login enabled?])```
-
-Decides whether to enable or disable user with given login.
-
-
-### tokens
-
-```(find-tokens-by-client [client])```
-
-Returns list of non-expirable refresh-tokens generated for given client.
-
-```(find-tokens-by-user [user])```
-
-Returns list of non-expirable refresh-tokens generated for clients operating on behalf of given user.
-
-```(revoke-tokens [client])```
-
-```(revoke-tokens [client login])```
-
-Revokes all access- and refresh-tokens bound with given client (and optional user's login).
+Full documentation can be found [here](http://api.defunkt.pl/cerber/api/cerber.oauth2.core.html).
 
 ### errors
 

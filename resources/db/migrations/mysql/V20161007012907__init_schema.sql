@@ -23,6 +23,7 @@ create table users (
   permissions varchar(1024),
   enabled bit not null default true,
   created_at datetime not null,
+  modified_at datetime,
   activated_at datetime,
   blocked_at datetime,
   UNIQUE KEY users_login_unique (login)
@@ -52,8 +53,12 @@ create table clients (
   secret varchar(32) not null,
   info varchar(255),
   approved bit not null default false,
+  enabled bit not null default true,
   scopes varchar(1024),
   grants varchar(255),
   redirects varchar(512) not null,
-  created_at datetime not null
+  created_at datetime not null,
+  modified_at datetime,
+  activated_at datetime,
+  blocked_at datetime
 );

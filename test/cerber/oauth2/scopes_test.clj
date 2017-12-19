@@ -1,5 +1,6 @@
 (ns cerber.oauth2.scopes-test
   (:require [cerber.oauth2.scopes :refer :all]
+            [cerber.stores.client :refer :all]
             [midje.sweet :refer :all]))
 
 (tabular
@@ -14,10 +15,9 @@
  nil                                #{})
 
 (tabular
- (fact "Verifies if all scopes are predefined as allowed ones"
-       (let [allowed-scopes #{"photos:read"  {:description "grants read-only priviledges to photos"}
-                              "photos:write" {:description "grants modification priviledges to photos"}}]
-         (allowed-scopes? ?scopes allowed-scopes)) => ?expected)
+ (fact "Valid scopes should be included in client definition."
+       (let [client (create-client "dummy" ["http://localhost"] [] ["photos:read" "photos:write"] false)]
+         (scopes-valid? client ?scopes) => ?expected))
 
  ?scopes                          ?expected
  #{"photos:read"}                 true
