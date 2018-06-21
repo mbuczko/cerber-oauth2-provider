@@ -1,6 +1,7 @@
 (ns cerber.oauth2.context
   (:require [cerber.error :as error]
             [cerber.helpers :refer [expired?]]
+            [cerber.oauth2.authenticator :refer [Authenticator]]
             [cerber.oauth2.scopes :as scopes]
             [cerber.stores.authcode :as authcode]
             [cerber.stores.client :as client]

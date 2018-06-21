@@ -36,7 +36,6 @@
 
   []
   (when-let [http-config (:server app-config)]
-    (selmer/set-resource-path! (clojure.java.io/resource "templates"))
     (web/run-server app-handler http-config)))
 
 (defstate ^:no-doc http-server

@@ -30,18 +30,18 @@
 
 (defn render-login-form [req]
   (let [session (:session req)]
-    (-> (render-template "forms/login.html" {:csrf (anti-forgery-field)
-                                             :action (authentication-endpoint)
-                                             :failed? (boolean (:failed? req))})
+    (-> (render-template "templates/cerber/login.html" {:csrf (anti-forgery-field)
+                                                        :action (authentication-endpoint)
+                                                        :failed? (boolean (:failed? req))})
 
         ;; clear up auth info if already existed
         (assoc :session (dissoc session :login)))))
 
 (defn render-approval-form [client req]
-  (render-template "forms/authorize.html" {:csrf (anti-forgery-field)
-                                           :client client
-                                           :action-approve (str (approve-endpoint) "?" (:query-string req))
-                                           :action-refuse  (str (refuse-endpoint) "?" (:query-string req))}))
+  (render-template "templates/cerber/authorize.html" {:csrf (anti-forgery-field)
+                                                      :client client
+                                                      :action-approve (str (approve-endpoint) "?" (:query-string req))
+                                                      :action-refuse  (str (refuse-endpoint) "?" (:query-string req))}))
 
 (defn handle-login-submit [req]
   (let [result (ctx/user-password-valid? req (default-authenticator))]

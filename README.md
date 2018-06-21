@@ -159,8 +159,8 @@ Configuration values can be easily replaced in 3 ways:
 To complete some of OAuth2-flow actions, like web based authentication or approval dialog, Cerber tries to load HTML templates and populate embedded expressions with use of [selmer](https://github.com/yogthos/Selmer).
 In similar way how it goes with configuration, Cerber looks for 2 HTML templates:
 
- * [forms/login.html](./config/templates/forms/login.html) - used to render authentication form.
- * [forms/authorize.html](./config/templates/forms/authorize.html) - used to render user a form where user is asked to grant a permission.
+ * [templates/cerber/login.html](./resources/templates/cerber/login.html) - used to render authentication form.
+ * [templates/cerber/authorize.html](./resources/templates/cerber/authorize.html) - used to render user a form where user is asked to grant a permission.
 
 Both are provided by this library with a very spartan styling, just to expose the most important things inside.
 

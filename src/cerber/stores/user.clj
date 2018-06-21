@@ -68,8 +68,8 @@
                    :email nil
                    :enabled? enabled
                    :password (and password (bcrypt password))
-                   :roles roles
-                   :permissions permissions
+                   :roles (helpers/coll->str roles)
+                   :permissions (helpers/coll->str permissions)
                    :activated-at (when enabled (helpers/now))
                    :created-at (helpers/now)})]
 
