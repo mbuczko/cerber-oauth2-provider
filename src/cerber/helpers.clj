@@ -1,7 +1,8 @@
 (ns cerber.helpers
   (:require [crypto.random :as random]
             [clojure.string :as str]
-            [digest]))
+            [digest])
+  (:import  [org.mindrot.jbcrypt BCrypt]))
 
 (def scheduler ^java.util.concurrent.ScheduledExecutorService
   (java.util.concurrent.Executors/newScheduledThreadPool 1))
@@ -83,10 +84,22 @@
               (.toLocalDateTime expires-at))))
 
 (defn digest
-  "Applies SHA-256 on given token"
+  "Applies SHA-256 on given secret."
 
   [secret]
   (digest/sha-256 secret))
+
+(defn bcrypt-hash
+  "Performs BCrypt hashing of password."
+
+  [password]
+  (BCrypt/hashpw password (BCrypt/gensalt)))
+
+(defn bcrypt-check
+  "Validates password against given hash."
+
+  [password hashed]
+  (BCrypt/checkpw password hashed))
 
 (defn uuid
   "Generates uuid"

@@ -10,14 +10,16 @@
             [cerber.stores.token :as token]
             [cerber.helpers :as helpers]))
 
-(declare ->map init-clients)
+(declare init-clients)
 
 (defrecord Client [id secret info redirects grants scopes approved? enabled? created-at modified-at activated-at blocked-at])
 
-(defrecord SqlClientStore []
+(defrecord SqlClientStore [normalizer]
   Store
   (fetch-one [this [client-id]]
-    (->map (first (db/find-client {:id client-id}))))
+    (-> (db/find-client {:id client-id})
+        first
+        normalizer))
   (revoke-one! [this [client-id]]
     (db/delete-client {:id client-id}))
   (store! [this k client]
@@ -28,6 +30,21 @@
       (db/disable-client client)))
   (purge! [this]
     (db/clear-clients)))
+
+(defn normalize [client]
+  (when-let [{:keys [id secret info approved scopes grants redirects enabled created_at modified_at activated_at blocked_at]} client]
+    (map->Client {:id id
+                  :secret secret
+                  :info info
+                  :approved? approved
+                  :enabled? enabled
+                  :scopes (helpers/str->coll [] scopes)
+                  :grants (helpers/str->coll [] grants)
+                  :redirects (helpers/str->coll [] redirects)
+                  :created-at created_at
+                  :modified-at modified_at
+                  :activated-at activated_at
+                  :blocked-at blocked_at})))
 
 (defmulti create-client-store identity)
 
@@ -49,7 +66,7 @@
   (->RedisStore "clients" (:redis-spec app-config)))
 
 (defmethod create-client-store :sql [_]
-  (->SqlClientStore))
+  (->SqlClientStore normalize))
 
 (defn validate-uri
   "Returns java.net.URL instance of given uri or failure info in case of error."
@@ -146,22 +163,3 @@
   (let [client-scopes (:scopes client)]
     (or (empty? scopes)
         (every? #(.contains client-scopes %) scopes))))
-
-(defn ->map [result]
-  (when-let [{:keys [approved scopes grants redirects enabled created_at modified_at activated_at blocked_at]} result]
-    (-> result
-        (assoc  :approved? approved
-                :enabled? enabled
-                :scopes (helpers/str->coll [] scopes)
-                :grants (helpers/str->coll [] grants)
-                :redirects (helpers/str->coll [] redirects)
-                :created-at created_at
-                :modified-at modified_at
-                :activated-at activated_at
-                :blocked-at blocked_at)
-        (dissoc :approved
-                :enabled
-                :created_at
-                :modified_at
-                :activated_at
-                :blocked_at))))

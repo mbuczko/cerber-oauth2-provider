@@ -15,6 +15,3 @@
 
 (defmethod authentication-handler :default [_]
   (FormAuthenticator.))
-
-(alter-meta! #'->FormAuthenticator    assoc :private true)
-(alter-meta! #'map->FormAuthenticator assoc :private true)

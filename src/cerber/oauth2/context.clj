@@ -11,9 +11,7 @@
             [clojure.string :as str])
   (:import org.apache.commons.codec.binary.Base64))
 
-(def ^:const default-client-roles #{"client/default"})
-
-(def ^:const state-pattern #"\p{Alnum}+")
+(def state-pattern #"\p{Alnum}+")
 
 (defn basic-authentication-credentials
   "Decodes basic authentication credentials.
@@ -83,8 +81,7 @@
                    (assoc req
                           ::client {:scopes (str/split scope #" ")}
                           ::user   {:id (:user-id token)
-                                    :login (:login token)
-                                    :roles default-client-roles}))))
+                                    :login (:login token)}))))
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]

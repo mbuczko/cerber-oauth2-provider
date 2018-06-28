@@ -5,17 +5,18 @@
              [helpers :as helpers]
              [config :refer [app-config]]
              [store :refer :all]]
-            [failjure.core :as f])
-  (:import [org.mindrot.jbcrypt BCrypt]))
+            [failjure.core :as f]))
 
-(declare ->map init-users)
+(declare init-users)
 
-(defrecord User [id login email name password roles permissions enabled? created-at modified-at activated-at blocked-at])
+(defrecord User [id login email name password enabled? created-at modified-at activated-at blocked-at])
 
-(defrecord SqlUserStore []
+(defrecord SqlUserStore [normalizer]
   Store
   (fetch-one [this [login]]
-    (->map (first (db/find-user {:login login}))))
+    (-> (db/find-user {:login login})
+        first
+        normalizer))
   (revoke-one! [this [login]]
     (db/delete-user {:login login}))
   (store! [this k user]
@@ -26,6 +27,22 @@
       (db/disable-user user)))
   (purge! [this]
     (db/clear-users)))
+
+(defn normalizer
+  [user]
+  (when-let [{:keys [id login email name password roles permissions created_at modified_at activated_at blocked_at enabled]} user]
+    (map->User {:id id
+                :login login
+                :email email
+                :name name
+                :password password
+                :enabled? enabled
+                :created-at created_at
+                :modified-at modified_at
+                :activated-at activated_at
+                :blocked-at blocked_at
+                :roles (helpers/str->coll #{} roles)
+                :permissions (helpers/str->coll #{} permissions)})))
 
 (defmulti ^:no-doc create-user-store identity)
 
@@ -47,12 +64,7 @@
   (->RedisStore "users" (:redis-spec app-config)))
 
 (defmethod create-user-store :sql [_]
-  (->SqlUserStore))
-
-(defn bcrypt
-  "Performs BCrypt hashing of password."
-  [password]
-  (BCrypt/hashpw password (BCrypt/gensalt)))
+  (->SqlUserStore normalizer))
 
 (defn create-user
   "Creates new user"
@@ -67,7 +79,7 @@
                    :name nil
                    :email nil
                    :enabled? enabled
-                   :password (and password (bcrypt password))
+                   :password (and password (helpers/bcrypt-hash password))
                    :roles (helpers/coll->str roles)
                    :permissions (helpers/coll->str permissions)
                    :activated-at (when enabled (helpers/now))
@@ -118,25 +130,6 @@
            users)))
 
 (defn valid-password?
-  "Verify that candidate password matches the hashed bcrypted password"
-  [candidate hashed]
-  (and candidate hashed (BCrypt/checkpw candidate hashed)))
-
-(defn ->map [result]
-  (when-let [{:keys [roles permissions created_at modified_at activated_at blocked_at enabled]} result]
-    (-> result
-        (assoc  :enabled? enabled
-                :created-at created_at
-                :modified-at modified_at
-                :activated-at activated_at
-                :blocked-at blocked_at
-                :roles (helpers/str->coll #{} roles)
-                :permissions (helpers/str->coll #{} permissions))
-        (dissoc :enabled
-                :created_at
-                :modified_at
-                :confirmed_at
-                :activated_at
-                :blocked_at))))
-
-(alter-meta! #'map->SqlUserStore assoc :private true)
+  "Verify that given password matches the hashed one."
+  [password hashed]
+  (and password hashed (helpers/bcrypt-check password hashed)))

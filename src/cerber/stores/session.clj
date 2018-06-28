@@ -11,14 +11,14 @@
 (defn default-valid-for []
   (-> app-config :sessions :valid-for))
 
-(declare ->map)
-
 (defrecord Session [sid content created-at expires-at])
 
-(defrecord SqlSessionStore []
+(defrecord SqlSessionStore [normalizer]
   Store
   (fetch-one [this [sid]]
-    (->map (first (db/find-session {:sid sid}))))
+    (-> (db/find-session {:sid sid})
+        first
+        normalizer))
   (revoke-one! [this [sid]]
     (db/delete-session {:sid sid}))
   (store! [this k session]
@@ -34,6 +34,13 @@
       (when (= 1 result) extended)))
   (purge! [this]
     (db/clear-sessions)))
+
+(defn normalizer [session]
+  (when-let [{:keys [sid content created_at expires_at]} session]
+    (map->Session {:sid sid
+                   :content (nippy/thaw content)
+                   :expires-at expires_at
+                   :created-at created_at})))
 
 (defmulti create-session-store identity)
 
@@ -54,7 +61,7 @@
 
 (defmethod create-session-store :sql [_]
   (helpers/with-periodic-fn
-    (->SqlSessionStore) db/clear-expired-sessions 10000))
+    (->SqlSessionStore normalizer) db/clear-expired-sessions 10000))
 
 (defn create-session
   "Creates new session"
@@ -88,10 +95,3 @@
   []
   "Removes sessions from store. Used for tests only."
   (purge! *session-store*))
-
-(defn ->map [result]
-  (when-let [{:keys [sid content created_at expires_at]} result]
-    {:sid sid
-     :content (nippy/thaw content)
-     :expires-at expires_at
-     :created-at created_at}))

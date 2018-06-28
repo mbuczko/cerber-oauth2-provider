@@ -5,13 +5,11 @@
  :dependencies '[[org.clojure/clojure "1.9.0" :scope "provided"]
                  [com.taoensso/carmine "2.16.0"]
                  [org.mindrot/jbcrypt "0.4"]
-                 [mbuczko/boot-flyway "0.1.1" :scope "test"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
                  [zilti/boot-midje "0.2.2-SNAPSHOT" :scope "test"]
                  [com.h2database/h2 "1.4.196" :scope "test"]
                  [mysql/mysql-connector-java "6.0.6" :scope "test"]
                  [org.postgresql/postgresql "42.1.4" :scope "test"]
-                 [funcool/boot-codeina "0.1.0-SNAPSHOT" :scope "test"]
                  [ring/ring-defaults "0.3.1"]
                  [midje "1.9.0" :scope "test"]
                  [peridot "0.5.0" :scope "test"]
@@ -27,15 +25,13 @@
                  [ring-middleware-format "0.7.2"]
                  [digest "1.4.6"]])
 
-(def +version+ "0.3.1")
+(def +version+ "0.3.2")
 
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
 
 (require
  '[cerber.oauth2.standalone.system]
- '[cerber.migration]
- '[funcool.boot-codeina :refer :all]
  '[adzerk.bootlaces :refer [bootlaces! build-jar push-release]]
  '[zilti.boot-midje :refer [midje]])
 
@@ -60,37 +56,9 @@
         (midje)
         (speak)))
 
-(deftask migrate
-  "Applies pending migrations."
-  [j jdbc-url URL     str  "the jdbc url"
-   a action   ACTION  str  "the action to perform (info, clean or migrate by default)"]
-  (cerber.migration/migrate jdbc-url action))
-
 (task-options! midje {:test-paths #{"test"}}
                pom   {:project 'cerber/cerber-oauth2-provider
                       :version +version+
                       :description "OAuth2 provider"
                       :url "https://github.com/mbuczko/cerber-oauth2-provider"
-                      :scm {:url "https://github.com/mbuczko/cerber-oauth2-provider"}}
-               apidoc {:version +version+
-                       :title "Cerber"
-                       :sources #{"src"}
-                       :description "OAuth2 provider for Clojure"
-                       :reader :clojure
-                       :src-uri "http://github.com/mbuczko/cerber-oauth2-provider/blob/master/"
-                       :exclude ['cerber.config
-                                 'cerber.db
-                                 'cerber.error
-                                 'cerber.form
-                                 'cerber.handlers
-                                 'cerber.helpers
-                                 'cerber.middleware
-                                 'cerber.stores.authcode
-                                 'cerber.stores.client
-                                 'cerber.stores.user
-                                 'cerber.stores.token
-                                 'cerber.stores.session
-                                 'cerber.oauth2.response
-                                 'cerber.oauth2.context
-                                 'cerber.oauth2.authorization]}
-               migrate {:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres"})
+                      :scm {:url "https://github.com/mbuczko/cerber-oauth2-provider"}})

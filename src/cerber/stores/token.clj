@@ -14,31 +14,40 @@
 (defn default-valid-for []
   (-> app-config :tokens :valid-for))
 
-(declare ->map)
-
 (defrecord Token [client-id user-id login scope secret created-at expires-at])
 
-(defrecord SqlTokenStore []
+(defrecord SqlTokenStore [normalizer]
   Store
   (fetch-one [this [client-id tag secret login]]
-    (->map (first (db/find-tokens-by-secret {:secret secret :tag tag}))))
+    (-> (db/find-tokens-by-secret {:secret secret :tag tag})
+        first
+        normalizer))
   (fetch-all [this [client-id tag secret login]]
-    (map ->map (if secret
-                 (db/find-tokens-by-secret {:secret secret :tag tag})
-                 (if client-id
-                   (db/find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
-                   (db/find-tokens-by-login {:login login :tag tag})))))
+    (map normalizer (if secret
+                      (db/find-tokens-by-secret {:secret secret :tag tag})
+                      (if client-id
+                        (db/find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
+                        (db/find-tokens-by-login {:login login :tag tag})))))
   (revoke-one! [this [client-id tag secret]]
     (db/delete-token-by-secret {:secret secret}))
   (revoke-all! [this [client-id tag secret login]]
     (map ->Token (if login
-      (db/delete-tokens-by-login  {:client-id client-id :login login :tag tag})
-      (db/delete-tokens-by-client {:client-id client-id :tag tag}))))
+                   (db/delete-tokens-by-login  {:client-id client-id :login login :tag tag})
+                   (db/delete-tokens-by-client {:client-id client-id :tag tag}))))
   (store! [this k token]
     (when (= 1 (db/insert-token token)) token))
   (purge! [this]
     (db/clear-tokens)))
 
+(defn normalizer [token]
+  (when-let [{:keys [client_id user_id login scope secret created_at expires_at]} token]
+    (map->Token {:client-id client_id
+                 :user-id user_id
+                 :login login
+                 :scope scope
+                 :secret secret
+                 :created-at created_at
+                 :expires-at expires_at})))
 
 (defmulti create-token-store identity)
 
@@ -59,7 +68,7 @@
 
 (defmethod create-token-store :sql [_]
   (helpers/with-periodic-fn
-    (->SqlTokenStore) db/clear-expired-tokens 60000))
+    (->SqlTokenStore normalizer) db/clear-expired-tokens 60000))
 
 (defn create-token
   "Creates new token."
@@ -174,13 +183,3 @@
                            {:id user-id :login login}
                            scope
                            {:refresh? true})))
-
-(defn ->map [result]
-  (when-let [{:keys [client_id user_id login scope secret created_at expires_at]} result]
-    {:client-id client_id
-     :user-id user_id
-     :login login
-     :scope scope
-     :secret secret
-     :created-at created_at
-     :expires-at expires_at}))

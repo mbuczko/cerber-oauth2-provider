@@ -3,9 +3,10 @@
             [clojure.string :as str]
             [cerber.helpers :as helpers]))
 
-(def ^:private select-values (comp vals select-keys))
+(def ^:private select-values
+  (comp vals select-keys))
 
-(defn- ns-key
+(defn ^:private ns-key
   ([namespace composite nil-to]
    (ns-key namespace (mapv #(or %1 nil-to) composite)))
   ([namespace composite]
@@ -20,6 +21,8 @@
   (modify!     [this k item] "Modifies item stored at key k")
   (touch!      [this k item ttl] "Extends life time of given item by ttl seconds")
   (purge!      [this] "Purges store"))
+
+;; basic store implementations
 
 (defrecord MemoryStore [namespace store]
   Store
@@ -93,6 +96,3 @@
       (catch java.io.EOFException e
         (if-let [msg (.getMessage e)]
           (println msg))))))
-
-(alter-meta! #'map->RedisStore  assoc :private true)
-(alter-meta! #'map->MemoryStore assoc :private true)
