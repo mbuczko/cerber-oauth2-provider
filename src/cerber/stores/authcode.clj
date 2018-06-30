@@ -1,14 +1,14 @@
 (ns cerber.stores.authcode
-  (:require [mount.core :refer [defstate]]
+  (:require [clojure.string :refer [join split]]
+            [cerber.stores.user :as user]
             [cerber
              [db :as db]
+             [error :as error]
              [helpers :as helpers]
              [config :refer [app-config]]
              [store :refer :all]]
             [failjure.core :as f]
-            [cerber.stores.user :as user]
-            [cerber.error :as error]
-            [clojure.string :refer [join split]]))
+            [mount.core :refer [defstate]]))
 
 (defn default-valid-for []
   (-> app-config :authcodes :valid-for))
@@ -28,7 +28,8 @@
   (purge! [this]
     (db/clear-authcodes)))
 
-(defn normalizer [authcode]
+(defn normalize
+  [authcode]
   (when-let [{:keys [client_id login code scope redirect_uri created_at expires_at]} authcode]
     (map->AuthCode {:client-id client_id
                     :login login
@@ -40,15 +41,6 @@
 
 (defmulti create-authcode-store identity)
 
-(defmacro with-authcode-store
-  "Changes default binding to default authcode store."
-  [store & body]
-  `(binding [*authcode-store* ~store] ~@body))
-
-(defstate ^:dynamic *authcode-store*
-  :start (create-authcode-store (-> app-config :authcodes :store))
-  :stop  (helpers/stop-periodic *authcode-store*))
-
 (defmethod create-authcode-store :in-memory [_]
   (->MemoryStore "authcodes" (atom {})))
 
@@ -57,7 +49,11 @@
 
 (defmethod create-authcode-store :sql [_]
   (helpers/with-periodic-fn
-    (->SqlAuthCodeStore normalizer) db/clear-expired-authcodes 8000))
+    (->SqlAuthCodeStore normalize) db/clear-expired-authcodes 8000))
+
+(defstate ^:dynamic *authcode-store*
+  :start (create-authcode-store (-> app-config :authcodes :store))
+  :stop  (helpers/stop-periodic *authcode-store*))
 
 (defn revoke-authcode
   "Revokes previously generated authcode."
@@ -81,11 +77,16 @@
       (error/internal-error "Cannot store authcode"))))
 
 (defn find-authcode [code]
-  (if-let [authcode (fetch-one *authcode-store* [code])]
+  (when-let [authcode (fetch-one *authcode-store* [code])]
     (when-not (helpers/expired? authcode)
       (map->AuthCode authcode))))
 
 (defn purge-authcodes
   []
-  "Removes auth code from store. Used for tests only."
+  "Removes auth code from store."
   (purge! *authcode-store*))
+
+(defmacro with-authcode-store
+  "Changes default binding to default authcode store."
+  [store & body]
+  `(binding [*authcode-store* ~store] ~@body))

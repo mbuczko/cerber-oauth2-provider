@@ -38,6 +38,35 @@
   (when-let [http-config (:server app-config)]
     (web/run-server app-handler http-config)))
 
+(defn init-users
+  "Initializes pre-defined collection of users."
+
+  []
+  (let [users (-> app-config :users :init)]
+    (doseq [{:keys [login email name permissions roles enabled? password]} users]
+      (user/create-user ({:login login
+                          :email email
+                          :name name
+                          :enabled? enabled?})
+                        password
+                        roles
+                        permissions))))
+
+(defn init-clients
+  "Initializes pre-defined collection of clients."
+
+  []
+  (let [clients (-> app-config :clients :init)]
+    (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
+      (client/create-client info redirects grants scopes approved? id secret))))
+
+
 (defstate ^:no-doc http-server
   :start (init-server)
   :stop  (when http-server (http-server)))
+
+(defstate ^:no-doc users
+  :start init-users)
+
+(defstate ^:no-doc clients
+  :start init-clients)

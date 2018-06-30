@@ -2,12 +2,11 @@
   (:require [mount.core :refer [defstate]]
             [cerber
              [db :as db]
+             [error :as error]
              [helpers :as helpers]
              [config :refer [app-config]]
              [store :refer :all]]
             [failjure.core :as f]))
-
-(declare init-users)
 
 (defrecord User [id login email name password enabled? created-at modified-at activated-at blocked-at])
 
@@ -28,7 +27,7 @@
   (purge! [this]
     (db/clear-users)))
 
-(defn normalizer
+(defn normalize
   [user]
   (when-let [{:keys [id login email name password roles permissions created_at modified_at activated_at blocked_at enabled]} user]
     (map->User {:id id
@@ -46,17 +45,6 @@
 
 (defmulti ^:no-doc create-user-store identity)
 
-(defmacro with-user-store
-  "Changes default binding to default users store."
-  [store & body]
-  `(binding [*user-store* ~store] ~@body))
-
-(defstate ^:dynamic *user-store*
-  :start (create-user-store (-> app-config :users :store)))
-
-(defstate ^:no-doc defined-users
-  :start (init-users (-> app-config :users :defined)))
-
 (defmethod create-user-store :in-memory [_]
   (->MemoryStore "users" (atom {})))
 
@@ -64,7 +52,10 @@
   (->RedisStore "users" (:redis-spec app-config)))
 
 (defmethod create-user-store :sql [_]
-  (->SqlUserStore normalizer))
+  (->SqlUserStore normalize))
+
+(defstate ^:dynamic *user-store*
+  :start (create-user-store (-> app-config :users :store)))
 
 (defn create-user
   "Creates new user"
@@ -85,8 +76,9 @@
                    :activated-at (when enabled (helpers/now))
                    :created-at (helpers/now)})]
 
-     (when (store! *user-store* [:login] merged)
-       (map->User merged)))))
+     (if (store! *user-store* [:login] merged)
+       (map->User merged)
+       (error/internal-error "Cannot store user")))))
 
 (defn find-user
   "Returns users with given login, if found or nil otherwise."
@@ -110,26 +102,16 @@
   (= 1 (modify! *user-store* [:login] (assoc user :enabled? false :blocked-at (helpers/now)))))
 
 (defn purge-users
-  "Removes users from store. Used for tests only."
+  "Removes users from store."
   []
   (purge! *user-store*))
-
-(defn init-users
-  "Initializes configured users."
-  [users]
-  (f/try*
-   (reduce (fn [reduced {:keys [login email name permissions roles enabled? password]}]
-             (conj reduced (create-user (map->User {:login login
-                                                    :email email
-                                                    :name name
-                                                    :enabled? enabled?})
-                                        password
-                                        roles
-                                        permissions)))
-           {}
-           users)))
 
 (defn valid-password?
   "Verify that given password matches the hashed one."
   [password hashed]
   (and password hashed (helpers/bcrypt-check password hashed)))
+
+(defmacro with-user-store
+  "Changes default binding to default users store."
+  [store & body]
+  `(binding [*user-store* ~store] ~@body))

@@ -37,6 +37,9 @@
                found  (find-client (:id client))]
 
            ;; then
+           client => (instance-of Client)
+           client => (has-secret :secret)
+
            found => (instance-of Client)
            found => (has-secret :secret))))
 

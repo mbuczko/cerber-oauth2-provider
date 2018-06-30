@@ -14,15 +14,12 @@
 (defn create-client
   "Creates new OAuth client.
 
-  `info` is a non-validated info string (typically client's app name or URL to client's homepage)
-
-  `redirects` is a validated vector of approved redirect-uris; redirect-uri provided with token request should match one of these entries
-
-  `grants` is an optional vector of allowed grants: authorization_code, token, password or client_credentials; all grants allowed if set to nil
-
-  `scopes` is an optional vector of OAuth scopes that client may request an access to
-
-  `approved?` decides whether client should be auto-approved or not. Set to false by default.
+    `info`      : a non-validated info string (typically client's app name or URL to client's homepage)
+    `redirects` : a validated vector of approved redirect-uris.
+                  redirect-uri provided with token request should match one of these entries.
+    `grants`    : an optional vector of allowed grants: authorization_code, token, password or client_credentials; all grants allowed if set to nil
+    `scopes`    : an optional vector of OAuth scopes that client may request an access to
+    `approved?` : decides whether client should be auto-approved or not. Set to false by default.
 
   Example:
 
@@ -73,11 +70,9 @@
 (defn create-user
   "Creates new user with given login, descriptive name, user's email, password (stored as hash), roles and permissions.
 
-  `roles` set of user's roles
-
-  `permissions` set of user's permissions
-
-  `enabled?` decides whether user should be enabled or not. Set to true by default.
+    `roles`       : set of user's roles
+    `permissions` : set of user's permissions
+    `enabled?`    : decides whether user should be enabled or not. Set to true by default.
 
   Example:
 
@@ -86,7 +81,8 @@
                      \"foo@bar.bazz\"
                      \"secret\"
                      #{\"user/admin\"}
-                     #{\"photos:read\"})"
+                     #{\"photos:read\"}
+                     true)"
 
   [login name email password roles permissions enabled?]
   (user/create-user (user/map->User {:login login

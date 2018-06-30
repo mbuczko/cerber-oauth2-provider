@@ -4,7 +4,8 @@
 
 [Architecture][arch] | [Usage][use] | [API][api] | [FAQ][faq] | [Development][dev]
 
-This is a work-in-progress of Clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749). Currently covers all scenarios described by spec:
+This is a clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
+Currently covers all scenarios described by spec:
 
 * [Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-4.1)
 * [Implict Grant](https://tools.ietf.org/html/rfc6749#section-4.2)
@@ -16,18 +17,19 @@ Tokens expiration and [refreshing](https://tools.ietf.org/html/rfc6749#section-6
 ## Architecture
 
 This implementation assumes Authorization Server and Resource Server having same source of knowledge about issued tokens and sessions.
-Servers might be horizontally scaled but still need to be connected to the same underlaying database (redis or sql-based). This is also why in-memory
-storage should be used for development only. It simply does not scale (at least not with current implementation).
+Servers might be horizontally scaled but still need to be connected to the same underlaying database (redis or sql-based).
+This is also why in-memory storage should be used for development only. It simply does not scale (at least not with current implementation).
 
-All _NOT RECOMMENDED_ points from specification have been purposely omitted for security reasons. Bearer tokens and client credentials should be passed in HTTP
-headers. All other ways (like query param or form fields) are ignored and will result in HTTP 401 (Unauthorized) or HTTP 403 (Forbidden) errors.
+All _NOT RECOMMENDED_ points from specification have been purposely omitted for security reasons. Bearer tokens and client credentials should be
+passed in HTTP headers. All other ways (like query param or form fields) are ignored and will result in HTTP 401 (Unauthorized) or HTTP 403
+(Forbidden) errors.
 
 _(todo)_ introduce JWT tokens
 
 ### Stores
 
-_Store_ is a base abstraction of storage which, through protocol, exposes simple API to read and write entities (user, client, session, token or authorization code) that all the logic operates on.
-Cerber stands on a shoulders of 5 stores:
+_Store_ is a base abstraction of storage which, through protocol, exposes simple API to read and write entities (user, client, session, token or
+authorization code) that all the logic operates on. Cerber stands on a shoulders of 5 stores:
 
 * users - keeps users details (along with encoded password)
 * clients - keeps OAuth clients data (identifiers, secrets, allowed redirect URIs and so on)
@@ -37,26 +39,26 @@ Cerber stands on a shoulders of 5 stores:
 
 As for now, each store implements following types:
 
-* ```in-memory``` - a store keeping its data straight in `atom`. Ideal for development mode and tests.
-* ```redis``` - a proxy to Redis. Recommended for production mode.
-* ```sql``` - a proxy to relational database (eg. MySQL or PostgreSQL). Recommended for production mode.
+* `in-memory` - a store keeping its data straight in `atom`. Ideal for development mode and tests.
+* `redis` - a proxy to Redis. Recommended for production mode.
+* `sql` - a proxy to relational database (eg. MySQL or PostgreSQL). Recommended for production mode.
 
-To keep maximal flexibility each store can be configured separately, eg. typical configuration might use ```sql``` store for users and clients and ```redis``` one for sessions / tokens / authcodes.
+To keep maximal flexibility each store can be configured separately, eg. typical configuration might use `sql` store for users and clients and `redis`
+one for sessions / tokens / authcodes.
 
 When speaking of configuration...
 
 ### Configuration
 
-Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everything it needs to operate. Instead of creating stores by hand it's enough to describe them in EDN based configuration:
+Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everything it needs to operate. Instead of creating stores by hand it's enough
+to describe them in EDN based configuration:
 
 ``` clojure
 {:authcodes   {:store :sql :valid-for 180}
  :sessions    {:store :sql :valid-for 180}
  :tokens      {:store :sql :valid-for 180}
- :users       {:store :sql
-               :defined []}
- :clients     {:store :sql
-               :defined []}
+ :users       {:store :sql}
+ :clients     {:store :sql}
  :landing-url "/"
  :realm       "http://defunkt.pl"
  :endpoints   {:authentication "/login"
@@ -73,69 +75,72 @@ Cerber uses glorious [mount](https://github.com/tolitius/mount) to set up everyt
 
 Words of explanation:
 
- * ```authcodes``` auth-codes store definition, requires an auth-code life-time option (:valid-for) in seconds.
- * ```sessions``` sessions store definition, requires a session life-time option (:valid-for) in seconds.
- * ```tokens``` tokens store definition, requires a token life-time option (:valid-for) in seconds.
- * ```users``` users store definition.
- * ```clients``` oauth2 clients store definition.
- * ```redis-spec``` (optional) is a redis connection specification (look at [carmine](https://github.com/ptaoussanis/carmine) for more info) for redis-based stores.
- * ```jdbc-pool``` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info) for sql-based stores.
- * ```endpoints``` (optional) should reflect cerber's routes to authentication and access approve/refuse endpoints.
- * ```realm``` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
+ * `authcodes` auth-codes store definition, requires an auth-code life-time option (:valid-for) in seconds.
+ * `sessions` sessions store definition, requires a session life-time option (:valid-for) in seconds.
+ * `tokens` tokens store definition, requires a token life-time option (:valid-for) in seconds.
+ * `users` users store definition.
+ * `clients` oauth2 clients store definition.
+ * `redis-spec` (optional) is a redis connection specification (look at [carmine](https://github.com/ptaoussanis/carmine) for more info) for redis-based stores.
+ * `jdbc-pool` (optional) is a sql database pool specification (look at [conman](https://github.com/luminus-framework/conman) for more info) for sql-based stores.
+ * `endpoints` (optional) should reflect cerber's routes to authentication and access approve/refuse endpoints.
+ * `realm` (required) is a realm presented in WWW-Authenticate header in case of 401/403 http error codes
 
 #### Users and clients
 
-Cerber has its own abstraction of User ([resource owner](https://tools.ietf.org/html/rfc6749#section-1.1)) and Client (application which requests on behalf of User).
-Instances of both can be predefined in configuration or created in runtime using [API] functions. 
+Cerber has its own abstraction of User ([resource owner](https://tools.ietf.org/html/rfc6749#section-1.1)) and Client (application which
+requests on behalf of User). Instances of both can be easily created using cerber's API.
 
-To configure users and/or clients as a part of environment, it's enough to list them in ```:defined``` vector in corresponding store:
+To initialize users and/or clients as a part of environment, the first thing is to decide what storage should hold these entities.
+If it's an :in-memory one, following entries should be placed into `cerber.edn` config file:
 
 ``` clojure
-{:users   {:store :in-memory
-           :defined [{:login "foo"
-                      :email "foo@bar.com"
-                      :name "Foo Bar"
-                      :enabled? true
-                      :password "pass"}]}
+{:users   {:store :in-memory}
+ :clients {:store :in-memory}}
+```
 
- :clients {:store :in-memory
-           :defined [{:id "KEJ57AVGDWJA4YSEUBX3H3M2RBW53WLA"
-                      :secret "BOQUIIPBU5LDJ5BBZMZQYZZK2KTLHLBS"
-                      :info "Default client"
-                      :redirects ["http://localhost"]
-                      :grants ["authorization_code" "password"]
-                      :scopes ["photo:read" "photo:write"]
-                      :approved? true}]}}
+Now, initialization boils down to call of `create-user` or `create-client` functions:
+
+``` clojure
+(require '[cerber.core :as c]')
+
+(c/create-user "foobar" "Foo Bar" "foo@bar.bazz" "secret" #{"user/admin"} #{"photos:read"} true)
+
+(c/create-client "http://defunkt.pl"
+                 ["http://defunkt.pl/callback"]
+                 ["authorization_code" "password"]
+                 ["photo:read" "photo:list"]
+                 true
+                 "KEJ57AVGDWJA4YSEUBX3H3M2RBW53WLA"
+                 "BOQUIIPBU5LDJ5BBZMZQYZZK2KTLHLBS")
 ```
 
 #### Authorization Grant Types
 
 Grant types allowed:
 
-* ```authorization_code``` for [Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-4.1)
-* ```token``` for [Implict Code Grant](https://tools.ietf.org/html/rfc6749#section-4.2)
-* ```password``` for [Resource Owner Password Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.3)
-* ```client_credentials``` for [Client Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.4)
+* `authorization_code` for [Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-4.1)
+* `token` for [Implict Code Grant](https://tools.ietf.org/html/rfc6749#section-4.2)
+* `password` for [Resource Owner Password Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.3)
+* `client_credentials` for [Client Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.4)
 
 #### Scopes
 
-Client scopes are configured as a vector of unique strings like ```"user"```, ```"photo:read"``` or ```"profile:write"``` which may be structurized in kind of hierarchy.
-For example one can define scopes as ```#{"photo" "photo:read" "photo:write"}``` which grants _read_ and _write_ permission to imaginary photo resoure and
+Client scopes are configured as a vector of unique strings like `"user"`, `"photo:read"` or `"profile:write"` which may be structurized in kind of hierarchy.
+For example one can define scopes as `#{"photo" "photo:read" "photo:write"}` which grants _read_ and _write_ permission to imaginary photo resoure and
 a _photo_ permission which is a parent of _photo:read_ and _photo:write_ and implicitly includes both permissions.
 
-Cerber also normalizes scope requests, so when client asks for ```#{"photo" "photo:read"}``` scopes, it's been simplified to ```#{"photo"}``` only.
+Cerber also normalizes scope requests, so when client asks for `#{"photo" "photo:read"}` scopes, it's been simplified to `#{"photo"}` only.
 
 Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec.
 
 ### Environments
 
-When Cerber's system boots up, it tries first to load default EDN confguration which is located in ```cerber.edn```. Global configuration provided by this library in ```cerber.edn``` resource
-sets default values as following:
+When Cerber's system boots up, it tries first to load default EDN confguration is located in `cerber.edn`. By default it sets up all the stores to in-memory
+and configures required endpoints:
 
 ``` clojure
 {:landing-url "http://localhost"
  :realm       "http://localhost"
- :scopes      #{}
  :authcodes   {:store :in-memory :valid-for 600}
  :sessions    {:store :in-memory :valid-for 600}
  :tokens      {:store :in-memory :valid-for 600}
@@ -145,24 +150,24 @@ sets default values as following:
                :client-approve "/approve"
                :client-refuse  "/refuse"}}
 ```
+Configuration can be easily extended or replaced in 3 ways:
 
-No fancy stuff. No default clients, users or scopes. All stores use their in-memory implementations.
-
-Configuration values can be easily replaced in 3 ways:
-
- - including custom ```cerber.edn``` in own project resources
- - including optional ```cerber-ENV.edn``` where ENV is a value of ```ENV``` environmental variable or a JVM ```ENV``` system property (if former was not found) or ```local``` if no ENV was found.
- - including both ```cerber.edn``` and environment specific ```cerber-ENV.edn```. In this case both resources will be merged together (environment-specific entries have higher priority in case of conflicts).
+ - including custom `cerber.edn` in project resources
+ - including environment-specific configuration file `cerber-ENV.edn` where ENV may be one of following:
+   * value of `ENV` environmental variable
+   * value of `ENV` JVM system property
+   * `local` if no `ENV` environmental variable or JVM system property were found
+ - including both `cerber.edn` and environment specific `cerber-ENV.edn`. In this case both resources will be merged together (environment-specific entries have
+ higher priority in case of conflicts).
 
 ### Forms
 
-To complete some of OAuth2-flow actions, like web based authentication or approval dialog, Cerber tries to load HTML templates and populate embedded expressions with use of [selmer](https://github.com/yogthos/Selmer).
-In similar way how it goes with configuration, Cerber looks for 2 HTML templates:
+To complete some of OAuth2-flow actions, like web based authentication or approval dialog Cerber makes use of following templates to render HTML pages:
 
  * [templates/cerber/login.html](./resources/templates/cerber/login.html) - used to render authentication form.
  * [templates/cerber/authorize.html](./resources/templates/cerber/authorize.html) - used to render user a form where user is asked to grant a permission.
 
-Both are provided by this library with a very spartan styling, just to expose the most important things inside.
+Both templates are provided by this library with a very spartan styling, just to expose the most important things inside and should be replaced with own customized ones.
 
 ## Usage
 
@@ -183,7 +188,7 @@ Anyway, this is how bindings would look like with compojure:
   (POST "/login"     [] handlers/login-submit-handler))
 ```
 
-To recall, any change in default /login, /approve or /refuse paths should be reflected in corresponding ```endpoints``` part of configuration.
+To recall, any change in default /login, /approve or /refuse paths should be reflected in corresponding `endpoints` part of configuration.
 
 Having OAuth Authentication Server paths set up, next step is to configure restricted resources:
 
@@ -194,10 +199,9 @@ Having OAuth Authentication Server paths set up, next step is to configure restr
   (GET "/user/info" [] (fn [req] {:status 200
                                   :body (::ctx/user req)})))
 ```
-
 Almost there. One missing part not mentioned yet is authorization and the way how token is validated.
 
-All this magic happens inside ```handlers/wrap-authorized``` handler which scans ```Authorization``` header for a token issued by Authorization Server.
+All this magic happens inside `handlers/wrap-authorized` handler which scans `Authorization` header for a token issued by Authorization Server.
 Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
 
 ``` clojure
@@ -230,7 +234,7 @@ This simply starts the Cerber system by mounting all stores and populates them w
 
 ## API
 
-API functions are all grouped in ```cerber.oauth2.core``` namespace and allow to manipulate with clients, users and tokens at higher level.
+API functions are all grouped in `cerber.oauth2.core` namespace and allow to manipulate with clients, users and tokens at higher level.
 
 Full documentation can be found [here](http://api.defunkt.pl/cerber/api/cerber.oauth2.core.html).
 
@@ -250,37 +254,6 @@ or added to the _error_ query param in case of callback requests.
 
 Callback requests (redirects) are one of the crucial concepts of OAuth flow thus it's extremally important to have redirect URIs verified. There are several way to validate redirect URI,
 this implementation however goes the simplest way and does _exact match_ which means that URI provided by client in a request MUST be exactly the same as one of URIs bound to the client during registration.
-
-
-## FAQ
-
-#### I've chosen SQL engine for some of my stores. How to apply database schema?
-
-Cerber uses SQL migrations (handled by [flyway](https://flywaydb.org/)) to incrementally apply changes on database schema.
-All migrations live [here](https://github.com/mbuczko/cerber-oauth2-provider/tree/master/resources/db/migrations). 
-You may either apply them by hand (not recommended) or use `cerber.migration/migrate` which applies missing changes on database of your choice:
-
-``` clojure
-
-# for MySQL
-cerber.migration> (migrate "jdbc:mysql://localhost:3306/template1?user=root&password=secret")
-
-# for PostgreSQL
-cerber.migration> (migrate "jdbc:postgresql://localhost:5432/template1?user=postgres&password=secret")
-
-# use optional 2nd argument "info" to display migration status
-cerber.migration> (migrate "jdbc:postgresql://localhost:5432/template1?user=postgres&password=secret" "info")
-
-+----------------+-------------+---------------------+---------+
-| Version        | Description | Installed on        | State   |
-+----------------+-------------+---------------------+---------+
-| 20161007012907 | init schema | 2017-11-07 23:33:22 | Success |
-+----------------+-------------+---------------------+---------+
-```
-
-### What SQL databases are supported?
-
-Currently MySQL and Postgres are supported out of the box and recognized based on jdbc-url.
 
 ## Development
 

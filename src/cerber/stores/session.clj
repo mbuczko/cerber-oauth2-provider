@@ -1,12 +1,12 @@
 (ns cerber.stores.session
-  (:require [cerber
+  (:require [cerber.helpers :as helpers]
+            [cerber
              [config :refer [app-config]]
              [db :as db]
              [helpers :as helpers]
              [store :refer :all]]
             [mount.core :refer [defstate]]
-            [taoensso.nippy :as nippy]
-            [cerber.helpers :as helpers]))
+            [taoensso.nippy :as nippy]))
 
 (defn default-valid-for []
   (-> app-config :sessions :valid-for))
@@ -35,7 +35,8 @@
   (purge! [this]
     (db/clear-sessions)))
 
-(defn normalizer [session]
+(defn normalize
+  [session]
   (when-let [{:keys [sid content created_at expires_at]} session]
     (map->Session {:sid sid
                    :content (nippy/thaw content)
@@ -43,15 +44,6 @@
                    :created-at created_at})))
 
 (defmulti create-session-store identity)
-
-(defmacro with-session-store
-  "Changes default binding to default session store."
-  [store & body]
-  `(binding [*session-store* ~store] ~@body))
-
-(defstate ^:dynamic *session-store*
-  :start (create-session-store (-> app-config :sessions :store))
-  :stop  (helpers/stop-periodic *session-store*))
 
 (defmethod create-session-store :in-memory [_]
   (->MemoryStore "sessions" (atom {})))
@@ -61,7 +53,11 @@
 
 (defmethod create-session-store :sql [_]
   (helpers/with-periodic-fn
-    (->SqlSessionStore normalizer) db/clear-expired-sessions 10000))
+    (->SqlSessionStore normalize) db/clear-expired-sessions 10000))
+
+(defstate ^:dynamic *session-store*
+  :start (create-session-store (-> app-config :sessions :store))
+  :stop  (helpers/stop-periodic *session-store*))
 
 (defn create-session
   "Creates new session"
@@ -93,5 +89,10 @@
 
 (defn purge-sessions
   []
-  "Removes sessions from store. Used for tests only."
+  "Removes sessions from store."
   (purge! *session-store*))
+
+(defmacro with-session-store
+  "Changes default binding to default session store."
+  [store & body]
+  `(binding [*session-store* ~store] ~@body))

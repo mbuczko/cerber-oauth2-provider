@@ -1,16 +1,14 @@
 (ns cerber.stores.client
-  (:require [mount.core :refer [defstate]]
+  (:require [clojure.string :as str]
+            [cerber.stores.token :as token]
+            [cerber.helpers :as helpers]
             [cerber
              [config :refer [app-config]]
              [db :as db]
+             [error :as error]
              [store :refer :all]]
-            [clojure.string :as str]
             [failjure.core :as f]
-            [cerber.error :as error]
-            [cerber.stores.token :as token]
-            [cerber.helpers :as helpers]))
-
-(declare init-clients)
+            [mount.core :refer [defstate]]))
 
 (defrecord Client [id secret info redirects grants scopes approved? enabled? created-at modified-at activated-at blocked-at])
 
@@ -31,7 +29,8 @@
   (purge! [this]
     (db/clear-clients)))
 
-(defn normalize [client]
+(defn normalize
+  [client]
   (when-let [{:keys [id secret info approved scopes grants redirects enabled created_at modified_at activated_at blocked_at]} client]
     (map->Client {:id id
                   :secret secret
@@ -48,17 +47,6 @@
 
 (defmulti create-client-store identity)
 
-(defmacro with-client-store
-  "Changes default binding to default client store."
-  [store & body]
-  `(binding [*client-store* ~store] ~@body))
-
-(defstate ^:dynamic *client-store*
-  :start (create-client-store (-> app-config :clients :store)))
-
-(defstate defined-clients
-  :start (init-clients (-> app-config :clients :defined)))
-
 (defmethod create-client-store :in-memory [_]
   (->MemoryStore "clients" (atom {})))
 
@@ -67,6 +55,9 @@
 
 (defmethod create-client-store :sql [_]
   (->SqlClientStore normalize))
+
+(defstate ^:dynamic *client-store*
+  :start (create-client-store (-> app-config :clients :store)))
 
 (defn validate-uri
   "Returns java.net.URL instance of given uri or failure info in case of error."
@@ -119,35 +110,22 @@
                 :activated-at (helpers/now)
                 :created-at (helpers/now)}]
 
-    (if (empty? result)
+    (if (seq result)
+      (error/internal-error (first result))
       (if (store! *client-store* [:id] client)
-        (map->Client (assoc client
-                            :scopes (or scopes [])
-                            :grants (or grants [])
-                            :redirects (or redirects [])))
-        (error/internal-error "Cannot store client"))
-      (first result))))
+        (map->Client client)
+        (error/internal-error "Cannot store client")))))
 
 (defn find-client
-  "Returns client with given id, if found or nil otherwise."
+  "Returns a client with given id if any found or nil otherwise."
   [client-id]
-  (if-let [found (and client-id (fetch-one *client-store* [client-id]))]
-    (let [{:keys [approved scopes grants redirects]} found]
-      (map->Client found))))
+  (when-let [found (and client-id (fetch-one *client-store* [client-id]))]
+    (map->Client found)))
 
 (defn purge-clients
   []
-  "Removes clients from store. Used for tests only."
+  "Removes clients from store."
   (purge! *client-store*))
-
-(defn init-clients
-  "Initializes configured clients."
-  [clients]
-  (f/try*
-   (reduce (fn [reduced {:keys [id secret info redirects grants scopes approved?]}]
-             (conj reduced (create-client info redirects grants scopes approved? id secret)))
-           {}
-           clients)))
 
 (defn grant-allowed? [client grant]
   (let [grants (:grants client)]
@@ -163,3 +141,8 @@
   (let [client-scopes (:scopes client)]
     (or (empty? scopes)
         (every? #(.contains client-scopes %) scopes))))
+
+(defmacro with-client-store
+  "Changes default binding to default client store."
+  [store & body]
+  `(binding [*client-store* ~store] ~@body))

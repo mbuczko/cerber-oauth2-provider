@@ -1,15 +1,15 @@
 (ns cerber.stores.token
-  (:require [mount.core :refer [defstate]]
+  (:require [clojure.string :refer [join split]]
+            [cerber.stores.user :as user]
+            [cerber.helpers :as helpers]
             [cerber
              [db :as db]
+             [error :as error]
              [config :refer [app-config]]
              [helpers :as helpers]
              [store :refer :all]]
             [failjure.core :as f]
-            [cerber.stores.user :as user]
-            [cerber.error :as error]
-            [cerber.helpers :as helpers]
-            [clojure.string :refer [join split]]))
+            [mount.core :refer [defstate]]))
 
 (defn default-valid-for []
   (-> app-config :tokens :valid-for))
@@ -39,7 +39,8 @@
   (purge! [this]
     (db/clear-tokens)))
 
-(defn normalizer [token]
+(defn normalize
+  [token]
   (when-let [{:keys [client_id user_id login scope secret created_at expires_at]} token]
     (map->Token {:client-id client_id
                  :user-id user_id
@@ -51,15 +52,6 @@
 
 (defmulti create-token-store identity)
 
-(defmacro with-token-store
-  "Changes default binding to default token store."
-  [store & body]
-  `(binding [*token-store* ~store] ~@body))
-
-(defstate ^:dynamic *token-store*
-  :start (create-token-store (-> app-config :tokens :store))
-  :stop  (helpers/stop-periodic *token-store*))
-
 (defmethod create-token-store :in-memory [_]
   (->MemoryStore "tokens" (atom {})))
 
@@ -68,7 +60,11 @@
 
 (defmethod create-token-store :sql [_]
   (helpers/with-periodic-fn
-    (->SqlTokenStore normalizer) db/clear-expired-tokens 60000))
+    (->SqlTokenStore normalize) db/clear-expired-tokens 60000))
+
+(defstate ^:dynamic *token-store*
+  :start (create-token-store (-> app-config :tokens :store))
+  :stop  (helpers/stop-periodic *token-store*))
 
 (defn create-token
   "Creates new token."
@@ -139,7 +135,7 @@
   (first (find-by-pattern [client-id "refresh" (helpers/digest secret) login])))
 
 (defn purge-tokens
-  "Removes token from store. Used for tests only."
+  "Removes token from store."
   []
   (purge! *token-store*))
 
@@ -183,3 +179,8 @@
                            {:id user-id :login login}
                            scope
                            {:refresh? true})))
+
+(defmacro with-token-store
+  "Changes default binding to default token store."
+  [store & body]
+  `(binding [*token-store* ~store] ~@body))
