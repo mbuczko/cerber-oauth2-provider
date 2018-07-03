@@ -2,31 +2,31 @@
   (:require [clojure.string :refer [join split]]
             [cerber.stores.user :as user]
             [cerber
-             [db :as db]
              [error :as error]
              [helpers :as helpers]
-             [config :refer [app-config]]
              [store :refer :all]]
             [failjure.core :as f]
             [mount.core :refer [defstate]]))
 
-(defn default-valid-for []
-  (-> app-config :authcodes :valid-for))
+(defonce default-valid-for (atom 180))
 
 (defrecord AuthCode [client-id login code scope redirect-uri expires-at created-at])
 
-(defrecord SqlAuthCodeStore [normalizer]
+(defrecord SqlAuthCodeStore [normalizer {:keys [find-authcode
+                                                delete-authcode
+                                                insert-authcode
+                                                clear-authcodes]}]
   Store
   (fetch-one [this [code]]
-    (-> (db/find-authcode {:code code})
+    (-> (find-authcode {:code code})
         first
         normalizer))
   (revoke-one! [this [code]]
-    (db/delete-authcode {:code code}))
+    (delete-authcode {:code code}))
   (store! [this k authcode]
-    (when (= 1 (db/insert-authcode authcode)) authcode))
+    (when (= 1 (insert-authcode authcode)) authcode))
   (purge! [this]
-    (db/clear-authcodes)))
+    (clear-authcodes)))
 
 (defn normalize
   [authcode]
@@ -39,21 +39,26 @@
                     :expires-at expires_at
                     :created-at created_at})))
 
-(defmulti create-authcode-store identity)
+(defmulti create-authcode-store (fn [type config] type))
 
-(defmethod create-authcode-store :in-memory [_]
+(defmethod create-authcode-store :in-memory [_ {:keys [valid-for]}]
+  (reset! default-valid-for valid-for)
   (->MemoryStore "authcodes" (atom {})))
 
-(defmethod create-authcode-store :redis [_]
+(defmethod create-authcode-store :redis [_ {:keys [redis-spec valid-for]}]
+  (reset! default-valid-for valid-for)
   (->RedisStore "authcodes" (:redis-spec app-config)))
 
-(defmethod create-authcode-store :sql [_]
-  (helpers/with-periodic-fn
-    (->SqlAuthCodeStore normalize) db/clear-expired-authcodes 8000))
+(defmethod create-authcode-store :sql [_ {:keys [jdbc-spec valid-for]}]
+  (reset! default-valid-for valid-for)
+  (let [fns (helpers/resolve-in-ns
+             'cerber.db
+             ['find-authcode 'delete-authcode 'insert-authcode 'clear-authcodes 'clear-expired-authcodes]
+             :init-fn 'init-pool
+             :init-args jdbc-spec)]
 
-(defstate ^:dynamic *authcode-store*
-  :start (create-authcode-store (-> app-config :authcodes :store))
-  :stop  (helpers/stop-periodic *authcode-store*))
+    (helpers/with-periodic-fn
+      (->SqlAuthCodeStore normalize) (:clear-expired-authcodes fns) 8000)))
 
 (defn revoke-authcode
   "Revokes previously generated authcode."
@@ -70,7 +75,7 @@
                    :code (helpers/generate-secret)
                    :redirect-uri redirect-uri
                    :created-at (helpers/now)}
-                  (or ttl (default-valid-for)))]
+                  (or ttl @default-valid-for))]
 
     (if (store! *authcode-store* [:code] authcode)
       (map->AuthCode authcode)

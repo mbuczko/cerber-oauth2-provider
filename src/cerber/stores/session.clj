@@ -1,39 +1,43 @@
 (ns cerber.stores.session
   (:require [cerber.helpers :as helpers]
             [cerber
-             [config :refer [app-config]]
-             [db :as db]
              [helpers :as helpers]
              [store :refer :all]]
             [mount.core :refer [defstate]]
             [taoensso.nippy :as nippy]))
 
-(defn default-valid-for []
-  (-> app-config :sessions :valid-for))
+(def default-valid-for (atom 3600))
+
+(def ^:dynamic *session-store*)
 
 (defrecord Session [sid content created-at expires-at])
 
-(defrecord SqlSessionStore [normalizer]
+(defrecord SqlSessionStore [normalizer {:keys [find-session
+                                               delete-session
+                                               insert-session
+                                               update-session
+                                               update-session-expiration
+                                               clear-sessions]}]
   Store
   (fetch-one [this [sid]]
-    (-> (db/find-session {:sid sid})
+    (-> (find-session {:sid sid})
         first
         normalizer))
   (revoke-one! [this [sid]]
-    (db/delete-session {:sid sid}))
+    (delete-session {:sid sid}))
   (store! [this k session]
     (let [content (nippy/freeze (:content session))
-          result  (db/insert-session (assoc session :content content))]
+          result  (insert-session (assoc session :content content))]
       (when (= 1 result) session)))
   (modify! [this k session]
-    (let [result (db/update-session (update session :content nippy/freeze))]
+    (let [result (update-session (update session :content nippy/freeze))]
       (when (= 1 result) session)))
   (touch! [this k session ttl]
     (let [extended (helpers/reset-ttl session ttl)
-          result (db/update-session-expiration extended)]
+          result (update-session-expiration extended)]
       (when (= 1 result) extended)))
   (purge! [this]
-    (db/clear-sessions)))
+    (clear-sessions)))
 
 (defn normalize
   [session]
@@ -43,21 +47,32 @@
                    :expires-at expires_at
                    :created-at created_at})))
 
-(defmulti create-session-store identity)
+(defmulti create-session-store (fn [type config] type))
 
-(defmethod create-session-store :in-memory [_]
+(defmethod create-session-store :in-memory [_ {:keys [valid-for]}]
+  (reset! default-valid-for valid-for)
   (->MemoryStore "sessions" (atom {})))
 
-(defmethod create-session-store :redis [_]
-  (->RedisStore "sessions" (:redis-spec app-config)))
+(defmethod create-session-store :redis [_ {:keys [redis-spec valid-for]}]
+  (reset! default-valid-for valid-for)
+  (->RedisStore "sessions" redis-spec))
 
-(defmethod create-session-store :sql [_]
-  (helpers/with-periodic-fn
-    (->SqlSessionStore normalize) db/clear-expired-sessions 10000))
+(defmethod create-session-store :sql [_ {:keys [jdbc-spec valid-for]}]
+  (reset! default-valid-for valid-for)
+  (let [fns (helpers/resolve-in-ns
+             'cerber.db
+             ['find-session
+              'delete-session
+              'insert-session
+              'update-session
+              'update-session-expiration
+              'clear-sessions
+              'clear-expired-sessions]
+             :init-fn 'init-pool
+             :init-args jdbc-spec)]
 
-(defstate ^:dynamic *session-store*
-  :start (create-session-store (-> app-config :sessions :store))
-  :stop  (helpers/stop-periodic *session-store*))
+    (helpers/with-periodic-fn
+      (->SqlSessionStore normalize) (:clear-expired-sessions fns) 10000)))
 
 (defn create-session
   "Creates new session"
@@ -66,7 +81,7 @@
                  {:sid (helpers/uuid)
                   :content content
                   :created-at (helpers/now)}
-                 (or ttl (default-valid-for)))]
+                 (or ttl @default-valid-for))]
 
     (when (store! *session-store* [:sid] session)
       (map->Session session))))

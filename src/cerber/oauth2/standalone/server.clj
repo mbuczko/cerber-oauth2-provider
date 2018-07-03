@@ -8,7 +8,8 @@
             [mount.core :as mount :refer [defstate]]
             [org.httpkit.server :as web]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]
-            [selmer.parser :as selmer]))
+            [selmer.parser :as selmer]
+            [cerber.stores.client :as client]))
 
 (defn user-info-handler [req]
   {:status 200
@@ -64,6 +65,28 @@
 (defstate ^:no-doc http-server
   :start (init-server)
   :stop  (when http-server (http-server)))
+
+;; stores
+
+(defstate ^:no-doc client-store
+  :start (client/create-client-store :sql {:jdbc-spec (:jdbc-spec app-config)}))
+
+(defstate ^:no-doc user-store
+  :start (user/create-user-store :sql {:jdbc-spec (:jdbc-spec app-config)}))
+
+(defstate ^:no-doc token-store
+  :start (token/create-token-store :sql {:jdbc-spec (:jdbc-spec app-config)})
+  :stop  (helpers/stop-periodic token-store))
+
+(defstate ^:no-doc authcode-store
+  :start (authcode/create-authcode-store {:jdbc-spec (:jdbc-spec app-config)})
+  :stop  (helpers/stop-periodic authcode-store))
+
+(defstate ^:no-doc session-store
+  :start (session/create-session-store (:jdbc-spec (:jdbc-spec app-config)))
+  :stop  (helpers/stop-periodic session-store))
+
+;; oauth2 entities
 
 (defstate ^:no-doc users
   :start init-users)

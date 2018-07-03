@@ -35,7 +35,6 @@
   (when-let [^java.util.concurrent.ScheduledFuture periodic (:periodic store)]
     (.cancel periodic false)))
 
-
 (defn generate-secret
   "Generates a unique secret code."
 
@@ -119,5 +118,21 @@
   [m k v]
   (when-not (m k) (assoc m k v)))
 
-(defn atomic-assoc-or-nil [a k v f]
+(defn atomic-assoc-or-nil
+  [a k v f]
   (get (swap! a f k v) k))
+
+(defn resolve-in-ns
+  "Resolves collection of functions from given namespace."
+
+  [ns-sym fns & opts]
+  (require ns-sym)
+  (let [publics (ns-publics ns-sym)]
+    (->> publics
+         keys
+         (filter fns)
+         (reduce (fn [reduced s]
+                   (assoc reduced
+                          (keyword s)
+                          (get publics s)))
+                 {}))))

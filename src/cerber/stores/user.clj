@@ -1,31 +1,34 @@
 (ns cerber.stores.user
   (:require [mount.core :refer [defstate]]
             [cerber
-             [db :as db]
              [error :as error]
              [helpers :as helpers]
-             [config :refer [app-config]]
              [store :refer :all]]
             [failjure.core :as f]))
 
 (defrecord User [id login email name password enabled? created-at modified-at activated-at blocked-at])
 
-(defrecord SqlUserStore [normalizer]
+(defrecord SqlUserStore [normalizer {:keys [find-user
+                                            delete-user
+                                            insert-user
+                                            enable-user
+                                            disable-user
+                                            clear-users]}]
   Store
   (fetch-one [this [login]]
-    (-> (db/find-user {:login login})
+    (-> (find-user {:login login})
         first
         normalizer))
   (revoke-one! [this [login]]
-    (db/delete-user {:login login}))
+    (delete-user {:login login}))
   (store! [this k user]
-    (when (= 1 (db/insert-user user)) user))
+    (when (= 1 (insert-user user)) user))
   (modify! [this k user]
     (if (:enabled? user)
-      (db/enable-user user)
-      (db/disable-user user)))
+      (enable-user user)
+      (disable-user user)))
   (purge! [this]
-    (db/clear-users)))
+    (clear-users)))
 
 (defn normalize
   [user]
@@ -43,19 +46,21 @@
                 :roles (helpers/str->coll #{} roles)
                 :permissions (helpers/str->coll #{} permissions)})))
 
-(defmulti ^:no-doc create-user-store identity)
+(defmulti create-user-store (fn [type config] type))
 
-(defmethod create-user-store :in-memory [_]
+(defmethod create-user-store :in-memory [_ _]
   (->MemoryStore "users" (atom {})))
 
-(defmethod create-user-store :redis [_]
-  (->RedisStore "users" (:redis-spec app-config)))
+(defmethod create-user-store :redis [_ {:keys [redis-spec]}]
+  (->RedisStore "users" redis-spec))
 
-(defmethod create-user-store :sql [_]
-  (->SqlUserStore normalize))
-
-(defstate ^:dynamic *user-store*
-  :start (create-user-store (-> app-config :users :store)))
+(defmethod create-user-store :sql [_ {:keys [jdbc-spec]}]
+  (let [fns (helpers/resolve-in-ns
+             'cerber.db
+             ['init-pool 'find-user 'delete-user 'insert-user 'enable-user 'disable-user 'clear-users]
+             :init-fn 'init-pool
+             :init-args jdbc-spec)]
+    (->SqlUserStore normalize fns)))
 
 (defn create-user
   "Creates new user"

@@ -3,8 +3,6 @@
             [cerber.stores.token :as token]
             [cerber.helpers :as helpers]
             [cerber
-             [config :refer [app-config]]
-             [db :as db]
              [error :as error]
              [store :refer :all]]
             [failjure.core :as f]
@@ -12,22 +10,27 @@
 
 (defrecord Client [id secret info redirects grants scopes approved? enabled? created-at modified-at activated-at blocked-at])
 
-(defrecord SqlClientStore [normalizer]
+(defrecord SqlClientStore [normalizer {:keys [find-client
+                                              delete-client
+                                              insert-client
+                                              enable-client
+                                              disable-client
+                                              clear-clients]}]
   Store
   (fetch-one [this [client-id]]
-    (-> (db/find-client {:id client-id})
+    (-> (find-client {:id client-id})
         first
         normalizer))
   (revoke-one! [this [client-id]]
-    (db/delete-client {:id client-id}))
+    (delete-client {:id client-id}))
   (store! [this k client]
-    (when (= 1 (db/insert-client client)) client))
+    (when (= 1 (insert-client client)) client))
   (modify! [this k client]
     (if (:enabled? client)
-      (db/enable-client client)
-      (db/disable-client client)))
+      (enable-client client)
+      (disable-client client)))
   (purge! [this]
-    (db/clear-clients)))
+    (clear-clients)))
 
 (defn normalize
   [client]
@@ -45,19 +48,21 @@
                   :activated-at activated_at
                   :blocked-at blocked_at})))
 
-(defmulti create-client-store identity)
+(defmulti create-client-store (fn [type config] type))
 
-(defmethod create-client-store :in-memory [_]
+(defmethod create-client-store :in-memory [_ _]
   (->MemoryStore "clients" (atom {})))
 
-(defmethod create-client-store :redis [_]
-  (->RedisStore "clients" (:redis-spec app-config)))
+(defmethod create-client-store :redis [_ {:keys [redis-spec]}]
+  (->RedisStore "clients" redis-spec))
 
-(defmethod create-client-store :sql [_]
-  (->SqlClientStore normalize))
-
-(defstate ^:dynamic *client-store*
-  :start (create-client-store (-> app-config :clients :store)))
+(defmethod create-client-store :sql [_ {:keys [jdbc-spec]}]
+  (let [fns (helpers/resolve-in-ns
+             'cerber.db
+             ['init-pool 'find-client 'delete-client 'insert-client 'enable-client 'disable-client 'clear-clients]
+             :init-fn 'init-pool
+             :init-args jdbc-spec)]
+    (->SqlClientStore normalize fns)))
 
 (defn validate-uri
   "Returns java.net.URL instance of given uri or failure info in case of error."

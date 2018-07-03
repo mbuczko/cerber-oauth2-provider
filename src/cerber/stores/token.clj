@@ -3,41 +3,45 @@
             [cerber.stores.user :as user]
             [cerber.helpers :as helpers]
             [cerber
-             [db :as db]
              [error :as error]
-             [config :refer [app-config]]
              [helpers :as helpers]
              [store :refer :all]]
             [failjure.core :as f]
             [mount.core :refer [defstate]]))
 
-(defn default-valid-for []
-  (-> app-config :tokens :valid-for))
+(defonce default-valid-for (atom 300))
 
 (defrecord Token [client-id user-id login scope secret created-at expires-at])
 
-(defrecord SqlTokenStore [normalizer]
+(defrecord SqlTokenStore [normalizer valid-for {:keys [find-tokens-by-secret
+                                                       find-tokens-by-login
+                                                       find-tokens-by-login-and-client
+                                                       delete-token-by-secret
+                                                       delete-tokens-by-login
+                                                       delete-tokens-by-client
+                                                       insert-token
+                                                       clear-tokens]}]
   Store
   (fetch-one [this [client-id tag secret login]]
-    (-> (db/find-tokens-by-secret {:secret secret :tag tag})
+    (-> (find-tokens-by-secret {:secret secret :tag tag})
         first
         normalizer))
   (fetch-all [this [client-id tag secret login]]
     (map normalizer (if secret
-                      (db/find-tokens-by-secret {:secret secret :tag tag})
+                      (find-tokens-by-secret {:secret secret :tag tag})
                       (if client-id
-                        (db/find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
-                        (db/find-tokens-by-login {:login login :tag tag})))))
+                        (find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
+                        (find-tokens-by-login {:login login :tag tag})))))
   (revoke-one! [this [client-id tag secret]]
     (db/delete-token-by-secret {:secret secret}))
   (revoke-all! [this [client-id tag secret login]]
     (map ->Token (if login
-                   (db/delete-tokens-by-login  {:client-id client-id :login login :tag tag})
-                   (db/delete-tokens-by-client {:client-id client-id :tag tag}))))
+                   (delete-tokens-by-login  {:client-id client-id :login login :tag tag})
+                   (delete-tokens-by-client {:client-id client-id :tag tag}))))
   (store! [this k token]
-    (when (= 1 (db/insert-token token)) token))
+    (when (= 1 (insert-token token)) token))
   (purge! [this]
-    (db/clear-tokens)))
+    (clear-tokens)))
 
 (defn normalize
   [token]
@@ -50,21 +54,34 @@
                  :created-at created_at
                  :expires-at expires_at})))
 
-(defmulti create-token-store identity)
+(defmulti create-token-store (fn [type config] type))
 
-(defmethod create-token-store :in-memory [_]
+(defmethod create-token-store :in-memory [_ {:keys [valid-for]}]
+  (reset! default-valid-for valid-for)
   (->MemoryStore "tokens" (atom {})))
 
-(defmethod create-token-store :redis [_]
-  (->RedisStore "tokens" (:redis-spec app-config)))
+(defmethod create-token-store :redis [_ {:keys [redis-spec valid-for]}]
+  (reset! default-valid-for valid-for)
+  (->RedisStore "tokens" redis-spec))
 
-(defmethod create-token-store :sql [_]
-  (helpers/with-periodic-fn
-    (->SqlTokenStore normalize) db/clear-expired-tokens 60000))
+(defmethod create-token-store :sql [_ {:keys [jdbc-spec valid-for]}]
+  (reset! default-valid-for valid-for)
+  (let [fns (helpers/resolve-in-ns
+             'cerber.db
+             ['find-tokens-by-secret
+              'find-tokens-by-login
+              'find-tokens-by-login-and-client
+              'delete-token-by-secret
+              'delete-tokens-by-login
+              'delete-tokens-by-client
+              'insert-token
+              'clear-tokens
+              'clear-expired-tokens]
+             :init-fn 'init-pool
+             :init-args jdbc-spec)]
 
-(defstate ^:dynamic *token-store*
-  :start (create-token-store (-> app-config :tokens :store))
-  :stop  (helpers/stop-periodic *token-store*))
+    (helpers/with-periodic-fn
+      (->SqlTokenStore normalize) (:clear-expired-tokens fns) 60000)))
 
 (defn create-token
   "Creates new token."
@@ -78,7 +95,7 @@
                  :scope scope
                  :tag (name tag)
                  :created-at (helpers/now)}
-                (and (= tag :access) (or ttl (default-valid-for))))
+                (and (= tag :access) (or ttl @default-valid-for)))
         keyvec  (if (= tag :access)
                   [nil :tag :secret nil]
                   [:client-id :tag :secret :login])]
