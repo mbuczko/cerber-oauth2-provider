@@ -7,6 +7,10 @@
 (def login "foo")
 (def password "pass")
 
+(defmacro with-user-store
+  [store & body]
+  `(binding [*user-store* ~(atom store)] ~@body))
+
 (fact "Newly created user is returned with auto-generated id and crypted password filled in."
       (with-user-store (create-user-store :in-memory)
         (purge-users)

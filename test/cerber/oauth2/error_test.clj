@@ -1,7 +1,11 @@
 (ns cerber.oauth2.error-test
   (:require [midje.sweet :refer :all]
             [cerber.oauth2.authorization :refer [authorize!]]
-            [cerber.stores.client :refer [create-client create-client-store with-client-store]]))
+            [cerber.stores.client :refer :all]))
+
+(defmacro with-client-store
+  [store & body]
+  `(binding [*client-store* ~(atom store)] ~@body))
 
 (fact "Authorization fails when requested by unknown client."
       (with-client-store (create-client-store :in-memory)

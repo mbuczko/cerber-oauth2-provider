@@ -11,6 +11,10 @@
 (def client (create-test-client scope redirect-uri))
 (def user   (create-test-user ""))
 
+(defmacro with-token-store
+  [store & body]
+  `(binding [*token-store* ~(atom store)] ~@body))
+
 (fact "Newly created token is returned with user/client ids and secret filled in."
       (with-token-store (create-token-store :in-memory)
         (purge-tokens)

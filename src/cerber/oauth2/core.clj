@@ -1,7 +1,32 @@
 (ns cerber.oauth2.core
-  (:require [cerber.stores.client :as client]
-            [cerber.stores.token :as token]
-            [cerber.stores.user :as user]))
+  (:require [cerber.stores
+             [user :as user]
+             [token :as token]
+             [client :as client]
+             [session :as session]
+             [authcode :as authcode]]))
+
+;; stores
+
+(defn create-session-store
+  [type config]
+  (session/init-store type config))
+
+(defn create-authcode-store
+  [type config]
+  (authcode/init-store type config))
+
+(defn create-token-store
+  [type config]
+  (token/init-store type config))
+
+(defn create-user-store
+  [type config]
+  (user/init-store type config))
+
+(defn create-client-store
+  [type config]
+  (client/init-store type config))
 
 ;; clients
 

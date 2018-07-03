@@ -10,6 +10,10 @@
 (def user   (create-test-user ""))
 (def client (create-test-client scope redirect-uri))
 
+(defmacro with-authcode-store
+  [store & body]
+  `(binding [*authcode-store* ~(atom store)] ~@body))
+
 (fact "Newly created authcode is returned with secret code filled in."
       (with-authcode-store (create-authcode-store :in-memory)
 

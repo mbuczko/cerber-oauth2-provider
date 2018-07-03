@@ -6,6 +6,10 @@
 
 (def session-content {:sample "value"})
 
+(defmacro with-session-store
+  [store & body]
+  `(binding [*session-store* ~(atom store)] ~@body))
+
 (fact "Newly created session is returned with session content and random id filled in."
       (with-session-store (create-session-store :in-memory)
 

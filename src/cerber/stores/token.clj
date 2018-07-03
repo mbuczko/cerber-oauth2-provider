@@ -1,47 +1,42 @@
 (ns cerber.stores.token
   (:require [clojure.string :refer [join split]]
             [cerber.stores.user :as user]
-            [cerber.helpers :as helpers]
             [cerber
+             [db :as db]
              [error :as error]
              [helpers :as helpers]
              [store :refer :all]]
             [failjure.core :as f]
             [mount.core :refer [defstate]]))
 
-(defonce default-valid-for (atom 300))
+(def token-store (atom :not-initialized))
+
+(def default-valid-for (atom 300))
 
 (defrecord Token [client-id user-id login scope secret created-at expires-at])
 
-(defrecord SqlTokenStore [normalizer valid-for {:keys [find-tokens-by-secret
-                                                       find-tokens-by-login
-                                                       find-tokens-by-login-and-client
-                                                       delete-token-by-secret
-                                                       delete-tokens-by-login
-                                                       delete-tokens-by-client
-                                                       insert-token
-                                                       clear-tokens]}]
+(defrecord SqlTokenStore [normalizer valid-for]
   Store
   (fetch-one [this [client-id tag secret login]]
-    (-> (find-tokens-by-secret {:secret secret :tag tag})
+    (-> (db/call 'find-tokens-by-secret {:secret secret :tag tag})
         first
         normalizer))
   (fetch-all [this [client-id tag secret login]]
     (map normalizer (if secret
-                      (find-tokens-by-secret {:secret secret :tag tag})
+                      (db/call 'find-tokens-by-secret {:secret secret :tag tag})
                       (if client-id
-                        (find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
-                        (find-tokens-by-login {:login login :tag tag})))))
+                        (db/call 'find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
+                        (db/call 'find-tokens-by-login {:login login :tag tag})))))
   (revoke-one! [this [client-id tag secret]]
-    (db/delete-token-by-secret {:secret secret}))
+    (db/call 'delete-token-by-secret {:secret secret}))
   (revoke-all! [this [client-id tag secret login]]
     (map ->Token (if login
-                   (delete-tokens-by-login  {:client-id client-id :login login :tag tag})
-                   (delete-tokens-by-client {:client-id client-id :tag tag}))))
+                   (db/call 'delete-tokens-by-login  {:client-id client-id :login login :tag tag})
+                   (db/call 'delete-tokens-by-client {:client-id client-id :tag tag}))))
   (store! [this k token]
-    (when (= 1 (insert-token token)) token))
+    (when (= 1 (db/call 'insert-token token)) token))
   (purge! [this]
-    (clear-tokens)))
+    (db/call 'clear-tokens)))
 
 (defn normalize
   [token]
@@ -56,35 +51,20 @@
 
 (defmulti create-token-store (fn [type config] type))
 
-(defmethod create-token-store :in-memory [_ {:keys [valid-for]}]
-  (reset! default-valid-for valid-for)
+(defmethod create-token-store :in-memory [_ _]
   (->MemoryStore "tokens" (atom {})))
 
-(defmethod create-token-store :redis [_ {:keys [redis-spec valid-for]}]
-  (reset! default-valid-for valid-for)
+(defmethod create-token-store :redis [_ redis-spec]
   (->RedisStore "tokens" redis-spec))
 
-(defmethod create-token-store :sql [_ {:keys [jdbc-spec valid-for]}]
-  (reset! default-valid-for valid-for)
-  (let [fns (helpers/resolve-in-ns
-             'cerber.db
-             ['find-tokens-by-secret
-              'find-tokens-by-login
-              'find-tokens-by-login-and-client
-              'delete-token-by-secret
-              'delete-tokens-by-login
-              'delete-tokens-by-client
-              'insert-token
-              'clear-tokens
-              'clear-expired-tokens]
-             :init-fn 'init-pool
-             :init-args jdbc-spec)]
-
-    (helpers/with-periodic-fn
-      (->SqlTokenStore normalize) (:clear-expired-tokens fns) 60000)))
+(defmethod create-token-store :sql [_ jdbc-spec]
+  (db/init-pool jdbc-spec)
+  (helpers/with-periodic-fn
+    (->SqlTokenStore normalize) (db/interned-fn 'clear-expired-tokens) 60000))
 
 (defn create-token
   "Creates new token."
+
   [tag client user scope & [ttl]]
   (let [secret (helpers/generate-secret)
         token  (helpers/reset-ttl
@@ -100,14 +80,19 @@
                   [nil :tag :secret nil]
                   [:client-id :tag :secret :login])]
 
-    (if-let [result (store! *token-store* keyvec token)]
+    (if-let [result (store! @token-store keyvec token)]
       (map->Token (assoc result :secret secret))
       (error/internal-error "Cannot create token"))))
 
 ;; revocation
 
-(defn- revoke-by-pattern [pattern] (revoke-all! *token-store* pattern) nil)
-(defn- revoke-by-key [key] (revoke-one! *token-store* key) nil)
+(defn- revoke-by-pattern
+  [pattern]
+  (revoke-all! @token-store pattern) nil)
+
+(defn- revoke-by-key
+  [key]
+  (revoke-one! @token-store key) nil)
 
 (defn revoke-access-token
   [token]
@@ -128,7 +113,7 @@
   Each nil element of key will be replaced with wildcard specific for underlaying store implementation."
 
   [key]
-  (when-let [tokens (fetch-all *token-store* key)]
+  (when-let [tokens (fetch-all @token-store key)]
     (map (fn [t] (map->Token t)) tokens)))
 
 (defn find-by-key
@@ -136,7 +121,7 @@
   Each element of key is used to compose query depending on underlaying store implementation."
 
   [key]
-  (when-let [result (fetch-one *token-store* key)]
+  (when-let [result (fetch-one @token-store key)]
     (map->Token result)))
 
 (defn find-access-token
@@ -153,8 +138,9 @@
 
 (defn purge-tokens
   "Removes token from store."
+
   []
-  (purge! *token-store*))
+  (purge! @token-store))
 
 ;; generation
 
@@ -197,7 +183,14 @@
                            scope
                            {:refresh? true})))
 
-(defmacro with-token-store
-  "Changes default binding to default token store."
-  [store & body]
-  `(binding [*token-store* ~store] ~@body))
+(defn init-store
+  "Initializes token store according to given connection spec and
+  optional token `valid-for` ttl."
+
+  [type {:keys [jdbc-spec redis-spec valid-for]}]
+  (when valid-for
+    (reset! default-valid-for valid-for))
+
+  (if-let [spec (or jdbc-spec redis-spec (= type :in-memory))]
+    (reset! token-store (create-token-store type spec))
+    (println (str "Connection spec missing for " type " type of store."))))

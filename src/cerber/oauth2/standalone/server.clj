@@ -1,8 +1,11 @@
 (ns cerber.oauth2.standalone.server
   (:require [cerber
              [config :refer [app-config]]
-             [handlers :as handlers]]
+             [handlers :as handlers]
+             [helpers  :as helpers]]
             [cerber.oauth2.context :as ctx]
+            [cerber.oauth2.core :as core]
+            [cerber.stores.user :as user]
             [compojure
              [core :refer [defroutes GET POST routes wrap-routes]]]
             [mount.core :as mount :refer [defstate]]
@@ -69,21 +72,21 @@
 ;; stores
 
 (defstate ^:no-doc client-store
-  :start (client/create-client-store :sql {:jdbc-spec (:jdbc-spec app-config)}))
+  :start (core/create-client-store :sql app-config))
 
 (defstate ^:no-doc user-store
-  :start (user/create-user-store :sql {:jdbc-spec (:jdbc-spec app-config)}))
+  :start (core/create-user-store :sql app-config))
 
 (defstate ^:no-doc token-store
-  :start (token/create-token-store :sql {:jdbc-spec (:jdbc-spec app-config)})
+  :start (core/create-token-store :sql app-config)
   :stop  (helpers/stop-periodic token-store))
 
 (defstate ^:no-doc authcode-store
-  :start (authcode/create-authcode-store {:jdbc-spec (:jdbc-spec app-config)})
+  :start (core/create-authcode-store app-config)
   :stop  (helpers/stop-periodic authcode-store))
 
 (defstate ^:no-doc session-store
-  :start (session/create-session-store (:jdbc-spec (:jdbc-spec app-config)))
+  :start (core/create-session-store app-config)
   :stop  (helpers/stop-periodic session-store))
 
 ;; oauth2 entities

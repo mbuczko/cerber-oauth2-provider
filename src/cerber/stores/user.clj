@@ -1,34 +1,32 @@
 (ns cerber.stores.user
   (:require [mount.core :refer [defstate]]
             [cerber
+             [db :as db]
              [error :as error]
              [helpers :as helpers]
              [store :refer :all]]
             [failjure.core :as f]))
 
+(def user-store (atom :not-initialized))
+
 (defrecord User [id login email name password enabled? created-at modified-at activated-at blocked-at])
 
-(defrecord SqlUserStore [normalizer {:keys [find-user
-                                            delete-user
-                                            insert-user
-                                            enable-user
-                                            disable-user
-                                            clear-users]}]
+(defrecord SqlUserStore [normalizer]
   Store
   (fetch-one [this [login]]
-    (-> (find-user {:login login})
+    (-> (db/call 'find-user {:login login})
         first
         normalizer))
   (revoke-one! [this [login]]
-    (delete-user {:login login}))
+    (db/call 'delete-user {:login login}))
   (store! [this k user]
-    (when (= 1 (insert-user user)) user))
+    (when (= 1 (db/call 'insert-user user)) user))
   (modify! [this k user]
     (if (:enabled? user)
-      (enable-user user)
-      (disable-user user)))
+      (db/call 'enable-user user)
+      (db/call 'disable-user user)))
   (purge! [this]
-    (clear-users)))
+    (db/call 'clear-users)))
 
 (defn normalize
   [user]
@@ -51,19 +49,16 @@
 (defmethod create-user-store :in-memory [_ _]
   (->MemoryStore "users" (atom {})))
 
-(defmethod create-user-store :redis [_ {:keys [redis-spec]}]
+(defmethod create-user-store :redis [_ redis-spec]
   (->RedisStore "users" redis-spec))
 
-(defmethod create-user-store :sql [_ {:keys [jdbc-spec]}]
-  (let [fns (helpers/resolve-in-ns
-             'cerber.db
-             ['init-pool 'find-user 'delete-user 'insert-user 'enable-user 'disable-user 'clear-users]
-             :init-fn 'init-pool
-             :init-args jdbc-spec)]
-    (->SqlUserStore normalize fns)))
+(defmethod create-user-store :sql [_ jdbc-spec]
+  (db/init-pool jdbc-spec)
+  (->SqlUserStore normalize))
 
 (defn create-user
-  "Creates new user"
+  "Creates new user."
+
   ([user password]
    (create-user user password nil nil))
   ([user password roles permissions]
@@ -81,42 +76,51 @@
                    :activated-at (when enabled (helpers/now))
                    :created-at (helpers/now)})]
 
-     (if (store! *user-store* [:login] merged)
+     (if (store! @user-store [:login] merged)
        (map->User merged)
        (error/internal-error "Cannot store user")))))
 
 (defn find-user
   "Returns users with given login, if found or nil otherwise."
+
   [login]
-  (if-let [found (and login (fetch-one *user-store* [login]))]
+  (if-let [found (and login (fetch-one @user-store [login]))]
     (map->User found)))
 
 (defn revoke-user
   "Removes user from store"
+
   [user]
-  (revoke-one! *user-store* [(:login user)]))
+  (revoke-one! @user-store [(:login user)]))
 
 (defn enable-user
   "Enables user. Returns true if user has been enabled successfully or false otherwise."
+
   [user]
-  (= 1 (modify! *user-store* [:login] (assoc user :enabled? true :activated-at (helpers/now)))))
+  (= 1 (modify! @user-store [:login] (assoc user :enabled? true :activated-at (helpers/now)))))
 
 (defn disable-user
   "Disables user. Returns true if user has been disabled successfully or false otherwise."
+
   [user]
-  (= 1 (modify! *user-store* [:login] (assoc user :enabled? false :blocked-at (helpers/now)))))
+  (= 1 (modify! @user-store [:login] (assoc user :enabled? false :blocked-at (helpers/now)))))
 
 (defn purge-users
   "Removes users from store."
+
   []
-  (purge! *user-store*))
+  (purge! @user-store))
 
 (defn valid-password?
-  "Verify that given password matches the hashed one."
+  "Verifies that given password matches the hashed one."
+
   [password hashed]
   (and password hashed (helpers/bcrypt-check password hashed)))
 
-(defmacro with-user-store
-  "Changes default binding to default users store."
-  [store & body]
-  `(binding [*user-store* ~store] ~@body))
+(defn init-store
+  "Initializes user store according to given connection spec."
+
+  [type {:keys [jdbc-spec redis-spec]}]
+  (if-let [spec (or jdbc-spec redis-spec (= type :in-memory))]
+    (reset! user-store (create-user-store type spec))
+    (println (str "Connection spec missing for " type " type of store."))))
