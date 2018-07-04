@@ -28,7 +28,9 @@
       (db/call 'enable-client client)
       (db/call 'disable-client client)))
   (purge! [this]
-    (db/call 'clear-clients)))
+    (db/call 'clear-clients))
+  (close! [this]
+    ))
 
 (defn normalize
   [client]
@@ -54,8 +56,7 @@
 (defmethod create-client-store :redis [_ redis-spec]
   (->RedisStore "clients" redis-spec))
 
-(defmethod create-client-store :sql [_ jdbc-spec]
-  (db/init-pool jdbc-spec)
+(defmethod create-client-store :sql [_ _]
   (->SqlClientStore normalize))
 
 (defn validate-uri
@@ -155,7 +156,5 @@
 (defn init-store
   "Initializes client store according to given connection spec."
 
-  [type {:keys [jdbc-spec redis-spec]}]
-  (if-let [spec (or jdbc-spec redis-spec (= type :in-memory))]
-    (reset! client-store (create-client-store type spec))
-    (println (str "Connection spec missing for " type " type of store."))))
+  [type config]
+  (reset! client-store (create-client-store type config)))

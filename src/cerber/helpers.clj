@@ -4,36 +4,12 @@
             [digest])
   (:import  [org.mindrot.jbcrypt BCrypt]))
 
-(def scheduler ^java.util.concurrent.ScheduledExecutorService
-  (java.util.concurrent.Executors/newScheduledThreadPool 1))
-
 (defn now []
   (java.sql.Timestamp. (System/currentTimeMillis)))
 
 (defn now-plus-seconds [seconds]
   (when seconds
     (java.sql.Timestamp. (+ (System/currentTimeMillis) (* 1000 seconds)))))
-
-(defn init-periodic
-  "Schedules a function f to be run periodically at given interval.
-  Function gets {:date now} as an argument."
-
-  [f interval]
-  (let [runnable (proxy [Runnable] [] (run [] (f {:date (now)})))]
-    (.scheduleAtFixedRate scheduler ^Runnable runnable 0 interval java.util.concurrent.TimeUnit/MILLISECONDS)))
-
-(defn with-periodic-fn
-  "Initializes periodically run function and associates it to given store."
-
-  [store f interval]
-  (assoc store :periodic (init-periodic f interval)))
-
-(defn stop-periodic
-  "Stops periodically run funciton attached to store."
-
-  [store]
-  (when-let [^java.util.concurrent.ScheduledFuture periodic (:periodic store)]
-    (.cancel periodic false)))
 
 (defn generate-secret
   "Generates a unique secret code."

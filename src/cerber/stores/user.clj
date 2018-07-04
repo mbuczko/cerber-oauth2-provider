@@ -26,7 +26,9 @@
       (db/call 'enable-user user)
       (db/call 'disable-user user)))
   (purge! [this]
-    (db/call 'clear-users)))
+    (db/call 'clear-users))
+  (close! [this]
+    ))
 
 (defn normalize
   [user]
@@ -52,8 +54,7 @@
 (defmethod create-user-store :redis [_ redis-spec]
   (->RedisStore "users" redis-spec))
 
-(defmethod create-user-store :sql [_ jdbc-spec]
-  (db/init-pool jdbc-spec)
+(defmethod create-user-store :sql [_ _]
   (->SqlUserStore normalize))
 
 (defn create-user
@@ -120,7 +121,5 @@
 (defn init-store
   "Initializes user store according to given connection spec."
 
-  [type {:keys [jdbc-spec redis-spec]}]
-  (if-let [spec (or jdbc-spec redis-spec (= type :in-memory))]
-    (reset! user-store (create-user-store type spec))
-    (println (str "Connection spec missing for " type " type of store."))))
+  [type config]
+  (reset! user-store (create-user-store type config)))

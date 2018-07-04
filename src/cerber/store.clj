@@ -20,7 +20,8 @@
   (store!      [this k item] "Stores and returns new item with key taken from item map at k")
   (modify!     [this k item] "Modifies item stored at key k")
   (touch!      [this k item ttl] "Extends life time of given item by ttl seconds")
-  (purge!      [this] "Purges store"))
+  (purge!      [this] "Purges store")
+  (close!      [this] "Closes store and frees all allocated resources."))
 
 ;; basic store implementations
 
@@ -46,7 +47,9 @@
   (touch! [this k item ttl]
     (.modify! this k (helpers/reset-ttl item ttl)))
   (purge! [this]
-    (swap! store empty)))
+    (swap! store empty))
+  (close! [this]
+    (reset! store nil)))
 
 (defn- scan-by-key [spec key]
   (car/reduce-scan
@@ -95,4 +98,6 @@
       (car/wcar server-conn (car/flushdb))
       (catch java.io.EOFException e
         (if-let [msg (.getMessage e)]
-          (println msg))))))
+          (println msg)))))
+  (close! [this]
+    ))

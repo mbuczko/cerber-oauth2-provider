@@ -15,7 +15,7 @@
 
 (defrecord Token [client-id user-id login scope secret created-at expires-at])
 
-(defrecord SqlTokenStore [normalizer valid-for]
+(defrecord SqlTokenStore [normalizer cleaner]
   Store
   (fetch-one [this [client-id tag secret login]]
     (-> (db/call 'find-tokens-by-secret {:secret secret :tag tag})
@@ -36,7 +36,9 @@
   (store! [this k token]
     (when (= 1 (db/call 'insert-token token)) token))
   (purge! [this]
-    (db/call 'clear-tokens)))
+    (db/call 'clear-tokens))
+  (close! [this]
+    (db/stop-periodic cleaner)))
 
 (defn normalize
   [token]
@@ -57,10 +59,8 @@
 (defmethod create-token-store :redis [_ redis-spec]
   (->RedisStore "tokens" redis-spec))
 
-(defmethod create-token-store :sql [_ jdbc-spec]
-  (db/init-pool jdbc-spec)
-  (helpers/with-periodic-fn
-    (->SqlTokenStore normalize) (db/interned-fn 'clear-expired-tokens) 60000))
+(defmethod create-token-store :sql [_ _]
+  (->SqlTokenStore normalize (db/make-periodic 'clear-expired-tokens 60000)))
 
 (defn create-token
   "Creates new token."
@@ -187,10 +187,8 @@
   "Initializes token store according to given connection spec and
   optional token `valid-for` ttl."
 
-  [type {:keys [jdbc-spec redis-spec valid-for]}]
-  (when valid-for
+  [type config]
+  (when-let [valid-for (:valid-for config)]
     (reset! default-valid-for valid-for))
 
-  (if-let [spec (or jdbc-spec redis-spec (= type :in-memory))]
-    (reset! token-store (create-token-store type spec))
-    (println (str "Connection spec missing for " type " type of store."))))
+  (reset! token-store (create-token-store type config)))

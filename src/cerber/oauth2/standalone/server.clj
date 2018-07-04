@@ -1,18 +1,20 @@
 (ns cerber.oauth2.standalone.server
   (:require [cerber
              [config :refer [app-config]]
+             [store :refer :all]
              [handlers :as handlers]
              [helpers  :as helpers]]
             [cerber.oauth2.context :as ctx]
             [cerber.oauth2.core :as core]
             [cerber.stores.user :as user]
+            [cerber.stores.client :as client]
+            [cerber.oauth2.standalone.storage]
             [compojure
              [core :refer [defroutes GET POST routes wrap-routes]]]
             [mount.core :as mount :refer [defstate]]
             [org.httpkit.server :as web]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]
-            [selmer.parser :as selmer]
-            [cerber.stores.client :as client]))
+            [selmer.parser :as selmer]))
 
 (defn user-info-handler [req]
   {:status 200
@@ -65,34 +67,36 @@
       (client/create-client info redirects grants scopes approved? id secret))))
 
 
-(defstate ^:no-doc http-server
+(defstate http-server
   :start (init-server)
   :stop  (when http-server (http-server)))
 
-;; stores
+;; oauth2 stores
 
-(defstate ^:no-doc client-store
-  :start (core/create-client-store :sql app-config))
+(defstate client-store
+  :start (core/create-client-store :sql app-config)
+  :stop  (close! client-store))
 
-(defstate ^:no-doc user-store
-  :start (core/create-user-store :sql app-config))
+(defstate user-store
+  :start (core/create-user-store :sql app-config)
+  :stop  (close! user-store))
 
-(defstate ^:no-doc token-store
+(defstate token-store
   :start (core/create-token-store :sql app-config)
-  :stop  (helpers/stop-periodic token-store))
+  :stop  (close! token-store))
 
-(defstate ^:no-doc authcode-store
-  :start (core/create-authcode-store app-config)
-  :stop  (helpers/stop-periodic authcode-store))
+(defstate authcode-store
+  :start (core/create-authcode-store :sql app-config)
+  :stop  (close! authcode-store))
 
-(defstate ^:no-doc session-store
-  :start (core/create-session-store app-config)
-  :stop  (helpers/stop-periodic session-store))
+(defstate session-store
+  :start (core/create-session-store :sql app-config)
+  :stop  (close! session-store))
 
 ;; oauth2 entities
 
-(defstate ^:no-doc users
+(defstate users
   :start init-users)
 
-(defstate ^:no-doc clients
+(defstate clients
   :start init-clients)

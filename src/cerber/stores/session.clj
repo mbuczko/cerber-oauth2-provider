@@ -13,7 +13,7 @@
 
 (defrecord Session [sid content created-at expires-at])
 
-(defrecord SqlSessionStore [normalizer]
+(defrecord SqlSessionStore [normalizer cleaner]
   Store
   (fetch-one [this [sid]]
     (-> (db/call 'find-session {:sid sid})
@@ -33,7 +33,9 @@
           result (db/call 'update-session-expiration extended)]
       (when (= 1 result) extended)))
   (purge! [this]
-    (db/call 'clear-sessions)))
+    (db/call 'clear-sessions))
+  (close! [this]
+    (db/stop-periodic cleaner)))
 
 (defn normalize
   [session]
@@ -51,10 +53,8 @@
 (defmethod create-session-store :redis [_ redis-spec]
   (->RedisStore "sessions" redis-spec))
 
-(defmethod create-session-store :sql [_ jdbc-spec]
-  (db/init-pool jdbc-spec)
-  (helpers/with-periodic-fn
-    (->SqlSessionStore normalize) (db/interned-fn 'clear-expired-sessions) 10000))
+(defmethod create-session-store :sql [_ _]
+  (->SqlSessionStore normalize (db/make-periodic 'clear-expired-sessions 10000)))
 
 (defn create-session
   "Creates new session."
@@ -96,10 +96,8 @@
   "Initializes session store according to given connection spec and
   optional session `valid-for` ttl."
 
-  [type {:keys [jdbc-spec redis-spec valid-for]}]
-  (when valid-for
+  [type config]
+  (when-let [valid-for (:valid-for config)]
     (reset! default-valid-for valid-for))
 
-  (if-let [spec (or jdbc-spec redis-spec (= type :in-memory))]
-    (reset! session-store (create-session-store type spec))
-    (println (str "Connection spec missing for " type " type of store."))))
+  (reset! session-store (create-session-store type config)))

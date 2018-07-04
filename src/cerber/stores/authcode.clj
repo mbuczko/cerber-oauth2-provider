@@ -15,7 +15,7 @@
 
 (defrecord AuthCode [client-id login code scope redirect-uri expires-at created-at])
 
-(defrecord SqlAuthCodeStore [normalizer]
+(defrecord SqlAuthCodeStore [normalizer cleaner]
   Store
   (fetch-one [this [code]]
     (-> (db/call 'find-authcode {:code code})
@@ -26,7 +26,9 @@
   (store! [this k authcode]
     (when (= 1 (db/call 'insert-authcode authcode)) authcode))
   (purge! [this]
-    (db/call 'clear-authcodes)))
+    (db/call 'clear-authcodes))
+  (close! [this]
+    (db/stop-periodic cleaner)))
 
 (defn normalize
   [authcode]
@@ -47,10 +49,8 @@
 (defmethod create-authcode-store :redis [_ redis-spec]
   (->RedisStore "authcodes" redis-spec))
 
-(defmethod create-authcode-store :sql [_ jdbc-spec]
-  (db/init-pool jdbc-spec)
-  (helpers/with-periodic-fn
-    (->SqlAuthCodeStore normalize) (db/interned-fn 'clear-expired-authcodes) 8000))
+(defmethod create-authcode-store :sql [_ _]
+  (->SqlAuthCodeStore normalize (db/make-periodic 'clear-expired-authcodes 8000)))
 
 (defn revoke-authcode
   "Revokes previously generated authcode."
@@ -91,10 +91,8 @@
   "Initializes authcode store according to given connection spec and
   optional authcode `valid-for` ttl."
 
-  [type {:keys [jdbc-spec redis-spec valid-for]}]
-  (when valid-for
+  [type config]
+  (when-let [valid-for (:valid-for config)]
     (reset! default-valid-for valid-for))
 
-  (if-let [spec (or jdbc-spec redis-spec (= type :in-memory))]
-    (reset! authcode-store (create-authcode-store type spec))
-    (println (str "Connection spec missing for " type " type of store."))))
+  (reset! authcode-store (create-authcode-store type config)))
