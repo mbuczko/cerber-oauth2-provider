@@ -11,6 +11,7 @@
       (and (user/valid-password? password (:password user))
            (:enabled? user)
            user))))
+
 (defmulti authentication-handler identity)
 
 (defmethod authentication-handler :default [_]

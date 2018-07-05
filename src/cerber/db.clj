@@ -6,12 +6,13 @@
   [jdbc-spec]
   (Class/forName (:driver-class jdbc-spec))
   (when-let [db-conn (conman/connect! jdbc-spec)]
-    (conman/bind-connection db-conn
-                          "db/cerber/tokens.sql"
-                          "db/cerber/clients.sql"
-                          "db/cerber/authcodes.sql"
-                          "db/cerber/users.sql"
-                          "db/cerber/sessions.sql")
+    (binding [*ns* (the-ns 'cerber.db)]
+      (conman/bind-connection db-conn
+                              "db/cerber/tokens.sql"
+                              "db/cerber/clients.sql"
+                              "db/cerber/authcodes.sql"
+                              "db/cerber/users.sql"
+                              "db/cerber/sessions.sql"))
     db-conn))
 
 (defn close-pool
@@ -24,10 +25,10 @@
 
 (defn sql-fn
   [fn-sym]
-  (get (ns-interns *ns*) fn-sym))
+  (get (ns-interns 'cerber.db) fn-sym))
 
-(defn call
-  [fn-sym args]
+(defn sql-call
+  [fn-sym & args]
   (when-let [sqfn (sql-fn fn-sym)]
     (apply sqfn args)))
 

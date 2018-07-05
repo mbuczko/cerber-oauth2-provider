@@ -1,6 +1,9 @@
 (ns cerber.stores.authcode
+  "Functions handling OAuth2 authcode storage."
+
   (:require [clojure.string :refer [join split]]
             [cerber.stores.user :as user]
+            [cerber.oauth2.settings :as settings]
             [cerber
              [db :as db]
              [error :as error]
@@ -11,22 +14,20 @@
 
 (def authcode-store (atom :not-initialized))
 
-(def default-valid-for (atom 180))
-
 (defrecord AuthCode [client-id login code scope redirect-uri expires-at created-at])
 
 (defrecord SqlAuthCodeStore [normalizer cleaner]
   Store
   (fetch-one [this [code]]
-    (-> (db/call 'find-authcode {:code code})
+    (-> (db/sql-call 'find-authcode {:code code})
         first
         normalizer))
   (revoke-one! [this [code]]
-    (db/call 'delete-authcode {:code code}))
+    (db/sql-call 'delete-authcode {:code code}))
   (store! [this k authcode]
-    (when (= 1 (db/call 'insert-authcode authcode)) authcode))
+    (when (= 1 (db/sql-call 'insert-authcode authcode)) authcode))
   (purge! [this]
-    (db/call 'clear-authcodes))
+    (db/sql-call 'clear-authcodes))
   (close! [this]
     (db/stop-periodic cleaner)))
 
@@ -52,6 +53,12 @@
 (defmethod create-authcode-store :sql [_ _]
   (->SqlAuthCodeStore normalize (db/make-periodic 'clear-expired-authcodes 8000)))
 
+(defn init-store
+  "Initializes authcode store according to given type and configuration."
+
+  [type config]
+  (reset! authcode-store (create-authcode-store type config)))
+
 (defn revoke-authcode
   "Revokes previously generated authcode."
 
@@ -59,7 +66,7 @@
   (revoke-one! @authcode-store [(:code authcode)]) nil)
 
 (defn create-authcode
-  "Creates new auth code."
+  "Creates and returns a new auth-code."
 
   [client user scope redirect-uri & [ttl]]
   (let [authcode (helpers/reset-ttl
@@ -69,7 +76,7 @@
                    :code (helpers/generate-secret)
                    :redirect-uri redirect-uri
                    :created-at (helpers/now)}
-                  (or ttl @default-valid-for))]
+                  (or ttl (settings/authcode-valid-for)))]
 
     (if (store! @authcode-store [:code] authcode)
       (map->AuthCode authcode)
@@ -86,13 +93,3 @@
 
   []
   (purge! @authcode-store))
-
-(defn init-store
-  "Initializes authcode store according to given connection spec and
-  optional authcode `valid-for` ttl."
-
-  [type config]
-  (when-let [valid-for (:valid-for config)]
-    (reset! default-valid-for valid-for))
-
-  (reset! authcode-store (create-authcode-store type config)))

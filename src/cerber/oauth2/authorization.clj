@@ -1,6 +1,5 @@
 (ns cerber.oauth2.authorization
   (:require [cerber
-             [config :refer [app-config]]
              [form  :as form]
              [error :as error]]
             [cerber.oauth2
@@ -72,7 +71,7 @@
                             (ctx/client-authenticated?)
                             (ctx/grant-allowed? "password")
                             (ctx/scopes-allowed?)
-                            (ctx/user-password-valid? (form/default-authenticator)))]
+                            (ctx/user-password-valid? form/default-authenticator))]
     (if (f/failed? result)
       result
       (response/access-token-response result))))

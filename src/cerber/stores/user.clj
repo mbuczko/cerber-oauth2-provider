@@ -1,4 +1,6 @@
 (ns cerber.stores.user
+  "Functions handling OAuth2 user storage."
+
   (:require [mount.core :refer [defstate]]
             [cerber
              [db :as db]
@@ -14,19 +16,19 @@
 (defrecord SqlUserStore [normalizer]
   Store
   (fetch-one [this [login]]
-    (-> (db/call 'find-user {:login login})
+    (-> (db/sql-call 'find-user {:login login})
         first
         normalizer))
   (revoke-one! [this [login]]
-    (db/call 'delete-user {:login login}))
+    (db/sql-call 'delete-user {:login login}))
   (store! [this k user]
-    (when (= 1 (db/call 'insert-user user)) user))
+    (when (= 1 (db/sql-call 'insert-user user)) user))
   (modify! [this k user]
     (if (:enabled? user)
-      (db/call 'enable-user user)
-      (db/call 'disable-user user)))
+      (db/sql-call 'enable-user user)
+      (db/sql-call 'disable-user user)))
   (purge! [this]
-    (db/call 'clear-users))
+    (db/sql-call 'clear-users))
   (close! [this]
     ))
 
@@ -57,8 +59,14 @@
 (defmethod create-user-store :sql [_ _]
   (->SqlUserStore normalize))
 
+(defn init-store
+  "Initializes user store according to given type and configuration."
+
+  [type config]
+  (reset! user-store (create-user-store type config)))
+
 (defn create-user
-  "Creates new user."
+  "Creates and returns a new user."
 
   ([user password]
    (create-user user password nil nil))
@@ -117,9 +125,3 @@
 
   [password hashed]
   (and password hashed (helpers/bcrypt-check password hashed)))
-
-(defn init-store
-  "Initializes user store according to given connection spec."
-
-  [type config]
-  (reset! user-store (create-user-store type config)))

@@ -1,6 +1,9 @@
 (ns cerber.stores.token
+    "Functions handling OAuth2 token storage."
+
   (:require [clojure.string :refer [join split]]
             [cerber.stores.user :as user]
+            [cerber.oauth2.settings :as settings]
             [cerber
              [db :as db]
              [error :as error]
@@ -11,32 +14,30 @@
 
 (def token-store (atom :not-initialized))
 
-(def default-valid-for (atom 300))
-
 (defrecord Token [client-id user-id login scope secret created-at expires-at])
 
 (defrecord SqlTokenStore [normalizer cleaner]
   Store
   (fetch-one [this [client-id tag secret login]]
-    (-> (db/call 'find-tokens-by-secret {:secret secret :tag tag})
+    (-> (db/sql-call 'find-tokens-by-secret {:secret secret :tag tag})
         first
         normalizer))
   (fetch-all [this [client-id tag secret login]]
     (map normalizer (if secret
-                      (db/call 'find-tokens-by-secret {:secret secret :tag tag})
+                      (db/sql-call 'find-tokens-by-secret {:secret secret :tag tag})
                       (if client-id
-                        (db/call 'find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
-                        (db/call 'find-tokens-by-login {:login login :tag tag})))))
+                        (db/sql-call 'find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
+                        (db/sql-call 'find-tokens-by-login {:login login :tag tag})))))
   (revoke-one! [this [client-id tag secret]]
-    (db/call 'delete-token-by-secret {:secret secret}))
+    (db/sql-call 'delete-token-by-secret {:secret secret}))
   (revoke-all! [this [client-id tag secret login]]
     (map ->Token (if login
-                   (db/call 'delete-tokens-by-login  {:client-id client-id :login login :tag tag})
-                   (db/call 'delete-tokens-by-client {:client-id client-id :tag tag}))))
+                   (db/sql-call 'delete-tokens-by-login  {:client-id client-id :login login :tag tag})
+                   (db/sql-call 'delete-tokens-by-client {:client-id client-id :tag tag}))))
   (store! [this k token]
-    (when (= 1 (db/call 'insert-token token)) token))
+    (when (= 1 (db/sql-call 'insert-token token)) token))
   (purge! [this]
-    (db/call 'clear-tokens))
+    (db/sql-call 'clear-tokens))
   (close! [this]
     (db/stop-periodic cleaner)))
 
@@ -62,8 +63,14 @@
 (defmethod create-token-store :sql [_ _]
   (->SqlTokenStore normalize (db/make-periodic 'clear-expired-tokens 60000)))
 
+(defn init-store
+  "Initializes token store according to given type and configuration."
+
+  [type config]
+  (reset! token-store (create-token-store type config)))
+
 (defn create-token
-  "Creates new token."
+  "Creates and retuns new token."
 
   [tag client user scope & [ttl]]
   (let [secret (helpers/generate-secret)
@@ -75,7 +82,7 @@
                  :scope scope
                  :tag (name tag)
                  :created-at (helpers/now)}
-                (and (= tag :access) (or ttl @default-valid-for)))
+                (and (= tag :access) (or ttl (settings/token-valid-for))))
         keyvec  (if (= tag :access)
                   [nil :tag :secret nil]
                   [:client-id :tag :secret :login])]
@@ -182,13 +189,3 @@
                            {:id user-id :login login}
                            scope
                            {:refresh? true})))
-
-(defn init-store
-  "Initializes token store according to given connection spec and
-  optional token `valid-for` ttl."
-
-  [type config]
-  (when-let [valid-for (:valid-for config)]
-    (reset! default-valid-for valid-for))
-
-  (reset! token-store (create-token-store type config)))

@@ -1,6 +1,6 @@
 (ns cerber.error
-  (:require [failjure.core :as f]
-            [cerber.config :refer [app-config]]))
+  (:require [cerber.oauth2.settings :as settings]
+            [failjure.core :as f]))
 
 (defrecord HttpError [error message code])
 
@@ -70,6 +70,7 @@
 
 (defn error->json
   "Tranforms error into http response.
+
   In case of 401 (unauthorized) and 403 (forbidden) error codes, additional WWW-Authenticate
   header is returned as described in https://tools.ietf.org/html/rfc6750#section-3"
 
@@ -81,13 +82,13 @@
 
         ;; oauth request
         {:status code
-         :headers {"WWW-Authenticate" (str "Bearer realm=\"" (:realm app-config)
+         :headers {"WWW-Authenticate" (str "Bearer realm=\"" (settings/realm)
                                            "\",error=\"" error
                                            "\",error_description=\"" message "\"")}}
 
         ;; browser-based requested
         {:status 302
-         :headers {"Location" (get-in app-config [:endpoints :authentication])}
+         :headers {"Location" (settings/authentication-url)}
          :session {:landing-url uri}})
 
       ;; uups, something bad happened

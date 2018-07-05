@@ -1,4 +1,4 @@
-{:jdbc-pool  {:init-size  1
+{:jdbc-spec  {:init-size  1
               :min-idle   1
               :max-idle   4
               :max-active 32

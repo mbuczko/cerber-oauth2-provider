@@ -1,5 +1,8 @@
 (ns cerber.stores.session
+  "Functions handling OAuth2 session storage."
+
   (:require [cerber.helpers :as helpers]
+            [cerber.oauth2.settings :as settings]
             [cerber
              [db :as db]
              [helpers :as helpers]
@@ -9,31 +12,29 @@
 
 (def session-store (atom :not-initialized))
 
-(def default-valid-for (atom 3600))
-
 (defrecord Session [sid content created-at expires-at])
 
 (defrecord SqlSessionStore [normalizer cleaner]
   Store
   (fetch-one [this [sid]]
-    (-> (db/call 'find-session {:sid sid})
+    (-> (db/sql-call 'find-session {:sid sid})
         first
         normalizer))
   (revoke-one! [this [sid]]
-    (db/call 'delete-session {:sid sid}))
+    (db/sql-call 'delete-session {:sid sid}))
   (store! [this k session]
     (let [content (nippy/freeze (:content session))
-          result  (db/call 'insert-session (assoc session :content content))]
+          result  (db/sql-call 'insert-session (assoc session :content content))]
       (when (= 1 result) session)))
   (modify! [this k session]
-    (let [result (db/call 'update-session (update session :content nippy/freeze))]
+    (let [result (db/sql-call 'update-session (update session :content nippy/freeze))]
       (when (= 1 result) session)))
   (touch! [this k session ttl]
     (let [extended (helpers/reset-ttl session ttl)
-          result (db/call 'update-session-expiration extended)]
+          result (db/sql-call 'update-session-expiration extended)]
       (when (= 1 result) extended)))
   (purge! [this]
-    (db/call 'clear-sessions))
+    (db/sql-call 'clear-sessions))
   (close! [this]
     (db/stop-periodic cleaner)))
 
@@ -56,15 +57,21 @@
 (defmethod create-session-store :sql [_ _]
   (->SqlSessionStore normalize (db/make-periodic 'clear-expired-sessions 10000)))
 
+(defn init-store
+  "Initializes session store according to given type and configuration."
+
+  [type config]
+  (reset! session-store (create-session-store type config)))
+
 (defn create-session
-  "Creates new session."
+  "Creates and returns a new session."
 
   [content & [ttl]]
   (let [session (helpers/reset-ttl
                  {:sid (helpers/uuid)
                   :content content
                   :created-at (helpers/now)}
-                 (or ttl @default-valid-for))]
+                 (or ttl (settings/session-valid-for)))]
 
     (when (store! @session-store [:sid] session)
       (map->Session session))))
@@ -76,10 +83,10 @@
   (revoke-one! @session-store [(:sid session)]) nil)
 
 (defn update-session [session]
-  (modify! @session-store [:sid] (helpers/reset-ttl session @default-valid-for)))
+  (modify! @session-store [:sid] (helpers/reset-ttl session (settings/session-valid-for))))
 
 (defn extend-session [session]
-  (touch! @session-store [:sid] session @default-valid-for))
+  (touch! @session-store [:sid] session (settings/session-valid-for)))
 
 (defn find-session [sid]
   (when-let [found (fetch-one @session-store [sid])]
@@ -91,13 +98,3 @@
 
   []
   (purge! @session-store))
-
-(defn init-store
-  "Initializes session store according to given connection spec and
-  optional session `valid-for` ttl."
-
-  [type config]
-  (when-let [valid-for (:valid-for config)]
-    (reset! default-valid-for valid-for))
-
-  (reset! session-store (create-session-store type config)))

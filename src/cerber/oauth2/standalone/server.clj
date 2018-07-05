@@ -14,7 +14,8 @@
             [mount.core :as mount :refer [defstate]]
             [org.httpkit.server :as web]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]
-            [selmer.parser :as selmer]))
+            [selmer.parser :as selmer]
+            [failjure.core :as f]))
 
 (defn user-info-handler [req]
   {:status 200
@@ -45,26 +46,28 @@
     (web/run-server app-handler http-config)))
 
 (defn init-users
-  "Initializes pre-defined collection of users."
+  "Initializes pre-defined collection of dev users."
 
   []
-  (let [users (-> app-config :users :init)]
-    (doseq [{:keys [login email name permissions roles enabled? password]} users]
-      (user/create-user ({:login login
+  (let [users (:users app-config)]
+    (f/try*
+     (doseq [{:keys [login email name permissions roles enabled? password]} users]
+       (user/create-user {:login login
                           :email email
                           :name name
-                          :enabled? enabled?})
-                        password
-                        roles
-                        permissions))))
+                          :enabled? enabled?}
+                         password
+                         roles
+                         permissions)))))
 
 (defn init-clients
-  "Initializes pre-defined collection of clients."
+  "Initializes pre-defined collection of dev clients."
 
   []
-  (let [clients (-> app-config :clients :init)]
-    (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
-      (client/create-client info redirects grants scopes approved? id secret))))
+  (let [clients (:clients app-config)]
+    (f/try*
+     (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
+       (client/create-client info redirects grants scopes approved? id secret)))))
 
 
 (defstate http-server
@@ -96,7 +99,7 @@
 ;; oauth2 entities
 
 (defstate users
-  :start init-users)
+  :start (init-users))
 
 (defstate clients
-  :start init-clients)
+  :start (init-clients))

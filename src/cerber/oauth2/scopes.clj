@@ -1,6 +1,5 @@
 (ns cerber.oauth2.scopes
-  (:require [cerber.config :refer [app-config]]
-            [cerber.helpers :refer [str->coll]]
+  (:require [cerber.helpers :refer [str->coll]]
             [clojure.string :as str]))
 
 (defn- distinct-scope

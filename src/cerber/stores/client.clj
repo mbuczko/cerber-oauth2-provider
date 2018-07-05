@@ -1,4 +1,6 @@
 (ns cerber.stores.client
+  "Functions handling OAuth2 client storage."
+
   (:require [clojure.string :as str]
             [cerber.stores.token :as token]
             [cerber
@@ -16,19 +18,19 @@
 (defrecord SqlClientStore [normalizer]
   Store
   (fetch-one [this [client-id]]
-    (-> (db/call 'find-client {:id client-id})
+    (-> (db/sql-call 'find-client {:id client-id})
         first
         normalizer))
   (revoke-one! [this [client-id]]
-    (db/call 'delete-client {:id client-id}))
+    (db/sql-call 'delete-client {:id client-id}))
   (store! [this k client]
-    (when (= 1 (db/call 'insert-client client)) client))
+    (when (= 1 (db/sql-call 'insert-client client)) client))
   (modify! [this k client]
     (if (:enabled? client)
-      (db/call 'enable-client client)
-      (db/call 'disable-client client)))
+      (db/sql-call 'enable-client client)
+      (db/sql-call 'disable-client client)))
   (purge! [this]
-    (db/call 'clear-clients))
+    (db/sql-call 'clear-clients))
   (close! [this]
     ))
 
@@ -58,6 +60,12 @@
 
 (defmethod create-client-store :sql [_ _]
   (->SqlClientStore normalize))
+
+(defn init-store
+  "Initializes client store according to given type and configuration."
+
+  [type config]
+  (reset! client-store (create-client-store type config)))
 
 (defn validate-uri
   "Returns java.net.URL instance of given uri or failure info in case of error."
@@ -101,7 +109,7 @@
   (= 1 (modify! @client-store [:id] (assoc client :enabled? false :blocked-at (helpers/now)))))
 
 (defn create-client
-  "Creates new client."
+  "Creates and returns a new client."
 
   [info redirects grants scopes approved? & [id secret]]
   (let [result (validate-redirects redirects)
@@ -152,9 +160,3 @@
   (let [client-scopes (:scopes client)]
     (or (empty? scopes)
         (every? #(.contains client-scopes %) scopes))))
-
-(defn init-store
-  "Initializes client store according to given connection spec."
-
-  [type config]
-  (reset! client-store (create-client-store type config)))
