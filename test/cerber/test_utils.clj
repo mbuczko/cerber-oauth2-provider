@@ -1,13 +1,26 @@
 (ns cerber.test-utils
-  (:require [cerber.oauth2.standalone.system :as system]
-            [cerber.stores
-             [user   :as u]
-             [client :as c]]
+  (:require [cerber.stores
+             [user :as u]
+             [token :as t]
+             [client :as c]
+             [session :as s]
+             [authcode :as a]]
             [peridot.core :refer [request header]]
-            [clojure.data.codec.base64 :as b64]))
+            [clojure.data.codec.base64 :as b64]
+            [cerber.db :as db]))
 
-(defonce test-system
-  (system/go))
+(def redis-spec {:spec {:host "localhost"
+                        :port 6379}})
+
+(def jdbc-spec  {:init-size  1
+                 :min-idle   1
+                 :max-idle   4
+                 :max-active 32
+                 :driver-class "org.h2.Driver"
+                 :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"})
+
+;; connection to testing H2 instance
+(defonce db-conn (db/init-pool jdbc-spec))
 
 ;; some additional midje checkers
 
@@ -67,3 +80,23 @@
 
 (defn enable-test-user [user]
   (u/enable-user user))
+
+(defn init-stores
+  [type store-params]
+  (u/init-store type store-params)
+  (c/init-store type store-params)
+  (a/init-store type store-params)
+  (s/init-store type store-params)
+  (t/init-store type store-params)
+
+  (when (= type :redis)
+    (u/purge-users)
+    (c/purge-clients)
+    (a/purge-authcodes)
+    (s/purge-sessions)
+    (t/purge-tokens)))
+
+(defmacro with-stores
+  [type & body]
+  `(let [db-conn# (init-stores ~type redis-spec)]
+     ~@body))

@@ -4,18 +4,21 @@
              [store :refer :all]
              [handlers :as handlers]
              [helpers  :as helpers]]
-            [cerber.oauth2.context :as ctx]
-            [cerber.oauth2.core :as core]
-            [cerber.stores.user :as user]
-            [cerber.stores.client :as client]
+            [cerber.oauth2
+             [context :as ctx]
+             [core :as core]
+             [settings :as settings]]
+            [cerber.stores
+             [user :as user]
+             [client :as client]]
             [cerber.oauth2.standalone.storage]
             [compojure
              [core :refer [defroutes GET POST routes wrap-routes]]]
+            [failjure.core :as f]
+            [selmer.parser :as selmer]
             [mount.core :as mount :refer [defstate]]
             [org.httpkit.server :as web]
-            [ring.middleware.defaults :refer [api-defaults wrap-defaults]]
-            [selmer.parser :as selmer]
-            [failjure.core :as f]))
+            [ring.middleware.defaults :refer [api-defaults wrap-defaults]]))
 
 (defn user-info-handler [req]
   {:status 200
@@ -42,6 +45,9 @@
   "Initializes standalone HTTP server handling default OAuth2 endpoints."
 
   []
+  (when-let [landing-url (:landing-url app-config)]
+    (settings/landing-url landing-url))
+
   (when-let [http-config (:server app-config)]
     (web/run-server app-handler http-config)))
 

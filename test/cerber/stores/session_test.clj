@@ -1,17 +1,13 @@
 (ns cerber.stores.session-test
-  (:require [cerber.test-utils :refer [instance-of has-secret]]
+  (:require [cerber.test-utils :refer [instance-of has-secret with-stores]]
             [cerber.stores.session :refer :all]
             [midje.sweet :refer :all])
   (:import cerber.stores.session.Session))
 
 (def session-content {:sample "value"})
 
-(defmacro with-session-store
-  [store & body]
-  `(binding [*session-store* ~(atom store)] ~@body))
-
 (fact "Newly created session is returned with session content and random id filled in."
-      (with-session-store (create-session-store :in-memory)
+      (with-stores :in-memory
 
         ;; given
         (let [session (create-session session-content)]
@@ -23,7 +19,7 @@
 
 (tabular
  (fact "Session found in a store is returned session content and random id filled in."
-       (with-session-store (create-session-store ?store)
+       (with-stores ?store
 
          ;; given
          (let [initial (create-session session-content)
@@ -38,7 +34,7 @@
 
 (tabular
  (fact "Expired sessions are removed from store."
-       (with-session-store (create-session-store ?store)
+       (with-stores ?store
 
          ;; given
          (let [session (create-session session-content -1)]
@@ -50,7 +46,7 @@
 
 (tabular
  (fact "Extended session has expires-at updated."
-       (with-session-store (create-session-store ?store)
+       (with-stores ?store
 
          ;; given
          (let [initial (create-session session-content 1)
@@ -66,7 +62,7 @@
 
 (tabular
  (fact "Existing sessions can be updated with new content."
-       (with-session-store (create-session-store ?store)
+       (with-stores ?store
 
          ;; given
          (let [initial (create-session session-content)
@@ -85,8 +81,7 @@
 
 (tabular
  (fact "Non-existent sessions cannot be updated."
-       (with-session-store (create-session-store ?store)
-         (purge-sessions)
+       (with-stores ?store
          (update-session (map->Session {:sid "123" :content session-content})) => nil))
 
  ?store :in-memory :sql :redis)

@@ -51,7 +51,6 @@
 (deftask tests
   "Environment for test-driven development."
   []
-  (System/setProperty "env" "test")
   (comp (watch)
         (midje)
         (speak)))

@@ -1,14 +1,11 @@
 (ns cerber.oauth2.error-test
   (:require [midje.sweet :refer :all]
+            [cerber.test-utils :refer [with-stores]]
             [cerber.oauth2.authorization :refer [authorize!]]
             [cerber.stores.client :refer :all]))
 
-(defmacro with-client-store
-  [store & body]
-  `(binding [*client-store* ~(atom store)] ~@body))
-
 (fact "Authorization fails when requested by unknown client."
-      (with-client-store (create-client-store :in-memory)
+      (with-stores :in-memory
 
         ;; given
         (let [client (create-client "http://localhost" ["http://localhost"] nil ["photo"] false)
@@ -20,7 +17,7 @@
           (:error (authorize! (assoc-in req [:params :client_id] "foo"))) => "invalid_request")))
 
 (fact "Authorization fails when requested with unknown scope."
-      (with-client-store (create-client-store :in-memory)
+      (with-stores :in-memory
 
         ;; given
         (let [client (create-client "http://localhost" ["http://localhost"] nil ["photo"] false)

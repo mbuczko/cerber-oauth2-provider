@@ -1,5 +1,5 @@
 (ns cerber.stores.client-test
-  (:require [cerber.test-utils :refer [instance-of has-secret]]
+  (:require [cerber.test-utils :refer [instance-of has-secret with-stores]]
             [cerber.stores.client :refer :all]
             [midje.sweet :refer :all])
   (:import cerber.error.HttpError
@@ -10,15 +10,9 @@
 (def info "testing client")
 (def grants [])
 
-(fact "New client is returned as Client record with secret filled in."
-      (with-client-store (create-client-store :in-memory)
-        (let [client (create-client info redirects [scope] grants false)]
-          client => (instance-of Client)
-          client => (has-secret :secret))))
-
 (tabular
  (fact "Redirect URIs must be a valid URLs with no forbidden characters."
-       (with-client-store (create-client-store :in-memory)
+       (with-stores :in-memory
          (create-client info ?redirects [scope] grants false) => ?expected))
 
  ?redirects                       ?expected
@@ -30,7 +24,7 @@
 
 (tabular
  (fact "Newly created client is returned when stored correctly in a store."
-       (with-client-store (create-client-store ?store)
+       (with-stores ?store
 
          ;; given
          (let [client (create-client info redirects [scope] grants false)
@@ -47,7 +41,7 @@
 
 (tabular
  (fact "Revoked client is not returned from store."
-       (with-client-store (create-client-store ?store)
+       (with-stores ?store
 
          ;; given
          (let [client (create-client info redirects [scope] grants false)
