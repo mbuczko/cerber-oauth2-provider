@@ -56,7 +56,6 @@
 (tabular
  (fact "Revoked user is not returned from store."
        (with-stores ?store
-         (purge-users)
 
          ;; given
          (let [user (create-user {:login login} password)]

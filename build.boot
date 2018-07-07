@@ -10,6 +10,7 @@
                  [com.h2database/h2 "1.4.196" :scope "test"]
                  [mysql/mysql-connector-java "6.0.6" :scope "test"]
                  [org.postgresql/postgresql "42.1.4" :scope "test"]
+                 [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
                  [ring/ring-defaults "0.3.1"]
                  [midje "1.9.0" :scope "test"]
                  [peridot "0.5.0" :scope "test"]

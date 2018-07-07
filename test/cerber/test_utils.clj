@@ -7,10 +7,11 @@
              [authcode :as a]]
             [peridot.core :refer [request header]]
             [clojure.data.codec.base64 :as b64]
-            [cerber.db :as db]))
+            [cerber.db :as db])
+  (:import redis.embedded.RedisServer))
 
 (def redis-spec {:spec {:host "localhost"
-                        :port 6379}})
+                        :port 6380}})
 
 (def jdbc-spec  {:init-size  1
                  :min-idle   1
@@ -20,7 +21,13 @@
                  :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"})
 
 ;; connection to testing H2 instance
-(defonce db-conn (db/init-pool jdbc-spec))
+(defonce db-conn
+  (db/init-pool jdbc-spec))
+
+;; connection to testing redis instance
+(defonce redis-instance
+  (when-let [redis (RedisServer. (Integer. (-> redis-spec :spec :port)))]
+    (.start redis)))
 
 ;; some additional midje checkers
 
@@ -70,6 +77,7 @@
 
 (defn create-test-client
   "Creates test client - unapproved by default."
+
   ([scope redirect-uri]
    (create-test-client scope redirect-uri false))
   ([scope redirect-uri approved?]
@@ -82,6 +90,9 @@
   (u/enable-user user))
 
 (defn init-stores
+  "Initializes all the OAuth2 stores of given type and
+  purges data kept by underlaying databases (H2 and redis)."
+
   [type store-params]
   (u/init-store type store-params)
   (c/init-store type store-params)
@@ -89,14 +100,15 @@
   (s/init-store type store-params)
   (t/init-store type store-params)
 
-  (when (= type :redis)
-    (u/purge-users)
-    (c/purge-clients)
-    (a/purge-authcodes)
-    (s/purge-sessions)
-    (t/purge-tokens)))
+  ;; clear all the database-related stuff as one connection
+  ;; to redis & H2 is used across all the tests
+
+  (u/purge-users)
+  (c/purge-clients)
+  (a/purge-authcodes)
+  (s/purge-sessions)
+  (t/purge-tokens))
 
 (defmacro with-stores
   [type & body]
-  `(let [db-conn# (init-stores ~type redis-spec)]
-     ~@body))
+  `(do (init-stores ~type redis-spec) ~@body))
