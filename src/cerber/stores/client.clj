@@ -58,8 +58,10 @@
 (defmethod create-client-store :redis [_ redis-spec]
   (->RedisStore "clients" redis-spec))
 
-(defmethod create-client-store :sql [_ _]
-  (->SqlClientStore normalize))
+(defmethod create-client-store :sql [_ db-conn]
+  (when db-conn
+    (db/bind-queries db-conn)
+    (->SqlClientStore normalize)))
 
 (defn init-store
   "Initializes client store according to given type and configuration."

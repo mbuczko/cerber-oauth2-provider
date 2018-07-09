@@ -54,8 +54,10 @@
 (defmethod create-session-store :redis [_ redis-spec]
   (->RedisStore "sessions" redis-spec))
 
-(defmethod create-session-store :sql [_ _]
-  (->SqlSessionStore normalize (db/make-periodic 'clear-expired-sessions 10000)))
+(defmethod create-session-store :sql [_ db-conn]
+  (when db-conn
+    (db/bind-queries db-conn)
+    (->SqlSessionStore normalize (db/make-periodic 'clear-expired-sessions 10000))))
 
 (defn init-store
   "Initializes session store according to given type and configuration."

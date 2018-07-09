@@ -56,8 +56,10 @@
 (defmethod create-user-store :redis [_ redis-spec]
   (->RedisStore "users" redis-spec))
 
-(defmethod create-user-store :sql [_ _]
-  (->SqlUserStore normalize))
+(defmethod create-user-store :sql [_ db-conn]
+  (when db-conn
+    (db/bind-queries db-conn)
+    (->SqlUserStore normalize)))
 
 (defn init-store
   "Initializes user store according to given type and configuration."

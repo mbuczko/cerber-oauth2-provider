@@ -50,8 +50,10 @@
 (defmethod create-authcode-store :redis [_ redis-spec]
   (->RedisStore "authcodes" redis-spec))
 
-(defmethod create-authcode-store :sql [_ _]
-  (->SqlAuthCodeStore normalize (db/make-periodic 'clear-expired-authcodes 8000)))
+(defmethod create-authcode-store :sql [_ db-conn]
+  (when db-conn
+    (db/bind-queries db-conn)
+    (->SqlAuthCodeStore normalize (db/make-periodic 'clear-expired-authcodes 8000))))
 
 (defn init-store
   "Initializes authcode store according to given type and configuration."

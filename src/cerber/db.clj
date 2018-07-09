@@ -2,24 +2,15 @@
   (:require [cerber.helpers :as helpers]
             [conman.core :as conman]))
 
-(defn init-pool
-  [jdbc-spec]
-  (Class/forName (:driver-class jdbc-spec))
-  (when-let [db-conn (conman/connect! jdbc-spec)]
-    (binding [*ns* (the-ns 'cerber.db)]
-      (conman/bind-connection db-conn
-                              "db/cerber/tokens.sql"
-                              "db/cerber/clients.sql"
-                              "db/cerber/authcodes.sql"
-                              "db/cerber/users.sql"
-                              "db/cerber/sessions.sql"))
-    db-conn))
-
-(defn close-pool
+(defn bind-queries
   [db-conn]
-  (when db-conn
-    (conman/disconnect! db-conn)
-    (println "pool closed")))
+  (binding [*ns* (the-ns 'cerber.db)]
+    (conman/bind-connection db-conn
+                            "db/cerber/tokens.sql"
+                            "db/cerber/clients.sql"
+                            "db/cerber/authcodes.sql"
+                            "db/cerber/users.sql"
+                            "db/cerber/sessions.sql")))
 
 ;; helper functions to call SQL queries as interned functions
 

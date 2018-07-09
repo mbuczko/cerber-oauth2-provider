@@ -1,6 +1,5 @@
 (ns cerber.oauth2.standalone.server
   (:require [cerber
-             [config :refer [app-config]]
              [store :refer :all]
              [handlers :as handlers]
              [helpers  :as helpers]]
@@ -11,16 +10,29 @@
             [cerber.stores
              [user :as user]
              [client :as client]]
-            [cerber.oauth2.standalone.storage]
+            [cerber.oauth2.standalone.config :refer [app-config]]
             [compojure
              [core :refer [defroutes GET POST routes wrap-routes]]]
+            [conman.core :as conman]
             [failjure.core :as f]
             [selmer.parser :as selmer]
             [mount.core :as mount :refer [defstate]]
             [org.httpkit.server :as web]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]))
 
-(defn user-info-handler [req]
+(defonce db-conn
+  (and (Class/forName "org.h2.Driver")
+       (conman/connect! {:init-size  1
+                         :min-idle   1
+                         :max-idle   4
+                         :max-active 32
+                         :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"
+                         ;:driver-class "org.postgresql.Driver"
+                         ;:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres"
+                         })))
+
+(defn user-info-handler
+  [req]
   {:status 200
    :body (select-keys (::ctx/user req) [:login :name :email :roles :permissions])})
 
@@ -35,7 +47,7 @@
 (defroutes restricted-routes
   (GET "/users/me" [] user-info-handler))
 
-(def ^:no-doc app-handler
+(def app-handler
   (wrap-defaults
    (routes oauth2-routes (-> restricted-routes
                              (wrap-routes handlers/wrap-authorized)))
@@ -45,14 +57,13 @@
   "Initializes standalone HTTP server handling default OAuth2 endpoints."
 
   []
-  (when-let [landing-url (:landing-url app-config)]
-    (settings/landing-url landing-url))
-
+  (when-let [url (:landing-url app-config)]
+    (settings/landing-url url))
   (when-let [http-config (:server app-config)]
     (web/run-server app-handler http-config)))
 
 (defn init-users
-  "Initializes pre-defined collection of dev users."
+  "Initializes pre-defined collection of test users."
 
   []
   (let [users (:users app-config)]
@@ -67,7 +78,7 @@
                          permissions)))))
 
 (defn init-clients
-  "Initializes pre-defined collection of dev clients."
+  "Initializes pre-defined collection of test clients."
 
   []
   (let [clients (:clients app-config)]
@@ -83,23 +94,23 @@
 ;; oauth2 stores
 
 (defstate client-store
-  :start (core/create-client-store :sql app-config)
+  :start (core/create-client-store :sql db-conn)
   :stop  (close! client-store))
 
 (defstate user-store
-  :start (core/create-user-store :sql app-config)
+  :start (core/create-user-store :sql db-conn)
   :stop  (close! user-store))
 
 (defstate token-store
-  :start (core/create-token-store :sql app-config)
+  :start (core/create-token-store :sql db-conn)
   :stop  (close! token-store))
 
 (defstate authcode-store
-  :start (core/create-authcode-store :sql app-config)
+  :start (core/create-authcode-store :sql db-conn)
   :stop  (close! authcode-store))
 
 (defstate session-store
-  :start (core/create-session-store :sql app-config)
+  :start (core/create-session-store :sql db-conn)
   :stop  (close! session-store))
 
 ;; oauth2 entities

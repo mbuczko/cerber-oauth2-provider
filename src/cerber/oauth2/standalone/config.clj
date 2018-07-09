@@ -1,4 +1,4 @@
-(ns cerber.config
+(ns cerber.oauth2.standalone.config
   (:require [cprop.core :as cprop]
             [cprop.source :refer [from-env from-resource from-system-props]]
             [failjure.core :as f]

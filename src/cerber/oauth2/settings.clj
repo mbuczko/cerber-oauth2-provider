@@ -1,6 +1,6 @@
 (ns cerber.oauth2.settings)
 
-(def globals (atom {:realm "http://localhost"
+(def defaults (atom {:realm "http://localhost"
                     :authentication-url "/login"
                     :landing-url "/"
                     :token-valid-for 300
@@ -9,11 +9,11 @@
 
 (defn update-settings
   [settings]
-  (swap! globals merge settings))
+  (swap! defaults merge settings))
 
-(doseq [s (keys @globals)]
+(doseq [s (keys @defaults)]
   (intern *ns*
           (symbol (name s))
           (fn
-            ([]    (s @globals))
-            ([val] (swap! globals update s val)))))
+            ([]    (s @defaults))
+            ([val] (swap! defaults update s (constantly val))))))

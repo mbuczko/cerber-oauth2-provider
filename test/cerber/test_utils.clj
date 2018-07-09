@@ -1,13 +1,15 @@
 (ns cerber.test-utils
-  (:require [cerber.stores
+  (:require [cerber.db :as db]
+            [cerber.store :refer :all]
+            [cerber.stores
              [user :as u]
              [token :as t]
              [client :as c]
              [session :as s]
              [authcode :as a]]
-            [peridot.core :refer [request header]]
+            [conman.core :as conman]
             [clojure.data.codec.base64 :as b64]
-            [cerber.db :as db])
+            [peridot.core :refer [request header]])
   (:import redis.embedded.RedisServer))
 
 (def redis-spec {:spec {:host "localhost"
@@ -17,12 +19,12 @@
                  :min-idle   1
                  :max-idle   4
                  :max-active 32
-                 :driver-class "org.h2.Driver"
                  :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"})
 
 ;; connection to testing H2 instance
 (defonce db-conn
-  (db/init-pool jdbc-spec))
+  (and (Class/forName "org.h2.Driver")
+       (conman/connect! jdbc-spec)))
 
 ;; connection to testing redis instance
 (defonce redis-instance
@@ -94,21 +96,34 @@
   purges data kept by underlaying databases (H2 and redis)."
 
   [type store-params]
-  (u/init-store type store-params)
-  (c/init-store type store-params)
-  (a/init-store type store-params)
-  (s/init-store type store-params)
-  (t/init-store type store-params)
+  (let [stores [(u/init-store type store-params)
+                (c/init-store type store-params)
+                (a/init-store type store-params)
+                (s/init-store type store-params)
+                (t/init-store type store-params)]]
 
-  ;; clear all the database-related stuff as one connection
-  ;; to redis & H2 is used across all the tests
+    ;; clear all the database-related stuff as one connection
+    ;; to redis & H2 is used across all the tests
 
-  (u/purge-users)
-  (c/purge-clients)
-  (a/purge-authcodes)
-  (s/purge-sessions)
-  (t/purge-tokens))
+    (u/purge-users)
+    (c/purge-clients)
+    (a/purge-authcodes)
+    (s/purge-sessions)
+    (t/purge-tokens)
+
+    stores))
+
+(defn close-stores
+  "Closes all the stores provided in a collection."
+
+  [stores]
+  (doseq [store stores] (close! store)))
 
 (defmacro with-stores
   [type & body]
-  `(do (init-stores ~type redis-spec) ~@body))
+  `(let [stores# (init-stores ~type (condp = ~type
+                                      :sql db-conn
+                                      :redis redis-spec
+                                      nil))]
+     ~@body
+     (close-stores stores#)))

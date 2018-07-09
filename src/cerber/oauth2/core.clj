@@ -11,24 +11,41 @@
 
 (defn create-session-store
   "Initializes empty session store of given type - :in-memory, :sql or :redis one.
-  Redis-based session store expects redis connection spec passed in a `config` parameter."
+  Redis-based session store expects redis connection spec passed in a `config` parameter
+  whereas SQL-based one requires an initialized database connection."
 
   [type config]
   (session/init-store type config))
 
 (defn create-authcode-store
+  "Initializes empty authcode store of given type - :in-memory, :sql or :redis one.
+  Redis-based authcode store expects redis connection spec passed in a `config` parameter
+  whereas SQL-based one requires an initialized database connection."
+
   [type config]
   (authcode/init-store type config))
 
 (defn create-token-store
+  "Initializes empty token store of given type - :in-memory, :sql or :redis one.
+  Redis-based token store expects redis connection spec passed in a `config` parameter
+  whereas SQL-based one requires an initialized database connection."
+
   [type config]
   (token/init-store type config))
 
 (defn create-user-store
+  "Initializes empty user store of given type - :in-memory, :sql or :redis one.
+  Redis-based user store expects redis connection spec passed in a `config` parameter
+  whereas SQL-based one requires an initialized database connection."
+
   [type config]
   (user/init-store type config))
 
 (defn create-client-store
+  "Initializes empty client store of given type - :in-memory, :sql or :redis one.
+  Redis-based client store expects redis connection spec passed in a `config` parameter
+  whereas SQL-based one requires an initialized database connection."
+
   [type config]
   (client/init-store type config))
 

@@ -60,8 +60,10 @@
 (defmethod create-token-store :redis [_ redis-spec]
   (->RedisStore "tokens" redis-spec))
 
-(defmethod create-token-store :sql [_ _]
-  (->SqlTokenStore normalize (db/make-periodic 'clear-expired-tokens 60000)))
+(defmethod create-token-store :sql [_ db-conn]
+  (when db-conn
+    (db/bind-queries db-conn)
+    (->SqlTokenStore normalize (db/make-periodic 'clear-expired-tokens 60000))))
 
 (defn init-store
   "Initializes token store according to given type and configuration."
