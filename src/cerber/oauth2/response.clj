@@ -1,18 +1,20 @@
 (ns cerber.oauth2.response
   (:require [cerber
              [error :as error]
+             [helpers :as helpers]
              [form :as form]]
+            [cerber.oauth2
+             [context :as ctx]
+             [settings :as settings]]
             [cerber.stores
              [authcode :as authcode]
+             [client :as client]
              [token :as token]]
-            [cerber.oauth2.context :as ctx]
             [failjure.core :as f]
             [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
             [ring.util
              [request :refer [request-url]]
-             [response :as response]]
-            [cerber.stores.client :as client]
-            [cerber.helpers :as helpers]))
+             [response :as response]]))
 
 
 (defn redirect-to
@@ -68,5 +70,6 @@
   ((wrap-anti-forgery
     (partial form/render-approval-form client)) req))
 
-(defn authorization-form-response [req]
-  (redirect-with-session "/login" {:landing-url (request-url req)}))
+(defn authentication-form-response [req]
+  (redirect-with-session (settings/authentication-url)
+                         {:landing-url (request-url req)}))

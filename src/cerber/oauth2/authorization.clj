@@ -110,7 +110,7 @@
   (let [response (authorization-request-handler req)]
     (condp = (:error response)
       "unapproved"   (response/approval-form-response req (:client response))
-      "unauthorized" (response/authorization-form-response req)
+      "unauthorized" (response/authentication-form-response req)
       response)))
 
 (defn approve! [req]

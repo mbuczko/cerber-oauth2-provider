@@ -2,10 +2,9 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/cerber/cerber-oauth2-provider.svg)](https://clojars.org/cerber/cerber-oauth2-provider)
 
-[Architecture][arch] | [Usage][use] | [API][api] | [FAQ][faq] | [Development][dev]
+[Architecture][arch] | [Configuration][conf] | [Usage][use] | [API][api] | [Development][dev]
 
-This is a clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749).
-Currently covers all scenarios described by spec:
+This is a clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749). Currently covers all scenarios described by spec:
 
 * [Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-4.1)
 * [Implict Grant](https://tools.ietf.org/html/rfc6749#section-4.2)
@@ -17,24 +16,19 @@ Tokens expiration and [refreshing](https://tools.ietf.org/html/rfc6749#section-6
 ## Architecture
 
 This implementation assumes Authorization Server and Resource Server having same source of knowledge about issued tokens and sessions.
-Servers might be horizontally scaled but still need to be connected to the same underlaying database (redis or sql-based).
-This is also why in-memory storage should be used for development only. It simply does not scale (at least not with current implementation).
+Servers might be horizontally scaled but still need to be connected to the same underlaying database (redis or sql-based). This is also why in-memory storage should be used for development only. It simply does not scale (at least not with current implementation).
 
-All _NOT RECOMMENDED_ points from specification have been purposely omitted for security reasons. Bearer tokens and client credentials should be
-passed in HTTP headers. All other ways (like query param or form fields) are ignored and will result in HTTP 401 (Unauthorized) or HTTP 403
-(Forbidden) errors.
+All _NOT RECOMMENDED_ points from specification have been purposely omitted for security reasons. Bearer tokens and client credentials should be passed in HTTP headers. All other ways (like query param or form fields) are ignored and will result in HTTP 401 (Unauthorized) or HTTP 403 (Forbidden) errors.
 
 _(todo)_ introduce JWT tokens
 
 ### Users and clients
 
-Cerber has its own abstraction of [User](./src/cerber/stores/user.clj) ([resource owner](https://tools.ietf.org/html/rfc6749#)section-1.)1 and 
-[Client](./src/cerber/stores/client.clj) (application which requests on behalf of User). Instances of both can be easily created with Cerber's API.
+Cerber has its own abstraction of [User](./src/cerber/stores/user.clj) ([resource owner](https://tools.ietf.org/html/rfc6749#section-1.1) and [Client](./src/cerber/stores/client.clj) (application which requests on behalf of User). Instances of both can be easily created with Cerber's API.
 
 ### Stores
 
-_Store_ is a base abstraction of storage which, through protocol, exposes simple API to read and write entities (user, client, session, token or
-authorization code) that all the logic operates on. Cerber stands on a shoulders of 5 stores:
+_Store_ is a base abstraction of storage which, through protocol, exposes simple API to read and write entities (user, client, session, token or authorization code) that all the logic operates on. Cerber stands on a shoulders of 5 stores:
 
 * users - keeps users details (along with encoded password)
 * clients - keeps OAuth clients data (identifiers, secrets, allowed redirect URIs and so on)
@@ -44,20 +38,17 @@ authorization code) that all the logic operates on. Cerber stands on a shoulders
 
 As for now, each store implements following 3 types:
 
-* `in-memory` - a store keeping its data straight in `atom`. Ideal for development mode and tests.
-* `redis` - a proxy to Redis. Recommended for production mode.
-* `sql` - a proxy to relational database (eg. MySQL or PostgreSQL). Recommended for production mode.
+* `:in-memory` - a store keeping its data straight in `atom`. Ideal for development mode and tests.
+* `:redis` - a proxy to Redis. Recommended for production mode.
+* `:sql` - a proxy to relational database (eg. MySQL or PostgreSQL). Recommended for production mode.
 
-To keep maximal flexibility each store can be configured separately, eg. typical configuration might use `sql` store for users and clients and `redis`
-one for sessions / tokens / authcodes.
+To keep maximal flexibility each store can be configured separately, eg. typical configuration might use `:sql` store for users and clients and `:redis` one for sessions / tokens / authcodes.
 
 When speaking of configuration...
 
-### Configuration
+## Configuration
 
-`cerber.oauth2.core` namespace is a central place (an API) which exposes all the function required to initialize stores, users, clients and tinker with
-global options like realm or token/authcode/session life-times. Stores might seem to be a bit tricky to configure as they depend on underlaying storage
-and thus may expect additional parameters, so to configure session store as, let's say redis based one, following expression should make it happen:
+`cerber.oauth2.core` namespace is a central place (an API) which exposes all the function required to initialize stores, users, clients and tinker with global options like realm or token/authcode/session life-times. Stores might seem to be a bit tricky to configure as they depend on underlaying storage and thus may expect additional parameters, so to configure session store as, let's say redis based one, following expression should make it happen:
 
 ``` clojure
 (require '[cerber.core :as core])
@@ -85,6 +76,8 @@ and this is how to configure SQL-based store which requires database connection 
 Initialization and tear-down process can be easily handed over to glorious [mount](https://github.com/tolitius/mount):
 
 ``` clojure
+(require '[mount.core :refer [defstate]])
+
 (defstate client-store
   :start (core/create-client-store :sql db-conn)
   :stop  (close! client-store))
@@ -96,16 +89,7 @@ Initialization and tear-down process can be easily handed over to glorious [moun
    ...and so on...
 ```
 
-### Forms
-
-To complete some of OAuth2-flow actions, like web based authentication or approval dialog Cerber makes use of following templates to render HTML pages:
-
- * [templates/cerber/login.html](./resources/templates/cerber/login.html) - used to render authentication form.
- * [templates/cerber/authorize.html](./resources/templates/cerber/authorize.html) - used to render user a form where user is asked to grant a permission.
-
-Both templates are provided by this library with a very spartan styling, just to expose the most important things inside and should be replaced with own customized ones.
-
-## Authorization Grant Types
+### Authorization Grant Types
 
 Grant types allowed:
 
@@ -114,24 +98,30 @@ Grant types allowed:
 * `password` for [Resource Owner Password Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.3)
 * `client_credentials` for [Client Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.4)
 
-## Scopes
+### Scopes
 
-Client scopes are configured as a vector of unique strings like `"user"`, `"photo:read"` or `"profile:write"` which may be structurized in kind of hierarchy.
-For example one can define scopes as `#{"photo" "photo:read" "photo:write"}` which grants _read_ and _write_ permission to imaginary photo resoure and
-a _photo_ permission which is a parent of _photo:read_ and _photo:write_ and implicitly includes both permissions.
+Client scopes are configured as a set of unique strings like `user`, `photo:read` or `profile:write` which may be structurized in kind of hierarchy. For example one can define scopes as `#{"photo" "photo:read" "photo:write"}` which grants _read_ and _write_ permission to imaginary photo resoure and a _photo_ permission which is a parent of _photo:read_ and _photo:write_ and implicitly includes both permissions.
 
-Cerber also normalizes scope requests, so when client asks for `#{"photo" "photo:read"}` scopes, it's been simplified to `#{"photo"}` only.
+Cerber also auto-simplifies scope requests, so when client asks for `#{"photo" "photo:read"}` scopes, it's been simplified to `#{"photo"}` only, as it contains both  _photo:read_ and _photo:write_.
 
 Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec.
 
-## Roles and permissions
+### Roles and permissions
 
 Cerber does not deal with roles and permissions by default. Please use a [cerber-roles](https://github.com/mbuczko/cerber-roles) for that.
 
+### Forms
+
+To complete some of OAuth2-flow actions like web based authentication or asking user for approval, Cerber makes use of following templates to render corresponding HTML pages:
+
+ * [templates/cerber/login.html](./resources/templates/cerber/login.html) - used to render authentication form.
+ * [templates/cerber/authorize.html](./resources/templates/cerber/authorize.html) - used to render an user's approval/rejection form to grant (or not) certain permissions.
+
+Both templates are provided by this library with a very spartan styling, just to expose the most important things inside and should be replaced with own customized ones.
+
 ## Usage
 
-Cerber OAuth2 provider defines 6 [ring handlers](https://github.com/ring-clojure/ring/wiki/Concepts) that should be bound to specific routes. It's not done automagically.
-Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
+Cerber OAuth2 provider defines 6 [ring handlers](https://github.com/ring-clojure/ring/wiki/Concepts) that should be bound to specific routes. It's not done automagically. Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
 
 Anyway, this is how bindings would look like with compojure:
 
@@ -158,8 +148,7 @@ Having OAuth Authentication Server paths set up, next step is to configure restr
 ```
 Almost there. One missing part not mentioned yet is authorization and the way how token is validated.
 
-All the magic happens inside `handlers/wrap-authorized` handler which scans `Authorization` header for a token issued by Authorization Server.
-Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
+All the magic happens inside `handlers/wrap-authorized` handler which scans `Authorization` header for a token issued by Authorization Server. Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
 
 ``` clojure
 (require '[org.httpkit.server :as web]
@@ -203,7 +192,7 @@ passed in a `config` parameter whereas SQL-based one requires an initialized dat
 Used to create new OAuth client, where:
 - info is a non-validated info string (typically client's app name or URL to client's homepage)
 - redirects is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
-- grants is an optional vector of allowed grants: "authorization_code", "token", "password" or "client_credentials". if nil - all grants are allowed.
+- grants is an optional vector of allowed grants: "authorization\_code", "token", "password" or "client\_credentials". if nil - all grants are allowed.
 - scopes is an optional vector of OAuth scopes that client may request an access to
 - approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.
 
@@ -231,12 +220,17 @@ Looks up for client with given identifier.
 
 Removes client from store. Note that together with client all its access- and refresh-tokens are revoked as well.
 
+`(disable-client [client-id])`
+
+`(enable-client [client-id])`
+
+Disables or enables client with given identifier. Disabled client is no longer able to receive access/refresh-tokens nor operate on behalf of user in any other way.
+
 ### users
 
 `(create-user [login name email password roles permissions enabled?])`
 
-Creates new user with given login, descriptive name, user's email, password (stored as hash), roles and permissions.
-`enabled?` argument indicates whether user should be enabled by default (to be able to authenticate) or not.
+Creates new user with given login, descriptive name, user's email, password (stored as hash), roles and permissions.`enabled?` indicates whether user should be enabled by default (to be able to authenticate) or not.
 
 `(find-user [login])`
 
@@ -246,21 +240,31 @@ Looks up for a user with given login.
 
 Removes from store user with given login.
 
+`(disable-user [login])`
+
+`(enable-user [login])`
+
+Disables or enables user with given given login. Disabled user is no longer able to authenticate and all authorization attempts fail immediately.
+
 ### tokens
 
-`(find-tokens-by-client [client])`
+`(find-tokens-by-client [client token-type])`
 
-Returns list of non-expirable refresh-tokens generated for given client.
+Returns collection of "access" or "refresh" tokens generated for given client.
 
-`(find-tokens-by-user [user])`
+`(find-tokens-by-user [user token-type])`
 
-Returns list of non-expirable refresh-tokens generated for clients operating on behalf of given user.
+Returns collection of "access" or "refresh" tokens generated for clients operating on behalf of given user.
+
+`(revoke-access-token [token])`
+
+Revokes given access-token.
 
 `(revoke-tokens [client])`
 
 `(revoke-tokens [client login])`
 
-Revokes all access- and refresh-tokens bound with given client (and optional user's login).
+Revokes all access- and refresh-tokens bound with given client (and optionally with particular user).
 
 ### global options
 
@@ -298,23 +302,23 @@ Any errors returned in a response body are formed according to specification as 
 
 or added to the _error_ query param in case of callback requests.
 
-Callback requests (redirects) are one of the crucial concepts of OAuth flow thus it's extremally important to have redirect URIs verified. There are several way to validate redirect URI,
-this implementation however goes the simplest way and does _exact match_ which means that URI provided by client in a request MUST be exactly the same as one of URIs bound to the client during registration.
+Callback requests (redirects) are one of the crucial concepts of OAuth flow thus it's extremally important to have redirect URIs verified. There are several way to validate redirect URI, this implementation however goes the simplest way and does _exact match_ which means that URI provided by client in a request MUST be exactly the same as one of URIs bound to the client during registration.
 
 ## Development
 
-Cerber can be comfortably developed in [TDD](https://en.wikipedia.org/wiki/Test-driven_development) mode. Underlaying [midje](https://github.com/marick/Midje) testing framework has been configured to watch
-for changes and run automatically as a boot task:
+Cerber can be comfortably developed in [TDD](https://en.wikipedia.org/wiki/Test-driven_development) mode. Underlaying [midje](https://github.com/marick/Midje) testing framework has been configured to watch for changes and run automatically as a boot task:
 
 ``` shell
 $ boot tests
 ```
 
+### Standalone testing server
+
 As usual, PRs nicely welcomed :) Be sure first that your changes pass the tests or simply add your own tests if you found no ones covering your code yet.
 
 [arch]: #architecture
+[conf]: #configuration
 [use]: #usage
 [api]: #api
-[faq]: #faq
 [dev]: #development
 

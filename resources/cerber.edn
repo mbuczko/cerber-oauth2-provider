@@ -8,7 +8,7 @@
             :redirects ["http://cerber.test:8090"]
             :grants ["authorization_code" "password"]
             :scopes ["photos:read" "photos:write"]
-            :approved? true}]
+            :approved? false}]
 
  :users   [{:login "foo"
             :email "foo@bar.com"
