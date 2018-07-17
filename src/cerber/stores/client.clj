@@ -24,7 +24,10 @@
   (revoke-one! [this [client-id]]
     (db/sql-call 'delete-client {:id client-id}))
   (store! [this k client]
-    (when (= 1 (db/sql-call 'insert-client client)) client))
+    (= 1 (db/sql-call 'insert-client (-> client
+                                         (update :scopes helpers/coll->str)
+                                         (update :grants helpers/coll->str)
+                                         (update :redirects helpers/coll->str)))))
   (modify! [this k client]
     (if (:enabled? client)
       (db/sql-call 'enable-client client)
@@ -37,18 +40,18 @@
 (defn normalize
   [client]
   (when-let [{:keys [id secret info approved scopes grants redirects enabled created_at modified_at activated_at blocked_at]} client]
-    (map->Client {:id id
-                  :secret secret
-                  :info info
-                  :approved? approved
-                  :enabled? enabled
-                  :scopes (helpers/str->coll [] scopes)
-                  :grants (helpers/str->coll [] grants)
-                  :redirects (helpers/str->coll [] redirects)
-                  :created-at created_at
-                  :modified-at modified_at
-                  :activated-at activated_at
-                  :blocked-at blocked_at})))
+    {:id id
+     :secret secret
+     :info info
+     :approved? approved
+     :enabled? enabled
+     :scopes (helpers/str->coll [] scopes)
+     :grants (helpers/str->coll [] grants)
+     :redirects (helpers/str->coll [] redirects)
+     :created-at created_at
+     :modified-at modified_at
+     :activated-at activated_at
+     :blocked-at blocked_at}))
 
 (defmulti create-client-store (fn [type config] type))
 
@@ -76,8 +79,8 @@
   (if (empty? uri)
     (error/internal-error "redirect-uri cannot be empty")
     (if (or (>= (.indexOf uri "#") 0)
-            (>= (.indexOf uri " ") 0)
-            (>= (.indexOf uri "..") 0))
+            (>= (.indexOf uri "..") 0)
+            (.matches uri ".*\\s+.*"))
       (error/internal-error "Illegal characters in redirect URI")
       (try
         (java.net.URL. uri)
@@ -89,6 +92,13 @@
   [redirects]
   (filter f/failed? (map validate-uri redirects)))
 
+(defn find-client
+  "Returns a client with given id if any found or nil otherwise."
+
+  [client-id]
+  (when-let [found (and client-id (fetch-one @client-store [client-id]))]
+    (map->Client found)))
+
 (defn revoke-client
   "Revokes previously generated client and all tokens generated to this client so far."
 
@@ -96,6 +106,12 @@
   (let [id (:id client)]
     (revoke-one! @client-store [id])
     (token/revoke-client-tokens client)))
+
+(defn purge-clients
+  "Removes clients from store."
+
+  []
+  (purge! @client-store))
 
 (defn enable-client
   "Enables client. Returns true if client has been enabled successfully or false otherwise."
@@ -113,16 +129,16 @@
 (defn create-client
   "Creates and returns a new client."
 
-  [info redirects grants scopes approved? & [id secret]]
+  [info redirects grants scopes enabled? approved? & [id secret]]
   (let [result (validate-redirects redirects)
         client {:id (or id (helpers/generate-secret))
                 :secret (or secret (helpers/generate-secret))
                 :info info
-                :approved? approved?
-                :enabled? true
-                :scopes (helpers/coll->str scopes)
-                :grants (helpers/coll->str grants)
-                :redirects (helpers/coll->str redirects)
+                :approved? (boolean approved?)
+                :enabled? (boolean enabled?)
+                :scopes scopes
+                :grants grants
+                :redirects redirects
                 :activated-at (helpers/now)
                 :created-at (helpers/now)}]
 
@@ -131,19 +147,6 @@
       (if (store! @client-store [:id] client)
         (map->Client client)
         (error/internal-error "Cannot store client")))))
-
-(defn find-client
-  "Returns a client with given id if any found or nil otherwise."
-
-  [client-id]
-  (when-let [found (and client-id (fetch-one @client-store [client-id]))]
-    (map->Client found)))
-
-(defn purge-clients
-  "Removes clients from store."
-
-  []
-  (purge! @client-store))
 
 (defn grant-allowed?
   [client grant]

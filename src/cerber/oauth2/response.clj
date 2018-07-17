@@ -14,7 +14,8 @@
             [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
             [ring.util
              [request :refer [request-url]]
-             [response :as response]]))
+             [response :as response]]
+            [cerber.stores.user :as user]))
 
 
 (defn redirect-to
@@ -46,25 +47,32 @@
                  (redirect-to redirect)))
 
 (defn access-token-response [{:keys [::ctx/client ::ctx/scopes ::ctx/user ::ctx/authcode]}]
-
-  ;; revoke existing authcode first (if provided)
   (when authcode
     (authcode/revoke-authcode authcode))
 
-  ;; generate access & refresh token (if requested)
-  ;; note that scope won't exist in authorization_code scenario as it should be taken straight from authcode
+  ;; generate access & refresh token (if requested).
+  ;;
+  ;; note that scope won't exist in authorization_code scenario as it should be taken straight from authcode.
+  ;; also, user won't exist for Client Credentials grant.
+
   (f/attempt-all [access-scope (and scopes (helpers/coll->str scopes))
                   access-token (token/generate-access-token client
-                                                            user
+                                                            (or user {:enabled? true})
                                                             (or access-scope (:scope authcode))
-                                                            {:refresh? (boolean user)})]
+                                                            (boolean user))]
                  {:status 200
                   :body access-token}))
 
 (defn refresh-token-response [req]
-  (f/attempt-all [access-token (token/refresh-access-token (::ctx/refresh-token req))]
-                 {:status 200
-                  :body access-token}))
+  (let [{:keys [login scope]} (::ctx/refresh-token req)]
+    (f/attempt-all [access-token (token/generate-access-token (::ctx/client req)
+                                                              (user/find-user login)
+                                                              scope
+                                                              true)]
+                   {:status 200
+                    :body access-token})))
+
+
 
 (defn approval-form-response [req client]
   ((wrap-anti-forgery

@@ -18,24 +18,22 @@
 
 (defrecord SqlTokenStore [normalizer cleaner]
   Store
-  (fetch-one [this [client-id tag secret login]]
-    (-> (db/sql-call 'find-tokens-by-secret {:secret secret :tag tag})
+  (fetch-one [this [ttype secret client-id login]]
+    (-> (db/sql-call 'find-tokens-by-secret {:secret secret :ttype ttype})
         first
         normalizer))
-  (fetch-all [this [client-id tag secret login]]
+  (fetch-all [this [ttype secret client-id login]]
     (map normalizer (if secret
-                      (db/sql-call 'find-tokens-by-secret {:secret secret :tag tag})
-                      (if client-id
-                        (db/sql-call 'find-tokens-by-login-and-client {:client-id client-id :login login :tag tag})
-                        (db/sql-call 'find-tokens-by-login {:login login :tag tag})))))
-  (revoke-one! [this [client-id tag secret]]
+                      (db/sql-call 'find-tokens-by-secret {:ttype ttype :secret secret})
+                      (db/sql-call 'find-tokens-by-client {:ttype ttype :client-id client-id}))))
+  (revoke-one! [this [ttype secret client-id login]]
     (db/sql-call 'delete-token-by-secret {:secret secret}))
-  (revoke-all! [this [client-id tag secret login]]
-    (map ->Token (if login
-                   (db/sql-call 'delete-tokens-by-login  {:client-id client-id :login login :tag tag})
-                   (db/sql-call 'delete-tokens-by-client {:client-id client-id :tag tag}))))
+  (revoke-all! [this [ttype secret client-id login]]
+    (if login
+      (db/sql-call 'delete-tokens-by-login  {:client-id client-id :login login :ttype ttype})
+      (db/sql-call 'delete-tokens-by-client {:client-id client-id :ttype ttype})))
   (store! [this k token]
-    (when (= 1 (db/sql-call 'insert-token token)) token))
+    (= 1 (db/sql-call 'insert-token token)))
   (purge! [this]
     (db/sql-call 'clear-tokens))
   (close! [this]
@@ -44,13 +42,13 @@
 (defn normalize
   [token]
   (when-let [{:keys [client_id user_id login scope secret created_at expires_at]} token]
-    (map->Token {:client-id client_id
-                 :user-id user_id
-                 :login login
-                 :scope scope
-                 :secret secret
-                 :created-at created_at
-                 :expires-at expires_at})))
+    {:client-id client_id
+     :user-id user_id
+     :login login
+     :scope scope
+     :secret secret
+     :created-at created_at
+     :expires-at expires_at}))
 
 (defmulti create-token-store (fn [type config] type))
 
@@ -74,76 +72,54 @@
 (defn create-token
   "Creates and retuns new token."
 
-  [tag client user scope & [ttl]]
+  [ttype client user scope & [ttl access-secret]]
   (let [secret (helpers/generate-secret)
         token  (helpers/reset-ttl
                 {:client-id (:id client)
                  :user-id (:id user)
                  :login (:login user)
-                 :secret (helpers/digest secret)
+                 :secret secret
                  :scope scope
-                 :tag (name tag)
-                 :created-at (helpers/now)}
-                (and (= tag :access) (or ttl (settings/token-valid-for))))
-        keyvec  (if (= tag :access)
-                  [nil :tag :secret nil]
-                  [:client-id :tag :secret :login])]
+                 :ttype (name ttype)
+                 :created-at (helpers/now)
+                 :access-secret (helpers/digest access-secret)}
+                (and (= ttype :access) (or ttl (settings/token-valid-for))))
+        keyvec  (if (= ttype :access)
+                  [:ttype :secret]
+                  [:ttype :secret :client-id :login])]
 
-    (if-let [result (store! @token-store keyvec token)]
-      (map->Token (assoc result :secret secret))
+    (if (store! @token-store keyvec (update token :secret helpers/digest))
+      (map->Token token)
       (error/internal-error "Cannot create token"))))
-
-;; revocation
-
-(defn- revoke-by-pattern
-  [pattern]
-  (revoke-all! @token-store pattern) nil)
-
-(defn- revoke-by-key
-  [key]
-  (revoke-one! @token-store key) nil)
-
-(defn revoke-access-token
-  [token]
-  (when-let [secret (:secret token)]
-    (revoke-by-key [nil "access" (helpers/digest (:secret token)) nil])))
-
-(defn revoke-client-tokens
-  ([client]
-   (revoke-client-tokens client nil))
-  ([client login]
-   (revoke-by-pattern [(:id client) "access" nil login])
-   (revoke-by-pattern [(:id client) "refresh" nil login])))
 
 ;; retrieval
 
 (defn find-by-pattern
-  "Finds token by vectorized pattern key.
-  Each nil element of key will be replaced with wildcard specific for underlaying store implementation."
+  "Finds token by vectorized pattern key. Each nil element of key will be
+  replaced with wildcard specific for underlaying store implementation."
 
   [key]
-  (when-let [tokens (fetch-all @token-store key)]
-    (map (fn [t] (map->Token t)) tokens)))
+  (map map->Token (fetch-all @token-store key)))
 
 (defn find-by-key
-  "Finds token by vectorized exact key.
-  Each element of key is used to compose query depending on underlaying store implementation."
+  "Finds token by vectorized exact key. Each element of key is used to compose
+  query depending on underlaying store implementation."
 
   [key]
   (when-let [result (fetch-one @token-store key)]
     (map->Token result)))
 
 (defn find-access-token
-  "Finds access token issued for given client-user pair with particular auto-generated secret code."
+  "Finds access token issued for given client with given secret code."
 
   [secret]
-  (find-by-key [nil "access" (helpers/digest secret) nil]))
+  (find-by-key ["access" (helpers/digest secret)]))
 
 (defn find-refresh-token
-  "Finds refresh token issued for given client-user pair with particular auto-generated secret code."
+  "Finds refresh token issued for given client with given secret code."
 
-  [client-id secret login]
-  (first (find-by-pattern [client-id "refresh" (helpers/digest secret) login])))
+  [client-id secret]
+  (first (find-by-pattern ["refresh" (helpers/digest secret) client-id nil])))
 
 (defn purge-tokens
   "Removes token from store."
@@ -151,43 +127,88 @@
   []
   (purge! @token-store))
 
+;; revocation
+
+(defn revoke-by-pattern
+  [pattern]
+  (revoke-all! @token-store pattern) nil)
+
+(defn revoke-by-key
+  [key]
+  (revoke-one! @token-store key) nil)
+
+(defn revoke-access-token
+  [secret]
+  (revoke-by-key ["access" (helpers/digest secret)]))
+
+(defn revoke-client-tokens
+  "Revokes access- and refresh-tokens of given client (and user optionally)."
+  ([client]
+   (revoke-client-tokens client nil))
+  ([client user]
+   (let [login (:login user)
+         client-id (:id client)]
+
+     ;; access-tokens are kept in no-sql stores under a key: access:<secret> for performance reasons,
+     ;; but that makes them hard to revoke as there is no client/login information attached to the key.
+     ;; on the other hand, refresh-tokens are stored under key: refresh:<secret>:<client-id>:<login>
+     ;; which makes them pretty easy to filter. to overcome a problem with not-searchable access-tokens
+     ;; their secrets are additionally stored along with refresh-tokens (as access-secret field).
+     ;; this way, having a refresh token for given client/login found, we also immediately have an
+     ;; access-token, which makes them both easily revokable.
+     ;;
+     ;; this is not a case for sql-stores which hold client/login information for both kind of tokens.
+     ;; concluding, if there is no access-secret found in a refresh-token, it means it was fetched from
+     ;; sql-store so both tokens may be revoked using `revoke-by-pattern`.
+
+     (let [refresh-tokens (find-by-pattern ["refresh" nil client-id login])]
+       (when (-> refresh-tokens first :access-secret)
+         (doseq [token refresh-tokens]
+           (revoke-by-key ["access" (:access-secret token)]))))
+
+     ;; this won't work for no-sql stores
+     (revoke-by-pattern ["access" nil client-id login])
+     ;; this works for both kind of stores
+     (revoke-by-pattern ["refresh" nil client-id login]))))
+
 ;; generation
 
 (defn generate-access-token
-  "Generates access-token for given client-user pair within provided scope.
-  Additional options (type, refresh?) may adjust token type (Bearer by default)
-  and decide whether to generate refresh-token as well or not (no refresh-tokens by default).
+  "Generates access-token for given client-login pair within provided scope.
 
-  Asking again for refresh-token generation (through :refresh? true option) reuses prevously
-  generated refresh-token for given client/user pair."
+  Additional options (`type` and `refresh?`) override default token type
+  (Bearer) and generate refresh-token, which is not created by default.
 
-  [client user scope & [opts]]
-  (let [access-token (and (nil? (revoke-by-pattern [(:id client) "access" nil (:login user)]))
-                          (create-token :access client user scope))
-        {:keys [client-id secret created-at expires-at login]} access-token
-        {:keys [type refresh?] :or {type "Bearer"}} opts]
+  When called on client-user pair which already had tokens generated, effectively
+  overrides both tokens revoking the old ones.
 
-    (if (f/failed? access-token)
-      access-token
-      (let [refresh-token (and refresh?
-                               (nil? (revoke-by-pattern [client-id "refresh" nil login]))
-                               (create-token :refresh client user scope))]
-        (-> {:access_token secret
-             :token_type type
-             :created_at created-at
-             :expires_in (quot (- (.getTime expires-at)
-                                  (.getTime created-at)) 1000)}
-            (cond-> scope
-              (assoc :scope scope))
-            (cond-> (and refresh-token (not (f/failed? refresh-token)))
-              (assoc :refresh_token (:secret refresh-token))))))))
+  To get tokens generated both client and user need to be enabled.
+  Otherwise HTTP 400 (invalid request) is returned."
 
-(defn refresh-access-token
-  "Refreshes access and refresh-tokens using provided refresh-token."
+  [client user scope & [refresh? type]]
 
-  [refresh-token]
-  (let [{:keys [client-id user-id login scope]} refresh-token]
-    (generate-access-token {:id client-id}
-                           {:id user-id :login login}
-                           scope
-                           {:refresh? true})))
+  (if (and (:enabled? client)
+           (:enabled? user))
+    (do
+
+      ;; revoke all the tokens for given client/user that are still in use.
+      (revoke-client-tokens client user)
+
+      (let [result (create-token :access client user scope)
+            {:keys [client-id secret created-at expires-at login]} result]
+
+        (if (f/failed? result)
+          result
+          (let [refresh-token (when refresh? (create-token :refresh client user scope nil secret))]
+            (-> {:access_token secret
+                 :token_type (or type "Bearer")
+                 :created_at created-at
+                 :expires_in (quot (- (.getTime expires-at)
+                                      (.getTime created-at)) 1000)}
+                (cond-> scope
+                  (assoc :scope scope))
+                (cond-> (not (or (nil? refresh-token)
+                                 (f/failed? refresh-token)))
+                  (assoc :refresh_token (:secret refresh-token))))))))
+
+        error/invalid-request))

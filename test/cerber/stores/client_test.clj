@@ -1,41 +1,57 @@
 (ns cerber.stores.client-test
   (:require [cerber.test-utils :refer [instance-of has-secret with-stores]]
-            [cerber.stores.client :refer :all]
+            [cerber.oauth2.core :as core]
             [midje.sweet :refer :all])
   (:import cerber.error.HttpError
            cerber.stores.client.Client))
 
-(def redirects ["http://localhost" "http://defunkt.pl"])
-(def scope "photo:read")
 (def info "testing client")
-(def grants [])
+(def scopes ["photo:read"])
+(def grants ["authorization_code" "password"])
+(def redirects ["http://localhost" "http://defunkt.pl"])
 
 (tabular
  (fact "Redirect URIs must be a valid URLs with no forbidden characters."
        (with-stores :in-memory
-         (create-client info ?redirects [scope] grants false) => ?expected))
+         (core/create-client info ?redirects scopes grants true false) => ?expected))
 
  ?redirects                       ?expected
- ["http://dupa.z.trupa"]          truthy
+ ["http://foo.bar.bazz"]          truthy
  ["foo.bar" "http://bar.foo.com"] (instance-of HttpError)
  ["http://foo.bar" ""]            (instance-of HttpError)
- ["http://some.nasty/../hack.pl"] (instance-of HttpError)
- ["http://some nasty.pl"]         (instance-of HttpError))
+ ["http://foo.bar#bazz"]          (instance-of HttpError)
+ ["http://some.nasty/../hack"]    (instance-of HttpError)
+ ["http://some nasty.hack"]       (instance-of HttpError)
+ ["http://some\tvery.nasty.hack"] (instance-of HttpError))
+
+(fact "Created client has a secret code."
+       (with-stores :in-memory
+
+         ;; given
+         (let [client (core/create-client info redirects scopes grants true false)]
+
+           ;; then
+           client => (instance-of Client)
+           client => (has-secret :secret))))
 
 (tabular
- (fact "Newly created client is returned when stored correctly in a store."
+ (fact "Clients are stored in a correct model."
        (with-stores ?store
 
          ;; given
-         (let [client (create-client info redirects [scope] grants false)
-               found  (find-client (:id client))]
+         (let [created (core/create-client info redirects grants scopes true false)
+               client  (core/find-client (:id created))]
 
            ;; then
            client => (instance-of Client)
            client => (has-secret :secret)
-
-           found => (instance-of Client)
-           found => (has-secret :secret))))
+           client => (contains {:id (:id client)
+                                :info info
+                                :redirects redirects
+                                :grants grants
+                                :scopes scopes
+                                :enabled? true
+                                :approved? false}))))
 
  ?store :in-memory :redis :sql)
 
@@ -44,16 +60,29 @@
        (with-stores ?store
 
          ;; given
-         (let [client (create-client info redirects [scope] grants false)
-               id (:id client)]
-
-           ;; and
-           (find-client id) => (instance-of Client)
+         (let [client (core/create-client info redirects scopes grants true false)
+               client-id (:id client)]
 
            ;; when
-           (revoke-client client)
+           (core/delete-client client-id)
 
            ;; then
-           (find-client id) => nil)))
+           (core/find-client client-id) => nil)))
+
+ ?store :in-memory :sql :redis)
+
+(tabular
+ (fact "Revoked client has all its tokens revoked as well."
+       (with-stores ?store
+
+         ;; given
+         (let [client (core/create-client info redirects scopes grants true false)
+               client-id (:id client)]
+
+           ;; when
+           (core/delete-client client-id)
+
+           ;; then
+           (core/find-refresh-tokens client-id) => (just '()))))
 
  ?store :in-memory :sql :redis)

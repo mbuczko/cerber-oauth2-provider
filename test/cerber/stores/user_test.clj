@@ -1,17 +1,20 @@
 (ns cerber.stores.user-test
-  (:require [cerber.stores.user :refer :all]
-            [cerber.test-utils :refer [has-secret instance-of with-stores]]
+  (:require [cerber.test-utils :refer [has-secret instance-of with-stores]]
+            [cerber.stores.user :refer [valid-password?]]
+            [cerber.oauth2.core :as core]
             [midje.sweet :refer :all])
   (:import cerber.stores.user.User))
 
 (def login "foo")
+(def email "foo@bazz.bar")
+(def uname "Foo Bazz")
 (def password "pass")
 
-(fact "Newly created user is returned with auto-generated id and crypted password filled in."
+(fact "Created user has auto-generated id and crypted password filled in."
       (with-stores :in-memory
 
         ;; given
-        (let [user (create-user {:login login} password)]
+        (let [user (core/create-user {:login login} password)]
 
           ;; then
           user => (instance-of User)
@@ -26,30 +29,26 @@
           ;; hashed passwords should be the same
           (valid-password? password (:password user)) => true)))
 
-(fact "Newly created user is enabled by default if no :enabled? property was set."
-      (with-stores :in-memory
-
-        ;; given
-        (let [user1 (create-user {:login login} password)
-              user2 (create-user {:login "bazz" :enabled? false} password)]
-
-          ;; then
-          (:enabled? user1) => true
-          (:enabled? user2) => false)))
-
 (tabular
- (fact "User found in a store is returned with details filled in."
+ (fact "Users are stored in a correct model, enabled by default if no :enabled? property was set."
        (with-stores ?store
 
          ;; given
-         (create-user {:login login} password)
+         (let [created1 (core/create-user {:login login :email email :name uname} password)
+               created2 (core/create-user {:login "bazz" :enabled? false} password)]
 
-         ;; when
-         (let [user (find-user login)]
+           ;; when
+           (let [user1 (core/find-user (:login created1))
+                 user2 (core/find-user (:login created2))]
 
-           ;; then
-           user => (instance-of User)
-           user => (has-secret :password))))
+             ;; then
+             user1 => (has-secret :password)
+             user1 => (contains {:login login
+                                 :email email
+                                 :name  uname
+                                 :enabled? true})
+
+             (:enabled? user2)) => false)))
 
  ?store :in-memory :sql :redis)
 
@@ -58,13 +57,13 @@
        (with-stores ?store
 
          ;; given
-         (let [user (create-user {:login login} password)]
-           (find-user login) => (instance-of User)
+         (let [user (core/create-user {:login login} password)]
+           (core/find-user login) => (instance-of User)
 
            ;; when
-           (revoke-user user)
+           (core/delete-user login)
 
            ;; then
-           (find-user login) => nil)))
+           (core/find-user login) => nil)))
 
  ?store :in-memory :sql :redis)

@@ -1,12 +1,7 @@
 (ns cerber.test-utils
   (:require [cerber.db :as db]
             [cerber.store :refer :all]
-            [cerber.stores
-             [user :as u]
-             [token :as t]
-             [client :as c]
-             [session :as s]
-             [authcode :as a]]
+            [cerber.oauth2.core :as core]
             [conman.core :as conman]
             [clojure.data.codec.base64 :as b64]
             [peridot.core :refer [request header]])
@@ -35,7 +30,7 @@
 
 (defn has-secret [field]
   (fn [actual]
-    (not-empty (get actual field))))
+    (boolean (seq (get actual field)))))
 
 (defn instance-of [clazz]
   (fn [actual]
@@ -73,9 +68,9 @@
 
 (defn create-test-user
   ([password]
-   (create-test-user nil password))
-  ([user password]
-   (u/create-user (or user {:login (random-string 12)}) password)))
+   (create-test-user {:login (random-string 12)} password))
+  ([details password]
+   (core/create-user details password)))
 
 (defn create-test-client
   "Creates test client - unapproved by default."
@@ -83,35 +78,34 @@
   ([scope redirect-uri]
    (create-test-client scope redirect-uri false))
   ([scope redirect-uri approved?]
-   (c/create-client "test client" [redirect-uri] ["authorization_code" "token" "password" "client_credentials"] [scope] approved?)))
+   (core/create-client "test client" [redirect-uri] ["authorization_code" "token" "password" "client_credentials"] [scope] true approved?)))
 
-(defn disable-test-user [user]
-  (u/disable-user user))
+(defn disable-test-user [login]
+  (core/disable-user login))
 
-(defn enable-test-user [user]
-  (u/enable-user user))
+(defn disable-test-client [client-id]
+  (core/disable-client client-id))
+
+(defn enable-test-user [login]
+  (core/enable-user login))
 
 (defn init-stores
   "Initializes all the OAuth2 stores of given type and
   purges data kept by underlaying databases (H2 and redis)."
 
   [type store-params]
-  (let [stores [(u/init-store type store-params)
-                (c/init-store type store-params)
-                (a/init-store type store-params)
-                (s/init-store type store-params)
-                (t/init-store type store-params)]]
+  [(core/create-user-store type store-params)
+   (core/create-client-store type store-params)
+   (core/create-authcode-store type store-params)
+   (core/create-session-store type store-params)
+   (core/create-token-store type store-params)])
 
-    ;; clear all the database-related stuff as one connection
-    ;; to redis & H2 is used across all the tests
+(defn purge-stores
+  "Clears all the database-related stuff as one connection
+  to redis & H2 is used across all the tests."
 
-    (u/purge-users)
-    (c/purge-clients)
-    (a/purge-authcodes)
-    (s/purge-sessions)
-    (t/purge-tokens)
-
-    stores))
+  [stores]
+  (doseq [store stores] (purge! store)))
 
 (defn close-stores
   "Closes all the stores provided in a collection."
@@ -125,5 +119,6 @@
                                       :sql db-conn
                                       :redis redis-spec
                                       nil))]
+     (purge-stores stores#)
      ~@body
      (close-stores stores#)))

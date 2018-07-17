@@ -6,6 +6,7 @@
             [cerber
              [db :as db]
              [helpers :as helpers]
+             [error :as error]
              [store :refer :all]]
             [mount.core :refer [defstate]]
             [taoensso.nippy :as nippy]))
@@ -23,9 +24,8 @@
   (revoke-one! [this [sid]]
     (db/sql-call 'delete-session {:sid sid}))
   (store! [this k session]
-    (let [content (nippy/freeze (:content session))
-          result  (db/sql-call 'insert-session (assoc session :content content))]
-      (when (= 1 result) session)))
+    (let [content (nippy/freeze (:content session))]
+      (= 1 (db/sql-call 'insert-session (assoc session :content content)))))
   (modify! [this k session]
     (let [result (db/sql-call 'update-session (update session :content nippy/freeze))]
       (when (= 1 result) session)))
@@ -41,10 +41,10 @@
 (defn normalize
   [session]
   (when-let [{:keys [sid content created_at expires_at]} session]
-    (map->Session {:sid sid
-                   :content (nippy/thaw content)
-                   :expires-at expires_at
-                   :created-at created_at})))
+    {:sid sid
+     :content (nippy/thaw content)
+     :expires-at expires_at
+     :created-at created_at}))
 
 (defmulti create-session-store (fn [type config] type))
 
@@ -65,6 +65,23 @@
   [type config]
   (reset! session-store (create-session-store type config)))
 
+(defn find-session [sid]
+  (when-let [session (fetch-one @session-store [sid])]
+    (when-not (helpers/expired? session)
+      (map->Session session))))
+
+(defn revoke-session
+  "Revokes previously generated session."
+
+  [session]
+  (revoke-one! @session-store [(:sid session)]) nil)
+
+(defn purge-sessions
+  "Removes sessions from store."
+
+  []
+  (purge! @session-store))
+
 (defn create-session
   "Creates and returns a new session."
 
@@ -75,28 +92,12 @@
                   :created-at (helpers/now)}
                  (or ttl (settings/session-valid-for)))]
 
-    (when (store! @session-store [:sid] session)
-      (map->Session session))))
-
-(defn revoke-session
-  "Revokes previously generated session."
-
-  [session]
-  (revoke-one! @session-store [(:sid session)]) nil)
+    (if (store! @session-store [:sid] session)
+      (map->Session session)
+      (error/internal-error "Cannot store session"))))
 
 (defn update-session [session]
   (modify! @session-store [:sid] (helpers/reset-ttl session (settings/session-valid-for))))
 
 (defn extend-session [session]
   (touch! @session-store [:sid] session (settings/session-valid-for)))
-
-(defn find-session [sid]
-  (when-let [found (fetch-one @session-store [sid])]
-    (when-not (helpers/expired? found)
-      (map->Session found))))
-
-(defn purge-sessions
-  "Removes sessions from store."
-
-  []
-  (purge! @session-store))

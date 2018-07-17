@@ -25,7 +25,7 @@
   (revoke-one! [this [code]]
     (db/sql-call 'delete-authcode {:code code}))
   (store! [this k authcode]
-    (when (= 1 (db/sql-call 'insert-authcode authcode)) authcode))
+    (= 1 (db/sql-call 'insert-authcode authcode)))
   (purge! [this]
     (db/sql-call 'clear-authcodes))
   (close! [this]
@@ -34,13 +34,13 @@
 (defn normalize
   [authcode]
   (when-let [{:keys [client_id login code scope redirect_uri created_at expires_at]} authcode]
-    (map->AuthCode {:client-id client_id
-                    :login login
-                    :code code
-                    :scope scope
-                    :redirect-uri redirect_uri
-                    :expires-at expires_at
-                    :created-at created_at})))
+    {:client-id client_id
+     :login login
+     :code code
+     :scope scope
+     :redirect-uri redirect_uri
+     :expires-at expires_at
+     :created-at created_at}))
 
 (defmulti create-authcode-store (fn [type config] type))
 
@@ -61,11 +61,23 @@
   [type config]
   (reset! authcode-store (create-authcode-store type config)))
 
+(defn find-authcode
+  [code]
+  (when-let [authcode (fetch-one @authcode-store [code])]
+    (when-not (helpers/expired? authcode)
+      (map->AuthCode authcode))))
+
 (defn revoke-authcode
   "Revokes previously generated authcode."
 
   [authcode]
   (revoke-one! @authcode-store [(:code authcode)]) nil)
+
+(defn purge-authcodes
+  "Removes auth code from store."
+
+  []
+  (purge! @authcode-store))
 
 (defn create-authcode
   "Creates and returns a new auth-code."
@@ -83,15 +95,3 @@
     (if (store! @authcode-store [:code] authcode)
       (map->AuthCode authcode)
       (error/internal-error "Cannot store authcode"))))
-
-(defn find-authcode
-  [code]
-  (when-let [authcode (fetch-one @authcode-store [code])]
-    (when-not (helpers/expired? authcode)
-      (map->AuthCode authcode))))
-
-(defn purge-authcodes
-  "Removes auth code from store."
-
-  []
-  (purge! @authcode-store))

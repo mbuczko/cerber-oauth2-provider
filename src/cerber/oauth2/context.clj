@@ -58,8 +58,8 @@
 
 (defn refresh-token-valid? [req]
   (let [client-id (:id (::client req))]
-    (f/attempt-all [refresh-token (get-in req [:params :refresh_token] error/invalid-request)
-                    rtoken (or (token/find-refresh-token client-id refresh-token nil) error/invalid-token)
+    (f/attempt-all [secret (get-in req [:params :refresh_token] error/invalid-request)
+                    rtoken (or (token/find-refresh-token client-id secret) error/invalid-token)
                     valid? (or (= client-id (:client-id rtoken)) error/invalid-token)]
                    (assoc req ::refresh-token rtoken))))
 
@@ -76,7 +76,7 @@
                             (:enabled? (user/find-user (:login token)))
 
                             ;; no such a user or user disabled?
-                            error/unauthorized)]
+                            (error/bad-request "User disabled."))]
                  (let [scope (:scope token)]
                    (assoc req
                           ::client {:scopes (str/split scope #" ")}
@@ -104,7 +104,7 @@
 (defn user-authenticated? [req]
   (let [user (user/find-user (-> req :session :login))]
     (or (and (:enabled? user)
-             (assoc req ::user (select-keys user [:id :login :roles :permissions])))
+             (assoc req ::user (select-keys user [:id :login :roles :permissions :enabled?])))
         error/unauthorized)))
 
 (defn user-password-valid? [req ^cerber.oauth2.authenticator.Authenticator authenticator]

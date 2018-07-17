@@ -2,7 +2,7 @@
 
 create table tokens (
   id serial primary key,
-  tag varchar(10),
+  ttype varchar(10),
   client_id varchar(32) not null,
   user_id varchar(50),
   secret varchar(64) not null UNIQUE,

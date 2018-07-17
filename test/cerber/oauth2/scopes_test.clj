@@ -1,6 +1,8 @@
 (ns cerber.oauth2.scopes-test
-  (:require [cerber.oauth2.scopes :refer :all]
-            [cerber.stores.client :refer :all]
+  (:require [cerber.oauth2.core :as core]
+            [cerber.oauth2.scopes :refer [normalize-scope]]
+            [cerber.stores.client :refer [scopes-valid?]]
+            [cerber.test-utils :refer [with-stores]]
             [midje.sweet :refer :all]))
 
 (tabular
@@ -16,8 +18,9 @@
 
 (tabular
  (fact "Valid scopes should be included in client definition."
-       (let [client (create-client "dummy" ["http://localhost"] [] ["photos:read" "photos:write"] false)]
-         (scopes-valid? client ?scopes) => ?expected))
+       (with-stores :in-memory
+         (let [client (core/create-client "dummy" ["http://localhost"] nil ["photos:read" "photos:write"] true false)]
+           (scopes-valid? client ?scopes) => ?expected)))
 
  ?scopes                          ?expected
  #{"photos:read"}                 true

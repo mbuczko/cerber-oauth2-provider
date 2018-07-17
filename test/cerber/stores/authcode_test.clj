@@ -7,7 +7,7 @@
 (def redirect-uri "http://localhost")
 (def scope "photo:read")
 
-(fact "Newly created authcode is returned with secret code filled in."
+(fact "Created authcode has a secret code."
       (with-stores :in-memory
 
         ;; given
@@ -20,18 +20,25 @@
           authcode => (has-secret :code))))
 
 (tabular
- (fact "Authcode found in a store is returned with secret code filled in."
+ (fact "Authcodes are stored in a correct model."
        (with-stores ?store
 
          ;; given
-         (let [user     (create-test-user "")
-               client   (create-test-client scope redirect-uri)
-               authcode (create-authcode client user scope redirect-uri)
-               found    (find-authcode (:code authcode))]
+         (let [user    (create-test-user "")
+               client  (create-test-client scope redirect-uri)
+               created (create-authcode client user scope redirect-uri)]
 
            ;; then
-           found => (instance-of AuthCode)
-           found => (has-secret :code))))
+           (let [authcode (find-authcode (:code created))]
+
+             authcode => (instance-of AuthCode)
+             authcode => (has-secret :code)
+             authcode => (contains {:client-id (:id client)
+                                    :login (:login user)
+                                    :scope scope
+                                    :redirect-uri redirect-uri})
+
+             (:expires-at authcode)) =not=> nil)))
 
  ?store :in-memory :sql :redis)
 

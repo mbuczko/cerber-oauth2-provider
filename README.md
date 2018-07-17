@@ -24,7 +24,7 @@ _(todo)_ introduce JWT tokens
 
 ### Users and clients
 
-Cerber has its own abstraction of [User](./src/cerber/stores/user.clj) ([resource owner](https://tools.ietf.org/html/rfc6749#section-1.1) and [Client](./src/cerber/stores/client.clj) (application which requests on behalf of User). Instances of both can be easily created with Cerber's API.
+Cerber has its own abstraction of [User](./src/cerber/stores/user.clj) ([resource owner](https://tools.ietf.org/html/rfc6749#section-1.1)) and [Client](./src/cerber/stores/client.clj) (application which requests on behalf of User). Instances of both can be easily created with Cerber's API.
 
 ### Stores
 
@@ -48,7 +48,7 @@ When speaking of configuration...
 
 ## Configuration
 
-`cerber.oauth2.core` namespace is a central place (an API) which exposes all the function required to initialize stores, users, clients and tinker with global options like realm or token/authcode/session life-times. Stores might seem to be a bit tricky to configure as they depend on underlaying storage and thus may expect additional parameters, so to configure session store as, let's say redis based one, following expression should make it happen:
+`cerber.oauth2.core` namespace is a central place (an API) which exposes all the function required to initialize stores, users, clients and tinker with global options like realm or token/authcode/session life-times. Stores might seem to be a bit tricky to configure as they depend on underlaying storage and thus may expect additional parameters. To configure session store as redis based one, following expression should make it happen:
 
 ``` clojure
 (require '[cerber.core :as core])
@@ -100,15 +100,19 @@ Grant types allowed:
 
 ### Scopes
 
-Client scopes are configured as a set of unique strings like `user`, `photo:read` or `profile:write` which may be structurized in kind of hierarchy. For example one can define scopes as `#{"photo" "photo:read" "photo:write"}` which grants _read_ and _write_ permission to imaginary photo resoure and a _photo_ permission which is a parent of _photo:read_ and _photo:write_ and implicitly includes both permissions.
+A scope represents the access authorization associated with a particular token with respect to resource servers, resources, and methods on those resources. Scopes are the OAuth way to explicitly manage the power associated with an access token.
 
-Cerber also auto-simplifies scope requests, so when client asks for `#{"photo" "photo:read"}` scopes, it's been simplified to `#{"photo"}` only, as it contains both  _photo:read_ and _photo:write_.
+Cerber defines scopes as a set of unique strings like `user`, `photo:read` or `profile:write` which may be structurized in kind of hierarchy. For example one can specify scopes as `#{"photo:read" "photo:write"}` which (when permission is granted) allows _reading_ and _writing_ to imaginary photo resoure. A _"photo"_ scope itself is assumed to be a parent of _"photo:read"_ and _"photo:write"_ and implicitly includes both scopes.
+
+In practice, scopes are auto-simplified, so when client asks for permission to _"photo"_ and _"photo:read"_ scopes, it's being simplified to _"photo"_ only.
 
 Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec.
 
 ### Roles and permissions
 
-Cerber does not deal with roles and permissions by default. Please use a [cerber-roles](https://github.com/mbuczko/cerber-roles) for that.
+Although User model contains both roles- and permissions fields they are not interpreted them in any way. These fields are simply returned for further processing, eg. by custom middleware.
+
+Please use a [cerber-roles](https://github.com/mbuczko/cerber-roles) to us these fields in more meaningful way.
 
 ### Forms
 
@@ -187,14 +191,15 @@ passed in a `config` parameter whereas SQL-based one requires an initialized dat
 
 ### clients
 
-`(create-client [info redirects & [grants scopes approved?]])`
+`(create-client [info redirects grants scopes enabled? approved?])`
 
 Used to create new OAuth client, where:
-- info is a non-validated info string (typically client's app name or URL to client's homepage)
-- redirects is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
-- grants is an optional vector of allowed grants: "authorization\_code", "token", "password" or "client\_credentials". if nil - all grants are allowed.
-- scopes is an optional vector of OAuth scopes that client may request an access to
-- approved? is an optional parameter deciding whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.
+- `info` is a non-validated info string (typically client's app name or URL to client's homepage)
+- `redirects` is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
+- `grants` is vector of allowed grants: "authorization\_code", "token", "password" or "client\_credentials". if nil - all grants are allowed.
+- `scopes` is vector of OAuth scopes that client may request an access to
+- `enabled?` decides whether client should be auto-enabled or not. It's false by default which means client is not able to request for tokens.
+- `approved?` decides whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.
 
 Example:
 
@@ -205,7 +210,8 @@ Example:
                      ["http://defunkt.pl/callback"]
                      ["authorization_code" "password"]
                      ["photo:read" "photo:list"]
-                     true)
+                     true
+                     false)
 ```
 
 Each generated client has its own random client-id and a secret which both are used in OAuth flow.
@@ -228,9 +234,16 @@ Disables or enables client with given identifier. Disabled client is no longer a
 
 ### users
 
-`(create-user [login name email password roles permissions enabled?])`
+`(create-user [details password])`
 
-Creates new user with given login, descriptive name, user's email, password (stored as hash), roles and permissions.`enabled?` indicates whether user should be enabled by default (to be able to authenticate) or not.
+Creates new user with given map of details:
+
+- `:login` is a user's login identifier
+- `:name` is a user's description (like full name)
+- `:email` is a user's email
+- `:roles` set of roles assigned
+- `:permissions` set of permissions assigned
+- `:enabled?` indicates whether user should be enabled. User is enabled by default unless `enabled?` states otherwise.
 
 `(find-user [login])`
 
@@ -248,23 +261,29 @@ Disables or enables user with given given login. Disabled user is no longer able
 
 ### tokens
 
-`(find-tokens-by-client [client token-type])`
+`(find-access-token [secret])`
 
-Returns collection of "access" or "refresh" tokens generated for given client.
+Returns an access token bound to given secret.
 
-`(find-tokens-by-user [user token-type])`
-
-Returns collection of "access" or "refresh" tokens generated for clients operating on behalf of given user.
-
-`(revoke-access-token [token])`
+`(revoke-access-token [secret])`
 
 Revokes given access-token.
 
-`(revoke-tokens [client])`
+`(find-refresh-tokens [client-id])`
 
-`(revoke-tokens [client login])`
+`(find-refresh-tokens [client-id login])`
 
-Revokes all access- and refresh-tokens bound with given client (and optionally with particular user).
+Returns collection of refresh-tokens for given client (and user optionally).
+
+`(revoke-client-tokens [client-id])`
+
+`(revoke-client-tokens [client-id login])`
+
+Revokes all access- and refresh-tokens bound with given client (and user optionally).
+
+`(regenerate-tokens [client-id login scope])`
+
+Refreshes tokens for given client-user pair. Revokes and overrides existing tokens, if any exist.
 
 ### global options
 

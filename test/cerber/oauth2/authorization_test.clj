@@ -208,7 +208,6 @@
                                                 :request-method :post
                                                 :params {:username (:login user)
                                                          :password "pass"})
-
                          ;; response with token
                          (follow-redirect))]
 
@@ -308,10 +307,39 @@
             refresh_token => truthy
             expires_in    => truthy
 
-            (utils/disable-test-user user)
+            (utils/disable-test-user (:login user))
 
             (-> (session app)
                 (header "Authorization" (str "Bearer " access_token))
                 (request "/users/me")
                 :response
-                :status) => 401))))
+                :status) => 400))))
+
+(fact "Active token should be rejected for disabled client."
+      (utils/with-stores :sql
+        (let [client (utils/create-test-client scope redirect-uri)
+              user   (utils/create-test-user "pass")
+              state  (-> (session (wrap-defaults oauth-routes api-defaults))
+                         (header "Accept" "application/json")
+                         (header "Authorization" (str "Basic " (utils/base64-auth client)))
+                         (request "/token"
+                                  :request-method :post
+                                  :params {:username (:login user)
+                                           :password "pass"
+                                           :grant_type "password"}))]
+
+          (let [{:keys [status body]} (:response state)
+                {:keys [access_token expires_in refresh_token]} (json/parse-string (slurp body) true)]
+
+            status        => 200
+            access_token  => truthy
+            refresh_token => truthy
+            expires_in    => truthy
+
+            (utils/disable-test-client (:id client))
+
+            (-> (session app)
+                (header "Authorization" (str "Bearer " access_token))
+                (request "/users/me")
+                :response
+                :status) => 400))))
