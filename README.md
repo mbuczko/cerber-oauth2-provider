@@ -287,25 +287,29 @@ Refreshes tokens for given client-user pair. Revokes and overrides existing toke
 
 ### global options
 
-`(set-token-valid-for valid-for)`
+`(set-token-valid-for! valid-for)`
 
 Sets up a token time-to-live (TTL) which essentially says how long OAuth2 tokens are valid.
 
-`(set-authcode-valid-for valid-for)`
+`(set-authcode-valid-for! valid-for)`
 
 Sets up an authcode time-to-live (TTL) which essentially says how long authcodes are valid.
 
-`(set-session-valid-for valid-for)`
+`(set-session-valid-for! valid-for)`
 
 Sets up a session time-to-live (TTL) which essentially says how long sessions are valid.
 
-`(set-landing-url url)`
+`(set-landing-url! url)`
 
 Sets up a location that browser should redirect to in order to authenticate a user.
 
-`(set-realm realm)`
+`(set-realm! realm)`
 
 Sets up a realm presented in WWW-Authenticate header in case of 401/403 http error codes.
+
+`(set-authentication-url! url)`
+
+Sets up a authentication URL, if it needs to be other than "/login".
 
 ### errors
 

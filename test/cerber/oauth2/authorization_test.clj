@@ -31,7 +31,7 @@
              (wrap-routes handlers/wrap-authorized)
              (wrap-defaults api-defaults)))
 
-(fact "Enabled user with valid password is redirected to langing page when successfully logged in."
+(fact "Enabled user with valid password is redirected to landing page when successfully logged in."
       (utils/with-stores :sql
         (let [user  (utils/create-test-user "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))

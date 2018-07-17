@@ -208,41 +208,41 @@
 
 ;; settings
 
-(defn set-realm
+(defn set-realm!
   "Sets up a global OAuth2 realm. Returns newly set value."
 
   [realm]
   (settings/realm realm))
 
-(defn set-authentication-url
+(defn set-authentication-url!
   "Sets up a location that browser should redirect to in order
   to authenticate a user. Returns newly set value."
 
   [auth-url]
   (settings/authentication-url auth-url))
 
-(defn set-landing-url
+(defn set-landing-url!
   "Sets up a landing URL that browser should redirect to after
   successful authentication. Returns newly set value."
 
   [landing-url]
   (settings/landing-url landing-url))
 
-(defn set-token-valid-for
+(defn set-token-valid-for!
   "Sets up a token time-to-live (TTL) which essentially says
   how long OAuth2 tokens are valid. Returns newly set value."
 
   [valid-for]
   (settings/token-valid-for valid-for))
 
-(defn set-authcode-valid-for
+(defn set-authcode-valid-for!
   "Sets up an auth-code time-to-live (TTL) which essentially says
   how long OAuth2 authcodes are valid. Returns newly set value."
 
   [valid-for]
   (settings/authcode-valid-for valid-for))
 
-(defn set-session-valid-for
+(defn set-session-valid-for!
   "Sets up a session time-to-live (TTL) which essentially says
   how long OAuth2 sessions are valid. Returns newly set value."
 

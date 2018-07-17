@@ -5,8 +5,7 @@
              [helpers  :as helpers]]
             [cerber.oauth2
              [context :as ctx]
-             [core :as core]
-             [settings :as settings]]
+             [core :as core]]
             [cerber.stores
              [user :as user]
              [client :as client]]
@@ -58,7 +57,7 @@
 
   []
   (when-let [url (:landing-url app-config)]
-    (settings/landing-url url))
+    (core/set-landing-url! url))
   (when-let [http-config (:server app-config)]
     (web/run-server app-handler http-config)))
 
