@@ -1,8 +1,7 @@
 (ns cerber.stores.user
   "Functions handling OAuth2 user storage."
 
-  (:require [mount.core :refer [defstate]]
-            [cerber
+  (:require [cerber
              [db :as db]
              [error :as error]
              [helpers :as helpers]

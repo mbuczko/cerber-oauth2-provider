@@ -2,7 +2,7 @@
   (:require [cprop.core :as cprop]
             [cprop.source :refer [from-env from-resource from-system-props]]
             [failjure.core :as f]
-            [mount.core :as mount :refer [defstate]]))
+            [mount.core :as mount]))
 
 (defn load-resource
   "Loads single configuration resource.

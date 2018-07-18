@@ -8,8 +8,7 @@
              [error :as error]
              [helpers :as helpers]
              [store :refer :all]]
-            [failjure.core :as f]
-            [mount.core :refer [defstate]]))
+            [failjure.core :as f]))
 
 (def client-store (atom :not-initialized))
 

@@ -8,7 +8,6 @@
              [helpers :as helpers]
              [error :as error]
              [store :refer :all]]
-            [mount.core :refer [defstate]]
             [taoensso.nippy :as nippy]))
 
 (def session-store (atom :not-initialized))

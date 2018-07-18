@@ -17,13 +17,13 @@
   (fetch-all   [this k] "Finds all items matching pattern key")
   (revoke-one! [this k] "Removes item based on exact key")
   (revoke-all! [this k] "Removes all items matching pattern key")
-  (store!      [this k item] "Stores and returns new item with key taken from item map at k")
+  (store!      [this k item] "Stores new item with key taken from item map at k")
   (modify!     [this k item] "Modifies item stored at key k")
   (touch!      [this k item ttl] "Extends life time of given item by ttl seconds")
   (purge!      [this] "Purges store")
-  (close!      [this] "Closes store and frees all allocated resources."))
+  (close!      [this] "Closes store and frees all allocated resources"))
 
-;; basic store implementations
+;; basic in-memory store implementations
 
 (defrecord MemoryStore [namespace store]
   Store
@@ -50,6 +50,8 @@
     (swap! store empty))
   (close! [this]
     (reset! store nil)))
+
+;; Redis-based store implementation
 
 (defn- scan-by-key [spec key]
   (car/reduce-scan

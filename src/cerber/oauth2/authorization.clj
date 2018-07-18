@@ -6,8 +6,7 @@
              [context :as ctx]
              [response :as response]]
             [cerber.stores.user :as user]
-            [failjure.core :as f]
-            [mount.core :refer [defstate]]))
+            [failjure.core :as f]))
 
 (defmulti authorization-request-handler (comp :response_type :params))
 
