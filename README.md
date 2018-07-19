@@ -116,7 +116,7 @@ Please take a look at [cerber-roles](https://github.com/mbuczko/cerber-roles) to
 
 ### Forms
 
-To complete some of OAuth2-flow actions like web based authentication or asking user for approval, Cerber makes use of following templates to render corresponding HTML pages:
+To complete some of OAuth2-flow actions like web based authentication or asking user for approval, Cerber picks up following templates to render corresponding HTML pages:
 
  * [templates/cerber/login.html](./resources/templates/cerber/login.html) - used to render authentication form.
  * [templates/cerber/authorize.html](./resources/templates/cerber/authorize.html) - used to render an user's approval/rejection form to grant (or not) certain permissions.
@@ -329,15 +329,28 @@ Callback requests (redirects) are one of the crucial concepts of OAuth flow thus
 
 ## Development
 
-Cerber can be comfortably developed in [TDD](https://en.wikipedia.org/wiki/Test-driven_development) mode. Underlaying [midje](https://github.com/marick/Midje) testing framework has been configured to watch for changes and run automatically as a boot task:
+Underlaying [midje](https://github.com/marick/Midje) testing framework has been configured to watch for changes and run corresponding tests after each change:
 
 ``` shell
 $ boot tests
 ```
 
-### Standalone testing server
+This library has also built-in [standalone testing server](./src/cerber/oauth2/standalone/server.clj) available in `cerber.oauth2.standalone.server` namespace. All it needs to start up is initialized with mount-based restartable system:
 
-As usual, PRs nicely welcomed :) Be sure first that your changes pass the tests or simply add your own tests if you found no ones covering your code yet.
+``` clojure
+(require '[cerber.oauth2.standalone.system :as system])
+
+;; start server
+(system/go)
+
+;; stops server
+(system/stop)
+
+;; restart server
+(system/restart)
+```
+
+Any ideas or bugfixes? PRs nicely welcomed. Be sure that your changes pass all the tests or simply add your own test suites if none covers your code yet.
 
 [arch]: #architecture
 [conf]: #configuration
