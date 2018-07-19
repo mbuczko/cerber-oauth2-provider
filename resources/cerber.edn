@@ -7,7 +7,7 @@
             :info "Default client"
             :redirects ["http://cerber.test:8090"]
             :grants ["authorization_code" "password"]
-            :scopes ["photos:read" "photos:write" "photos:manage"]
+            :scopes ["resources:read" "resources:write" "resources:manage"]
             :approved? false}]
 
  :users   [{:login "admin"
