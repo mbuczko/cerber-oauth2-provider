@@ -3,28 +3,28 @@
  :resource-paths #{"resources"}
  :directories    #{"config"}
  :dependencies '[[org.clojure/clojure "1.9.0" :scope "provided"]
-                 [com.taoensso/carmine "2.16.0"]
+                 [com.taoensso/carmine "2.18.1"]
                  [org.mindrot/jbcrypt "0.4"]
                  [adzerk/bootlaces "0.1.13" :scope "test"]
                  [zilti/boot-midje "0.2.2-SNAPSHOT" :scope "test"]
-                 [com.h2database/h2 "1.4.196" :scope "test"]
-                 [mysql/mysql-connector-java "6.0.6" :scope "test"]
-                 [org.postgresql/postgresql "42.1.4" :scope "test"]
+                 [com.h2database/h2 "1.4.197" :scope "test"]
+                 [mysql/mysql-connector-java "8.0.11" :scope "test"]
+                 [org.postgresql/postgresql "42.2.4" :scope "test"]
                  [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
-                 [ring/ring-defaults "0.3.1"]
-                 [midje "1.9.0" :scope "test"]
-                 [peridot "0.5.0" :scope "test"]
-                 [compojure "1.6.0" :scope "test"]
-                 [http-kit "2.2.0" :scope "test"]
+                 [ring/ring-defaults "0.3.2"]
+                 [ring/ring-anti-forgery "1.3.0"]
+                 [midje "1.9.2" :scope "test"]
+                 [peridot "0.5.1" :scope "test"]
+                 [compojure "1.6.1" :scope "test"]
+                 [http-kit "2.3.0" :scope "test"]
                  [cprop "0.1.11"]
                  [conman "0.7.4"]
-                 [mount "0.1.11"]
+                 [mount "0.1.12"]
                  [crypto-random "1.2.0"]
-                 [selmer "1.11.3"]
-                 [failjure "1.2.0"]
-                 [ring-anti-forgery "0.3.0"]
+                 [selmer "1.11.8"]
+                 [failjure "1.3.0"]
                  [ring-middleware-format "0.7.2"]
-                 [digest "1.4.6"]])
+                 [digest "1.4.8"]])
 
 (def +version+ "1.0.0-SNAPSHOT")
 
