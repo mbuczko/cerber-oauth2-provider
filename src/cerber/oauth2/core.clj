@@ -77,8 +77,10 @@
                        true
                        false)"
 
-  [info redirects grants scopes enabled? approved?]
-  (client/create-client info redirects grants scopes enabled? approved?))
+  ([info redirects grants scopes enabled? approved?]
+   (create-client info redirects grants scopes enabled? approved? nil nil))
+  ([info redirects grants scopes enabled? approved? id secret]
+   (client/create-client info redirects grants scopes enabled? approved? id secret)))
 
 (defn delete-client
   "Removes client from store along with all its access- and refresh-tokens."

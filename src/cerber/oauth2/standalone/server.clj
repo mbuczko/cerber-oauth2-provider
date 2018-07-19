@@ -1,20 +1,13 @@
 (ns cerber.oauth2.standalone.server
-  (:require [cerber
-             [store :refer :all]
-             [handlers :as handlers]
-             [helpers  :as helpers]]
-            [cerber.oauth2
-             [context :as ctx]
-             [core :as core]]
-            [cerber.stores
-             [user :as user]
-             [client :as client]]
+  (:require [cerber.handlers :as handlers]
+            [cerber.oauth2.context :as ctx]
+            [cerber.oauth2.core :as core]
             [cerber.oauth2.standalone.config :refer [app-config]]
-            [compojure
-             [core :refer [defroutes GET POST routes wrap-routes]]]
+            [cerber.store :refer :all]
+            [cerber.stores.client :as client]
+            [compojure.core :refer [defroutes GET POST routes wrap-routes]]
             [conman.core :as conman]
             [failjure.core :as f]
-            [selmer.parser :as selmer]
             [mount.core :as mount :refer [defstate]]
             [org.httpkit.server :as web]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]))
@@ -48,8 +41,8 @@
 
 (def app-handler
   (wrap-defaults
-   (routes oauth2-routes (-> restricted-routes
-                             (wrap-routes handlers/wrap-authorized)))
+   (routes oauth2-routes
+           (wrap-routes restricted-routes handlers/wrap-authorized))
    api-defaults))
 
 (defn init-server
@@ -67,14 +60,14 @@
   []
   (let [users (:users app-config)]
     (f/try*
-     (doseq [{:keys [login email name permissions roles enabled? password]} users]
-       (user/create-user {:login login
+     (for [{:keys [login email name permissions roles enabled? password]} users]
+       (core/create-user {:login login
                           :email email
                           :name name
+                          :roles roles
+                          :permissions permissions
                           :enabled? enabled?}
-                         password
-                         roles
-                         permissions)))))
+                         password)))))
 
 (defn init-clients
   "Initializes pre-defined collection of test clients."
@@ -82,8 +75,8 @@
   []
   (let [clients (:clients app-config)]
     (f/try*
-     (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
-       (client/create-client info redirects grants scopes approved? id secret)))))
+     (for [{:keys [id secret info redirects grants scopes approved?]} clients]
+       (core/create-client info redirects grants scopes true approved? id secret)))))
 
 
 (defstate http-server

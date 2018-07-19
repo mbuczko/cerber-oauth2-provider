@@ -193,6 +193,8 @@ passed in a `config` parameter whereas SQL-based one requires an initialized dat
 
 `(create-client [info redirects grants scopes enabled? approved?])`
 
+`(create-client [info redirects grants scopes enabled? approved? id secret])`
+
 Used to create new OAuth client, where:
 - `info` is a non-validated info string (typically client's app name or URL to client's homepage)
 - `redirects` is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
@@ -200,6 +202,8 @@ Used to create new OAuth client, where:
 - `scopes` is vector of OAuth scopes that client may request an access to
 - `enabled?` decides whether client should be auto-enabled or not. It's false by default which means client is not able to request for tokens.
 - `approved?` decides whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.
+- `id` - optional client-id, auto-generated if none provided.
+- `secret` - optional client-secret, auto-generated if none provided.
 
 Example:
 
