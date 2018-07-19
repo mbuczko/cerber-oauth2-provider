@@ -7,13 +7,19 @@
             :info "Default client"
             :redirects ["http://cerber.test:8090"]
             :grants ["authorization_code" "password"]
-            :scopes ["photos:read"]
+            :scopes ["photos:read" "photos:write" "photos:manage"]
             :approved? false}]
 
- :users   [{:login "foo"
+ :users   [{:login "admin"
+            :email "admin@bar.com"
+            :name "Admin Bar"
+            :enabled? true
+            :password "secret"
+            :roles #{"user/all"}
+            :permissions #{"photos:delete" "comments:delete"}}
+           {:login "foo"
             :email "foo@bar.com"
             :name "Foo Bar"
             :enabled? true
             :password "pass"
-            :roles #{"moderator"}
-            :permissions #{"photos:write" "photos:read"}}]}
+            :roles #{"user/all"}}]}

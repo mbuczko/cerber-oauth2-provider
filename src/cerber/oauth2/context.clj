@@ -68,12 +68,14 @@
                   bearer   (or (second (.split ^String authorization  " ")) error/unauthorized)
                   token    (or (token/find-access-token bearer) error/invalid-token)
                   valid?   (or (not (expired? token)) error/invalid-token)
+                  login    (:login token)
+                  user     (user/find-user login)
                   enabled? (or
                             ;; in client_credentials scenario no user login is stored
-                            (nil? (:login token))
+                            (nil? login)
 
                             ;; all other scenarios should have user login passed in a token
-                            (:enabled? (user/find-user (:login token)))
+                            (:enabled? user)
 
                             ;; no such a user or user disabled?
                             (error/bad-request "User disabled."))]
@@ -81,7 +83,9 @@
                    (assoc req
                           ::client {:scopes (str/split scope #" ")}
                           ::user   {:id (:user-id token)
-                                    :login (:login token)}))))
+                                    :login login
+                                    :roles (:roles user)
+                                    :permissions (:permissions user)}))))
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
