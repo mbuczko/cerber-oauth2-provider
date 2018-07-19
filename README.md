@@ -110,9 +110,9 @@ Note, it's perfectly valid to have an empty set of scopes as they are optional i
 
 ### Roles and permissions
 
-Although User model contains both roles- and permissions fields they are not interpreted them in any way. These fields are simply returned for further processing, eg. by custom middleware.
+Although User model contains both roles- and permissions fields they are not interpreted in any way. These fields are simply returned for further processing, eg. by custom middleware.
 
-Please use a [cerber-roles](https://github.com/mbuczko/cerber-roles) to us these fields in more meaningful way.
+Please take a look at [cerber-roles](https://github.com/mbuczko/cerber-roles) to make use of these fields in more meaningful way.
 
 ### Forms
 

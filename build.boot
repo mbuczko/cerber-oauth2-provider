@@ -33,7 +33,7 @@
 
 (require
  '[cerber.oauth2.standalone.system]
- '[adzerk.bootlaces :refer [bootlaces! build-jar push-release]]
+ '[adzerk.bootlaces :refer [bootlaces! build-jar push-release push-snapshot]]
  '[zilti.boot-midje :refer [midje]])
 
 (bootlaces! +version+)
