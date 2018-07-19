@@ -74,9 +74,9 @@
 
 
 
-(defn approval-form-response [req client]
+(defn approval-form-response [req client scopes]
   ((wrap-anti-forgery
-    (partial form/render-approval-form client)) req))
+    (partial form/render-approval-form client scopes)) req))
 
 (defn authentication-form-response [req]
   (redirect-with-session (settings/authentication-url)

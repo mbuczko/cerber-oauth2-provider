@@ -106,9 +106,9 @@
   error/unsupported-grant-type)
 
 (defn authorize! [req]
-  (let [response (authorization-request-handler req)]
+  (let [{:keys [client scopes] :as response} (authorization-request-handler req)]
     (condp = (:error response)
-      "unapproved"   (response/approval-form-response req (:client response))
+      "unapproved"   (response/approval-form-response req client scopes)
       "unauthorized" (response/authentication-form-response req)
       response)))
 

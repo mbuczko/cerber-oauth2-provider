@@ -24,10 +24,11 @@
         ;; clear up auth info if already existed
         (assoc :session (dissoc session :id :login)))))
 
-(defn render-approval-form [client req]
+(defn render-approval-form [client scopes req]
   (render-template "templates/cerber/authorize.html" {:csrf (anti-forgery-field)
                                                       :query-params (:query-string req)
-                                                      :client client}))
+                                                      :client client
+                                                      :scopes scopes}))
 
 (defn handle-login-submit [req]
   (let [result (ctx/user-password-valid? req default-authenticator)]

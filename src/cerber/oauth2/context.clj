@@ -121,7 +121,9 @@
   (if (or (::approved? req)
           (:approved? (::client req)))
     req
-    (assoc error/unapproved :client (::client req))))
+    (assoc error/unapproved
+           :client (::client req)
+           :scopes (::scopes req))))
 
 (defn approve-authorization [req]
   (assoc req ::approved? true))

@@ -9,7 +9,7 @@
                         Client <em>{{ client.info }}</em> wants to access your resources:
 
                         <ul>
-                        {% for scope in client.scopes %}
+                        {% for scope in scopes %}
                             <li>{{ scope }}</li>
                         {% endfor %}
                         </ul>
