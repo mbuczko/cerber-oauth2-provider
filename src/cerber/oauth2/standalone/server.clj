@@ -12,17 +12,6 @@
             [org.httpkit.server :as web]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]))
 
-(defonce db-conn
-  (and (Class/forName "org.h2.Driver")
-       (conman/connect! {:init-size  1
-                         :min-idle   1
-                         :max-idle   4
-                         :max-active 32
-                         :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"
-                         ;:driver-class "org.postgresql.Driver"
-                         ;:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres"
-                         })))
-
 (defn user-info-handler
   [req]
   {:status 200
@@ -83,6 +72,18 @@
   :start (init-server)
   :stop  (when http-server (http-server)))
 
+(defstate db-conn
+  :start (and (Class/forName "org.h2.Driver")
+              (conman/connect! {:init-size  1
+                                :min-idle   1
+                                :max-idle   4
+                                :max-active 32
+                                :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"
+                                        ;:driver-class "org.postgresql.Driver"
+                                        ;:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres"
+                                }))
+  :stop (conman/disconnect! db-conn))
+
 ;; oauth2 stores
 
 (defstate client-store
@@ -108,7 +109,7 @@
 ;; oauth2 entities
 
 (defstate users
-  :start (init-users))
+  :start (doall (init-users)))
 
 (defstate clients
-  :start (init-clients))
+  :start (doall (init-clients)))
