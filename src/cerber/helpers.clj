@@ -34,8 +34,8 @@
   (assoc item :expires-at (now-plus-seconds ttl)))
 
 (defn str->coll
-  "Decomposes string into collection of space separated substrings.
-  Returns given collection if string was either null or empty."
+  "Decomposes string into collection of space-separated substrings.
+  Returns input collection if string was either null or empty."
 
   [coll ^String str]
   (or (and str

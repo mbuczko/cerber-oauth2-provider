@@ -25,6 +25,6 @@
 
           ;; then
           (:status (authorize! req)) => 302
-          (:error (authorize! (assoc-in req [:params :client_id] "foo"))) => "invalid_request"
+          (:error (authorize! (assoc-in req [:params :client_id] "foo"))) => "bad_request"
           (:error (authorize! (assoc-in req [:params :scope] "dummy"))) => "invalid_scope"
           (:error (authorize! (assoc-in req [:params :redirect_uri] "http://bar.bazz"))) => "invalid_redirect_uri")))

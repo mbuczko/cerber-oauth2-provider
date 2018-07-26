@@ -46,18 +46,25 @@
           (error/error->json response (:state params) (:headers req) (request-url req)))
         response))))
 
-(defn wrap-authorization [handler]
+(defn wrap-authorization [handler redirect-on-error?]
   (fn [req]
     (let [result (or (and (-> req :session :login)
                           (ctx/user-authenticated? req))
                      (ctx/bearer-valid? req))]
       (if (f/failed? result)
-        result
+        (if redirect-on-error?
+          result
+          (handler req))
         (handler result)))))
+
+(defn wrap-maybe-authorized [handler]
+  (-> handler
+      (wrap-authorization false)
+      (wrap-session {:store session-store})))
 
 (defn wrap-authorized [handler]
   (-> handler
-      (wrap-authorization)
+      (wrap-authorization true)
       (wrap-errors)
       (wrap-session {:store session-store})
       (wrap-restful-format :formats [:json-kw])))

@@ -1,6 +1,6 @@
 (ns cerber.oauth2.context
   (:require [cerber.error :as error]
-            [cerber.helpers :refer [expired?]]
+            [cerber.helpers :as helpers]
             [cerber.oauth2.authenticator :refer [Authenticator]]
             [cerber.oauth2.scopes :as scopes]
             [cerber.stores.authcode :as authcode]
@@ -53,7 +53,8 @@
   (f/attempt-all [code (get-in req [:params :code] error/invalid-request)
                   authcode (or (authcode/find-authcode code) error/invalid-request)
                   valid?   (or (and (= (:client-id authcode) (:id (::client req)))
-                                    (not (expired? authcode))) error/invalid-request)]
+                                    (not (helpers/expired? authcode)))
+                               error/invalid-request)]
                  (assoc req ::authcode authcode)))
 
 (defn refresh-token-valid? [req]
@@ -67,21 +68,24 @@
   (f/attempt-all [authorization (get-in req [:headers "authorization"] error/unauthorized)
                   bearer   (or (second (.split ^String authorization  " ")) error/unauthorized)
                   token    (or (token/find-access-token bearer) error/invalid-token)
-                  valid?   (or (not (expired? token)) error/invalid-token)
+                  valid?   (or (not (helpers/expired? token)) error/invalid-token)
                   login    (:login token)
                   user     (user/find-user login)
                   enabled? (or
-                            ;; in client_credentials scenario no user login is stored
+
+                            ;; in client_credentials scenario no user login is stored.
+                            ;; all other scenarios should have user login passed in a token.
                             (nil? login)
 
-                            ;; all other scenarios should have user login passed in a token
+                            ;; consider enabled users only
                             (:enabled? user)
 
                             ;; no such a user or user disabled?
-                            (error/bad-request "User disabled."))]
-                 (let [scope (:scope token)]
+                            (error/bad-request "User disabled"))]
+
+                 (let [scopes (helpers/str->coll [] (:scope token))]
                    (assoc req
-                          ::client {:scopes (str/split scope #" ")}
+                          ::client {:scopes scopes}
                           ::user   {:id (:user-id token)
                                     :login login
                                     :roles (:roles user)
@@ -89,20 +93,20 @@
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
-    (f/attempt-all [user     (or (user/find-user login) error/invalid-request)
-                    enabled? (or (:enabled? user) error/unauthorized)]
+    (f/attempt-all [user     (or (user/find-user login) (error/bad-request "Invalid user"))
+                    enabled? (or (:enabled? user) (error/bad-request "User disabled"))]
                    (assoc req ::user user))))
 
 (defn client-valid? [req]
-  (f/attempt-all [client-id (get-in req [:params :client_id] error/invalid-request)
-                  client (or (client/find-client client-id) error/invalid-request)
-                  valid? (or (:enabled? client) error/invalid-request)]
+  (f/attempt-all [client-id (get-in req [:params :client_id] (error/bad-request "No client_id provided"))
+                  client (or (client/find-client client-id) (error/bad-request "Invalid client"))
+                  valid? (or (:enabled? client) (error/bad-request "Client disabled"))]
                  (assoc req ::client client)))
 
 (defn client-authenticated? [req]
   (f/attempt-all [auth   (or (basic-authentication-credentials req) error/unauthorized)
-                  client (or (client/find-client (first auth)) error/invalid-request)
-                  valid? (or (= (second auth) (:secret client)) error/invalid-request)]
+                  client (or (client/find-client (first auth)) (error/bad-request "Invalid client"))
+                  valid? (or (= (second auth) (:secret client)) (error/bad-request "Invalid secret"))]
                  (assoc req ::client client)))
 
 (defn user-authenticated? [req]
