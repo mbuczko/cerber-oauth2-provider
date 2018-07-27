@@ -152,7 +152,7 @@ Having OAuth Authentication Server paths set up, next step is to configure restr
 ```
 Almost there. One missing part not mentioned yet is authorization and the way how token is validated.
 
-All the magic happens inside `handlers/wrap-authorized` handler which scans `Authorization` header for a token issued by Authorization Server. Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
+All the magic happens inside `wrap-authorized` middleware which scans `Authorization` header for a token issued by Authorization Server. Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
 
 ``` clojure
 (require '[org.httpkit.server :as web]
@@ -351,7 +351,7 @@ This library has also built-in [standalone testing server](./src/cerber/oauth2/s
 (system/stop)
 
 ;; restart server
-(system/restart)
+(system/reset)
 ```
 
 Any ideas or bugfixes? PRs nicely welcomed. Be sure that your changes pass all the tests or simply add your own test suites if none covers your code yet.
