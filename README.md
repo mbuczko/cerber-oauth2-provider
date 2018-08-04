@@ -48,7 +48,7 @@ When speaking of configuration...
 
 ## Configuration
 
-`cerber.oauth2.core` namespace is a central place (an API) which exposes all the function required to initialize stores, users, clients and tinker with global options like realm or token/authcode/session life-times. Stores might seem to be a bit tricky to configure as they depend on underlaying storage and thus may expect additional parameters. To configure session store as redis based one, following expression should make it happen:
+`cerber.oauth2.core` namespace is a central place which exposes all the functions required to initialize stores, users, clients and tinker with global options like realm or token/authcode/session life-times. Stores might seem to be a bit tricky to configure as they depend on underlaying storage and thus may expect additional parameters. To configure session store as redis based one, following expression should make it happen:
 
 ``` clojure
 (require '[cerber.core :as core])
@@ -100,7 +100,7 @@ Grant types allowed:
 
 ### Scopes
 
-A scope represents the access authorization associated with a particular token with respect to resource servers, resources, and methods on those resources. Scopes are the OAuth way to explicitly manage the power associated with an access token.
+Scopes are the OAuth way to explicitly manage the power associated with an access token. In nutshell, a scope says what type of access OAuth2 client may need to particular resource.
 
 Cerber defines scopes as a set of unique strings like `user`, `photo:read` or `profile:write` which may be structurized in kind of hierarchy. For example one can specify scopes as `#{"photo:read" "photo:write"}` which (when permission is granted) allows _reading_ and _writing_ to imaginary photo resoure. A _"photo"_ scope itself is assumed to be a parent of _"photo:read"_ and _"photo:write"_ and implicitly includes both scopes.
 
