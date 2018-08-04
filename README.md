@@ -327,9 +327,18 @@ Any errors returned in a response body are formed according to specification as 
 }
 ```
 
-or added to the _error_ query param in case of callback requests.
+## Middlewares
 
-Callback requests (redirects) are one of the crucial concepts of OAuth flow thus it's extremally important to have redirect URIs verified. There are several way to validate redirect URI, this implementation however goes the simplest way and does _exact match_ which means that URI provided by client in a request MUST be exactly the same as one of URIs bound to the client during registration.
+Cerber exposes 2 middlewares in `cerber.handlers` namespace:
+
+`wrap-authorized`
+
+This one, based on cookie or bearer token conveyed in a request, sets up a context where a subject (authorized user) and OAuth2 client information is stored for a request time-life.
+Unauthorized requests result in `HTTP 401 Unauthorized` (in case of invalid token) or redirection to login page (in case of cookie based request).
+
+`wrap-maybe-authorized`
+
+Same as `wrap-authorized` but does no redirection or `HTTP 401 Unauthorized` responses in case of unauthorized requests. In this case a request context is simply not created and no user/client information is available.
 
 ## Development
 
