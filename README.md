@@ -102,9 +102,9 @@ Grant types allowed:
 
 Scopes are the OAuth way to explicitly manage the power associated with an access token. In nutshell, a scope says what type of access OAuth2 client may need to particular resource.
 
-Cerber defines scopes as a set of unique strings like `user`, `photo:read` or `profile:write` which may be structurized in kind of hierarchy. For example one can specify scopes as `#{"photo:read" "photo:write"}` which (when permission is granted) allows _reading_ and _writing_ to imaginary photo resoure. A _"photo"_ scope itself is assumed to be a parent of _"photo:read"_ and _"photo:write"_ and implicitly includes both scopes.
+Cerber defines scopes as a set of unique strings like `user`, `photo:read` or `profile:write` which may be structurized in kind of hierarchy. For example scopes may be defined as a following: `#{"photo:read" "photo:write"}` which (when permission is granted) allows _reading_ and _writing_ to imaginary photo resoure. A `photo` scope itself is assumed to be a parent of `photo:read` and `photo:write` and implicitly includes both scopes.
 
-In practice, scopes are auto-simplified, so when client asks for permission to _"photo"_ and _"photo:read"_ scopes, it's being simplified to _"photo"_ only.
+In practice, scopes are auto-simplified, so when client asks for permission to `photo` and `photo:read` scopes, it's being simplified to `photo` only.
 
 Note, it's perfectly valid to have an empty set of scopes as they are optional in OAuth2 spec.
 
