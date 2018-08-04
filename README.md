@@ -2,7 +2,7 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/cerber/cerber-oauth2-provider.svg)](https://clojars.org/cerber/cerber-oauth2-provider)
 
-[Architecture][arch] | [Configuration][conf] | [Usage][use] | [API][api] | [Development][dev]
+[Architecture][arch] | [Configuration][conf] | [Usage][use] | [API][api] | [Middlewares][middlewares] | [Development][dev]
 
 This is a clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749). Currently covers all scenarios described by spec:
 
@@ -369,5 +369,6 @@ Any ideas or bugfixes? PRs nicely welcomed. Be sure that your changes pass all t
 [conf]: #configuration
 [use]: #usage
 [api]: #api
+[middlewares]: #middlewares
 [dev]: #development
 
