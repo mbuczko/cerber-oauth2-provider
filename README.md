@@ -141,7 +141,7 @@ Anyway, this is how bindings would look like with compojure:
   (POST "/login"     [] handlers/login-submit-handler))
 ```
 
-Having OAuth Authentication Server paths set up, next step is to configure restricted resources:
+Having OAuth paths set up, next step is to configure routes to restricted resources (assuming here a user's details as such a one):
 
 ``` clojure
 (require '[cerber.oauth2.context :as ctx])
@@ -152,7 +152,7 @@ Having OAuth Authentication Server paths set up, next step is to configure restr
 ```
 Almost there. One missing part not mentioned yet is authorization and the way how token is validated.
 
-All the magic happens inside `wrap-authorized` middleware which scans `Authorization` header for a token issued by Authorization Server. Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
+All the magic happens inside `wrap-authorized` middleware which scans both for Cookie (for session-based authorization info) and `Authorization` header (for a token issued by Authorization Server). Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
 
 ``` clojure
 (require '[org.httpkit.server :as web]
