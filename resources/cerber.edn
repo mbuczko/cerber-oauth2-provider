@@ -15,8 +15,7 @@
             :name "Admin Bar"
             :enabled? true
             :password "secret"
-            :roles #{"user/all"}
-            :permissions #{"photos:delete" "comments:delete"}}
+            :roles #{"user/admin"}}
            {:login "foo"
             :email "foo@bar.com"
             :name "Foo Bar"

@@ -88,8 +88,7 @@
                           ::client {:scopes scopes}
                           ::user   {:id (:user-id token)
                                     :login login
-                                    :roles (:roles user)
-                                    :permissions (:permissions user)}))))
+                                    :roles (:roles user)}))))
 
 (defn user-valid? [req]
   (let [login (:login (::authcode req))]
@@ -112,7 +111,7 @@
 (defn user-authenticated? [req]
   (let [user (user/find-user (-> req :session :login))]
     (or (and (:enabled? user)
-             (assoc req ::user (select-keys user [:id :login :roles :permissions :enabled?])))
+             (assoc req ::user (select-keys user [:id :login :roles :enabled?])))
         error/unauthorized)))
 
 (defn user-password-valid? [req ^cerber.oauth2.authenticator.Authenticator authenticator]

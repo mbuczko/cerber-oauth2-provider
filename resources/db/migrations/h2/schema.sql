@@ -24,7 +24,6 @@ create table users (
   name varchar(128),
   password varchar(255),
   roles varchar(1024),
-  permissions varchar(1024),
   enabled bit not null default true,
   created_at datetime not null,
   modified_at datetime,
