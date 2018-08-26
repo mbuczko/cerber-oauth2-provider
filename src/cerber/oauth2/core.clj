@@ -126,16 +126,14 @@
                       :name  \"Foo Bar\"
                       :email \"foo@bar.bazz\"
                       :roles #{\"user/admin\"}
-                      :permissions #{\"photos:read\"}
                       :enabled? true}
                      \"secret\")"
 
-  [{:keys [login name email roles permissions enabled?] :or {enabled? true}} password]
+  [{:keys [login name email roles enabled?] :or {enabled? true}} password]
   (user/create-user {:login login
                      :name  name
                      :email email
                      :roles roles
-                     :permissions permissions
                      :enabled? enabled?}
                     password))
 

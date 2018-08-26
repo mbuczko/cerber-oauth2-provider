@@ -110,9 +110,9 @@ Note, it's perfectly valid to have an empty set of scopes as they are optional i
 
 ### Roles and permissions
 
-Although User model contains both roles- and permissions fields they are not interpreted in any way. These fields are simply returned for further processing, eg. by custom middleware.
+Although User model contains `roles` field it is not interpreted in any way. It is simply returned for further processing, eg. by custom middleware.
 
-Please take a look at [cerber-roles](https://github.com/mbuczko/cerber-roles) to make use of these fields in more meaningful way.
+Please take a look at [cerber-roles](https://github.com/mbuczko/cerber-roles) to make use of roles in more meaningful way.
 
 ### Forms
 
@@ -245,8 +245,7 @@ Creates new user with given map of details:
 - `:login` is a user's login identifier
 - `:name` is a user's description (like full name)
 - `:email` is a user's email
-- `:roles` set of roles assigned
-- `:permissions` set of permissions assigned
+- `:roles` set of optional roles
 - `:enabled?` indicates whether user should be enabled. User is enabled by default unless `enabled?` states otherwise.
 
 `(find-user [login])`

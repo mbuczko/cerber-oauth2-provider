@@ -15,7 +15,7 @@
 (defn user-info-handler
   [req]
   {:status 200
-   :body (select-keys (::ctx/user req) [:login :name :email :roles :permissions])})
+   :body (select-keys (::ctx/user req) [:login :name :email :roles])})
 
 (defroutes oauth2-routes
   (GET  "/authorize" [] handlers/authorization-handler)
@@ -49,12 +49,11 @@
   []
   (let [users (:users app-config)]
     (f/try*
-     (for [{:keys [login email name permissions roles enabled? password]} users]
+     (for [{:keys [login email name roles enabled? password]} users]
        (core/create-user {:login login
                           :email email
                           :name name
                           :roles roles
-                          :permissions permissions
                           :enabled? enabled?}
                          password)))))
 

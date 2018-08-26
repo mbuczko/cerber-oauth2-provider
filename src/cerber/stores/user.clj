@@ -21,9 +21,7 @@
   (revoke-one! [this [login]]
     (db/sql-call 'delete-user {:login login}))
   (store! [this k user]
-    (= 1 (db/sql-call 'insert-user (-> user
-                                       (update :roles helpers/coll->str)
-                                       (update :permissions helpers/coll->str)))))
+    (= 1 (db/sql-call 'insert-user (update user :roles helpers/coll->str))))
   (modify! [this k user]
     (if (:enabled? user)
       (db/sql-call 'enable-user user)
@@ -35,7 +33,7 @@
 
 (defn normalize
   [user]
-  (when-let [{:keys [id login email name password roles permissions created_at modified_at activated_at blocked_at enabled]} user]
+  (when-let [{:keys [id login email name password roles created_at modified_at activated_at blocked_at enabled]} user]
     {:id id
      :login login
      :email email
@@ -46,8 +44,7 @@
      :modified-at modified_at
      :activated-at activated_at
      :blocked-at blocked_at
-     :roles (helpers/str->coll #{} roles)
-     :permissions (helpers/str->coll #{} permissions)}))
+     :roles (helpers/str->coll #{} roles)}))
 
 (defmulti create-user-store (fn [type config] type))
 
@@ -90,7 +87,7 @@
 (defn create-user
   "Creates and returns a new user, enabled by default."
 
-  [{:keys [login name email roles permissions enabled?] :as details :or {enabled? true}} password]
+  [{:keys [login name email roles enabled?] :as details :or {enabled? true}} password]
   (when (and login password)
     (let [user (-> details
                    (assoc  :id (helpers/uuid)
