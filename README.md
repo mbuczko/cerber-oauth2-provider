@@ -312,7 +312,11 @@ Sets up a realm presented in WWW-Authenticate header in case of 401/403 http err
 
 `(set-authentication-url! url)`
 
-Sets up a authentication URL, if it needs to be other than "/login".
+Sets up an OAuth2 authentication URL ("/login" by default).
+
+`(set-unauthorized-url! url)`
+
+Sets up location where browser redirects in case of `HTTP 401 Unauthorized` ("/login" by default).
 
 ### errors
 

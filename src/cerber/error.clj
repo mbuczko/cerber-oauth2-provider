@@ -71,7 +71,7 @@
 (defn error->json
   "Tranforms error into http response.
 
-  In case of 401 (unauthorized) and 403 (forbidden) error codes, additional WWW-Authenticate
+  In case of 401 (unauthorized) and 403 (forbidden) error codes additional WWW-Authenticate
   header is returned as described in https://tools.ietf.org/html/rfc6750#section-3"
 
   [http-error state headers uri]
@@ -88,7 +88,7 @@
 
         ;; browser-based requested
         {:status 302
-         :headers {"Location" (settings/authentication-url)}
+         :headers {"Location" (settings/unauthorized-url)}
          :session {:landing-url uri}})
 
       ;; uups, something bad happened

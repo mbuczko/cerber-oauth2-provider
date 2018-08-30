@@ -2,6 +2,7 @@
 
 (def defaults (atom {:realm "http://localhost"
                      :authentication-url "/login"
+                     :unauthorized-url "/login"
                      :landing-url "/"
                      :token-valid-for 300
                      :authcode-valid-for 180

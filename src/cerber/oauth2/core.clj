@@ -215,11 +215,17 @@
   (settings/realm realm))
 
 (defn set-authentication-url!
-  "Sets up a location that browser should redirect to in order
-  to authenticate a user. Returns newly set value."
+  "Sets up an OAuth2 authentication URL. Returns newly set value."
 
   [auth-url]
   (settings/authentication-url auth-url))
+
+(defn set-unauthorized-url!
+  "Sets up a location that browser should redirect to in case
+  of HTTP 401 Unauthorized. Returns newly set value."
+
+  [auth-url]
+  (settings/unauthorized-url auth-url))
 
 (defn set-landing-url!
   "Sets up a landing URL that browser should redirect to after
