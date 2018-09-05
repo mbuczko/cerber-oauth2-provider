@@ -17,16 +17,16 @@
                  [peridot "0.5.1" :scope "test"]
                  [compojure "1.6.1" :scope "test"]
                  [http-kit "2.3.0" :scope "test"]
-                 [cprop "0.1.11"]
+                 [cprop "0.1.11" :scope "test"]
+                 [mount "0.1.12" :scope "test"]
                  [conman "0.7.4"]
-                 [mount "0.1.12"]
                  [crypto-random "1.2.0"]
                  [selmer "1.11.8"]
                  [failjure "1.3.0"]
                  [ring-middleware-format "0.7.2"]
                  [digest "1.4.8"]])
 
-(def +version+ "1.0.0-SNAPSHOT")
+(def +version+ "1.0.0")
 
 ;; to check the newest versions:
 ;; boot -d boot-deps ancient
