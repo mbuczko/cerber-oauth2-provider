@@ -1,11 +1,9 @@
 (ns cerber.oauth2.authorization
-  (:require [cerber
-             [form  :as form]
-             [error :as error]]
-            [cerber.oauth2
-             [context :as ctx]
-             [response :as response]]
-            [cerber.stores.user :as user]
+  (:require [cerber.error :as error]
+            [cerber.form :as form]
+            [cerber.oauth2.context :as ctx]
+            [cerber.oauth2.response :as response]
+            [cerber.stores.token :as token]
             [failjure.core :as f]))
 
 (defmulti authorization-request-handler (comp :response_type :params))
@@ -111,6 +109,17 @@
       "unapproved"   (response/approval-form-response req client scopes)
       "unauthorized" (response/authentication-form-response req)
       response)))
+
+(defn unauthorize! [req]
+  (let [user (::ctx/user req)
+        client (::ctx/client req)]
+
+    (when client
+      (token/revoke-client-tokens client user))
+
+    (if (or user client)
+      (response/redirect-with-session "/" nil)
+      error/unauthorized)))
 
 (defn approve! [req]
   (authorize! (ctx/approve-authorization req)))

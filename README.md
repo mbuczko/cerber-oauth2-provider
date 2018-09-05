@@ -125,7 +125,7 @@ Both templates are provided by this library with a very spartan styling, just to
 
 ## Usage
 
-Cerber OAuth2 provider defines 6 [ring handlers](https://github.com/ring-clojure/ring/wiki/Concepts) that should be bound to specific routes. It's not done automagically. Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
+Cerber OAuth2 provider defines 7 [ring handlers](https://github.com/ring-clojure/ring/wiki/Concepts) that should be bound to specific routes. It's not done automagically. Some people love [compojure](https://github.com/weavejester/compojure) some love [bidi](https://github.com/juxt/bidi) so Cerber leaves the decision in developer's hands.
 
 Anyway, this is how bindings would look like with compojure:
 
@@ -138,7 +138,8 @@ Anyway, this is how bindings would look like with compojure:
   (GET  "/refuse"    [] handlers/client-refuse-handler)
   (POST "/token"     [] handlers/token-handler)
   (GET  "/login"     [] handlers/login-form-handler)
-  (POST "/login"     [] handlers/login-submit-handler))
+  (POST "/login"     [] handlers/login-submit-handler)
+  (GET  "/logout"    [] handlers/logout-handler))
 ```
 
 Having OAuth paths set up, next step is to configure routes to restricted resources (assuming here a user's details as such a one):
@@ -208,14 +209,14 @@ Used to create new OAuth client, where:
 Example:
 
 ```clojure
-    (require '[cerber.oauth2.core :as c])
+(require '[cerber.oauth2.core :as c])
 
-    (c/create-client "http://defunkt.pl"
-                     ["http://defunkt.pl/callback"]
-                     ["authorization_code" "password"]
-                     ["photo:read" "photo:list"]
-                     true
-                     false)
+(c/create-client "http://defunkt.pl"
+                 ["http://defunkt.pl/callback"]
+                 ["authorization_code" "password"]
+                 ["photo:read" "photo:list"]
+                 true
+                 false)
 ```
 
 Each generated client has its own random client-id and a secret which both are used in OAuth flow.
@@ -261,6 +262,29 @@ Removes from store user with given login.
 `(enable-user [login])`
 
 Disables or enables user with given given login. Disabled user is no longer able to authenticate and all authorization attempts fail immediately.
+
+`(init-users [users])`
+`(init-clients [clients])`
+
+Initializes users- and clients-store with predefined collection of users/clients:
+
+```clojure
+(require '[cerber.oauth2.core :as c])
+
+(c/init-users [{:login "admin"
+                :email "admin@bar.com"
+                :name "Admin"
+                :enabled? true
+                :password "secret"
+                :roles #{"user/admin"}}
+               {:login "foo"
+                :email "foo@bar.com"
+                :name "Foo Bar"
+                :enabled? true
+                :password "pass"
+                :roles #{"user/all"}}])
+```
+
 
 ### tokens
 

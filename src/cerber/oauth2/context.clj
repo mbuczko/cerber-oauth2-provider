@@ -85,7 +85,8 @@
 
                  (let [scopes (helpers/str->coll [] (:scope token))]
                    (assoc req
-                          ::client {:scopes scopes}
+                          ::client {:id (:client-id token)
+                                    :scopes scopes}
                           ::user   {:id (:user-id token)
                                     :login login
                                     :roles (:roles user)}))))

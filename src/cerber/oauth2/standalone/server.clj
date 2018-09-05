@@ -23,7 +23,8 @@
   (GET  "/refuse"    [] handlers/client-refuse-handler)
   (POST "/token"     [] handlers/token-handler)
   (GET  "/login"     [] handlers/login-form-handler)
-  (POST "/login"     [] handlers/login-submit-handler))
+  (POST "/login"     [] handlers/login-submit-handler)
+  (GET  "/logout"    [] handlers/logout-handler))
 
 (defroutes restricted-routes
   (GET "/users/me" [] user-info-handler))
@@ -35,41 +36,17 @@
    api-defaults))
 
 (defn init-server
-  "Initializes standalone HTTP server handling default OAuth2 endpoints."
+  "Initializes preconfigured users, clients and standalone
+  HTTP server handling OAuth2 endpoints."
 
   []
+  (core/init-users (:users app-config))
+  (core/init-clients (:clients app-config))
+
   (when-let [url (:landing-url app-config)]
     (core/set-landing-url! url))
   (when-let [http-config (:server app-config)]
     (web/run-server app-handler http-config)))
-
-(defn init-users
-  "Initializes pre-defined collection of test users."
-
-  []
-  (let [users (:users app-config)]
-    (f/try*
-     (for [{:keys [login email name roles enabled? password]} users]
-       (core/create-user {:login login
-                          :email email
-                          :name name
-                          :roles roles
-                          :enabled? enabled?}
-                         password)))))
-
-(defn init-clients
-  "Initializes pre-defined collection of test clients."
-
-  []
-  (let [clients (:clients app-config)]
-    (f/try*
-     (for [{:keys [id secret info redirects grants scopes approved?]} clients]
-       (core/create-client info redirects grants scopes true approved? id secret)))))
-
-
-(defstate http-server
-  :start (init-server)
-  :stop  (when http-server (http-server)))
 
 (defstate db-conn
   :start (and (Class/forName "org.h2.Driver")
@@ -77,7 +54,7 @@
                                 :min-idle   1
                                 :max-idle   4
                                 :max-active 32
-                                :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"
+                                :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/cerber_schema.sql'"
                                         ;:driver-class "org.postgresql.Driver"
                                         ;:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres"
                                 }))
@@ -105,10 +82,6 @@
   :start (core/create-session-store :sql db-conn)
   :stop  (close! session-store))
 
-;; oauth2 entities
-
-(defstate users
-  :start (doall (init-users)))
-
-(defstate clients
-  :start (doall (init-clients)))
+(defstate http-server
+  :start (init-server)
+  :stop  (when http-server (http-server)))

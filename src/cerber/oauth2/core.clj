@@ -164,6 +164,28 @@
   (when-let [user (find-user login)]
     (and (user/enable-user user) user)))
 
+;; users/clients helpers
+
+(defn init-users
+  "Initializes users-store with predefined collection of users."
+
+  [users]
+  (doseq [{:keys [login email name roles enabled? password]} users]
+    (create-user {:login login
+                  :email email
+                  :name name
+                  :roles roles
+                  :enabled? enabled?}
+                 password)))
+
+(defn init-clients
+  "Initializes client-store with predefined collection of clients."
+
+  [clients]
+  (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
+    (create-client info redirects grants scopes true approved? id secret)))
+
+
 
 ;; tokens
 
@@ -188,7 +210,7 @@
    (token/find-by-pattern ["refresh" nil client-id login])))
 
 (defn revoke-client-tokens
-  "Revokes all refresh-tokens bound with given client (and optional user)."
+  "Revokes all access- and refresh-tokens bound with given client (and optional user)."
   ([client-id]
    (revoke-client-tokens client-id nil))
   ([client-id login]
