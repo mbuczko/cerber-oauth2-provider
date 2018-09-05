@@ -17,12 +17,13 @@
       (header "Content-Type" "text/html")))
 
 (defn render-login-form [req]
-  (let [session (:session req)]
+  (let [landing-url (get-in req [:session :landing-url])]
     (-> (render-template "templates/cerber/login.html" {:csrf (anti-forgery-field)
                                                         :failed? (boolean (:failed? req))})
 
-        ;; clear up auth info if already existed
-        (assoc :session (dissoc session :id :login)))))
+        ;; convey landing-url if it was set on login
+        (cond-> landing-url
+          (assoc :session {:landing-url landing-url})))))
 
 (defn render-approval-form [client scopes req]
   (render-template "templates/cerber/authorize.html" {:csrf (anti-forgery-field)
@@ -41,4 +42,5 @@
       (let [{:keys [id login]} (::ctx/user result)]
         (-> (get-in req [:session :landing-url] (settings/landing-url))
             (redirect)
-            (assoc :session {:id id :login login}))))))
+            (assoc  :session {:id id :login login})
+            (update :session dissoc :landing-url))))))

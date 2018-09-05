@@ -14,7 +14,7 @@
                  :min-idle   1
                  :max-idle   4
                  :max-active 32
-                 :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/schema.sql'"})
+                 :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/cerber_schema.sql'"})
 
 ;; connection to testing H2 instance
 (defonce db-conn
