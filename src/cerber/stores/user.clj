@@ -6,7 +6,8 @@
              [error :as error]
              [helpers :as helpers]
              [store :refer :all]]
-            [failjure.core :as f]))
+            [failjure.core :as f]
+            [clojure.string :as str]))
 
 (def user-store (atom :not-initialized))
 
@@ -115,4 +116,6 @@
   "Verifies that given password matches the hashed one."
 
   [password hashed]
-  (and password hashed (helpers/bcrypt-check password hashed)))
+  (and (not (str/blank? password))
+       (not (str/blank? hashed))
+       (helpers/bcrypt-check password hashed)))

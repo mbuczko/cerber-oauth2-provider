@@ -20,7 +20,7 @@
             [ring.middleware.session.store :refer [SessionStore]]
             [failjure.core :as f]))
 
-(deftype CookieCustomStore []
+(deftype RingCustomizedStore []
   SessionStore
   (read-session [_ key]
     (when-let [session (find-session key)]
@@ -35,7 +35,7 @@
     (revoke-session (find-session key))
     nil))
 
-(defonce session-store (CookieCustomStore.))
+(defonce session-store (RingCustomizedStore.))
 
 (defn wrap-errors [handler]
   (fn [req]
