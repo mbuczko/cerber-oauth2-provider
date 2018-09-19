@@ -20,7 +20,7 @@
             [ring.middleware.session.store :refer [SessionStore]]
             [failjure.core :as f]))
 
-(deftype CookieCustomStore []
+(deftype RingCustomizedStore []
   SessionStore
   (read-session [_ key]
     (when-let [session (find-session key)]
@@ -35,15 +35,16 @@
     (revoke-session (find-session key))
     nil))
 
-(defonce session-store (CookieCustomStore.))
+(defonce session-store (RingCustomizedStore.))
 
 (defn wrap-errors [handler]
   (fn [req]
-    (let [response (handler req), params (:params req)]
+    (let [response (handler req)
+          {:keys [state redirect_uri]} (:params req)]
       (if-let [error (:error response)]
         (if (= (:code response) 302)
-          (error/error->redirect response (:state params) (:redirect_uri params))
-          (error/error->json response (:state params) (:headers req) (request-url req)))
+          (error/error->redirect response state redirect_uri)
+          (error/error->edn response (:headers req) state (request-url req)))
         response))))
 
 (defn wrap-context [handler redirect-on-error?]
