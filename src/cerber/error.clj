@@ -1,5 +1,6 @@
 (ns cerber.error
   (:require [cerber.oauth2.settings :as settings]
+            [cerber.helpers :as helpers]
             [failjure.core :as f]))
 
 (defrecord HttpError [error message code])
@@ -51,12 +52,6 @@
 (defn bad-request [message]
   (map->HttpError {:error "bad_request" :message message :code 400}))
 
-(defn ajax-request?
-  "Returns true if X-Requested-With header was found with
-  XMLHttpRequest value, returns false otherwise."
-  [headers]
-  (= (headers "x-requested-with") "XMLHttpRequest"))
-
 (defn error->redirect
   "Tranforms error into http redirect response.
   Error info is added as query param as described in 4.1.2.1. Error Response of OAuth2 spec"
@@ -78,7 +73,7 @@
   (let [{:keys [code error message]} http-error]
     (if (or (= code 401) (= code 403))
       (if (or (headers "authorization")
-              (ajax-request? headers))
+              (helpers/ajax-request? headers))
 
         ;; oauth request
         {:status code
