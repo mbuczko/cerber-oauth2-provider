@@ -45,12 +45,27 @@
           (get-in state [:response :status]) => 302
           (get-in state [:response :headers "Location"]) => "http://localhost/")))
 
+(fact "Enabled user with valid password gets HTTP 200 OK with landing-url in a body when logging in with XHR request."
+      (utils/with-stores :sql
+        (let [user  (utils/create-test-user "pass")
+              state (-> (session (wrap-defaults oauth-routes api-defaults))
+                        (header "Accept" "application/json")
+                        (header "X-Requested-With" "XMLHttpRequest")
+                        (request "/login") ;; get csrf
+                        (utils/request-secured "/login"
+                                               :request-method :post
+                                               :params {:username (:login user)
+                                                        :password "pass"}))]
+
+          (get-in state [:response :status]) => 200
+          (get-in state [:response :body]) => {:landing-url "/"})))
+
 (fact "Enabled user with wrong credentials is redirected back to login page with failure info provided."
       (utils/with-stores :sql
         (let [user  (utils/create-test-user "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "text/html")
-                        (request "/login")
+                        (request "/login")  ;; get csrf
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
@@ -59,6 +74,20 @@
           (get-in state [:response :status]) => 200
           (get-in state [:response :body]) => (contains "failed"))))
 
+(fact "Enabled user with wrong credentials gets HTTP 401 Unauthorized when logging in with XHR request."
+      (utils/with-stores :sql
+        (let [user  (utils/create-test-user "pass")
+              state (-> (session (wrap-defaults oauth-routes api-defaults))
+                        (header "Accept" "application/json")
+                        (header "X-Requested-With" "XMLHttpRequest")
+                        (request "/login")  ;; get csrf
+                        (utils/request-secured "/login"
+                                               :request-method :post
+                                               :params {:username (:login user)
+                                                        :password ""}))]
+
+          (get-in state [:response :status]) => 401)))
+
 (fact "Inactive user is not able to log in."
       (utils/with-stores :sql
         (let [user  (utils/create-test-user {:login (utils/random-string 12)
@@ -66,7 +95,7 @@
                                             "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "text/html")
-                        (request "/login")
+                        (request "/login")  ;; get csrf
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
@@ -74,6 +103,22 @@
 
           (get-in state [:response :status]) => 200
           (get-in state [:response :body]) => (contains "failed"))))
+
+(fact "Inactive user is not able to log in with XHR request."
+      (utils/with-stores :sql
+        (let [user  (utils/create-test-user {:login (utils/random-string 12)
+                                             :enabled? false}
+                                            "pass")
+              state (-> (session (wrap-defaults oauth-routes api-defaults))
+                        (header "Accept" "application/json")
+                        (header "X-Requested-With" "XMLHttpRequest")
+                        (request "/login")  ;; get csrf
+                        (utils/request-secured "/login"
+                                               :request-method :post
+                                               :params {:username (:login user)
+                                                        :password "pass"}))]
+
+          (get-in state [:response :status]) => 401)))
 
 (fact "Unapproved client may receive its token in Authorization Code Grant scenario. Needs user's approval."
       (utils/with-stores :sql

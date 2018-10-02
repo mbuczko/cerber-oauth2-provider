@@ -33,7 +33,9 @@
                                                       :scopes scopes}))
 
 (defn handle-login-submit [req]
-  (let [result (ctx/user-password-valid? req default-authenticator)]
+  (let [result (ctx/user-password-valid? req default-authenticator)
+        ajax-request? (ajax-request? (:headers req))]
+
     (if (f/failed? result)
 
       ;; login failed. re-render login page with failure flag set on.
@@ -43,7 +45,6 @@
 
       ;; login succeeded. redirect either to session-stored or default landing url.
       (let [location (get-in req [:session :landing-url] (settings/landing-url))
-            ajax-request? (ajax-request? (:headers req))
             {:keys [id login]} (::ctx/user result)]
         (-> (redirect location)
             (assoc  :session {:id id :login login})
