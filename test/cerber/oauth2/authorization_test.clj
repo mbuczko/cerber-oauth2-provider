@@ -164,7 +164,9 @@
             expires_in    => truthy
 
             ;; authorized request to /users/me should contain user's login
-            (utils/request-authorized (session app) "/users/me" access_token) => (contains (:login user))))))
+            (-> (session app)
+                (utils/request-authorized "/users/me" access_token)
+                :login) => (:login user)))))
 
 (fact "Approved client may receive its token in Authorization Code Grant scenario. Doesn't need user's approval."
       (utils/with-stores :sql
@@ -204,7 +206,9 @@
             expires_in    => truthy
 
             ;; authorized request to /users/me should contain user's login
-            (utils/request-authorized (session app) "/users/me" access_token) => (contains (:login user))))))
+            (-> (session app)
+                (utils/request-authorized "/users/me" access_token)
+                :login) => (:login user)))))
 
 (fact "Client is redirected with error message when tries to get an access-token with undefined scope."
       (utils/with-stores :sql
@@ -264,10 +268,10 @@
             location =not=> (contains "refresh_token")
 
             ;; authorized request to /users/me should contain user's login
-            (let [token (second (re-find #"access_token=([^\&]+)" location))
-                  login (:login user)]
-
-              (utils/request-authorized (session app) "/users/me" token) => (contains login))))))
+            (let [token (second (re-find #"access_token=([^\&]+)" location))]
+              (-> (session app)
+                  (utils/request-authorized "/users/me" token)
+                  :login) => (:login user))))))
 
 (fact "Client may receive its token in Resource Owner Password Credentials Grant scenario for enabled user."
       (utils/with-stores :sql
@@ -291,7 +295,9 @@
             expires_in    => truthy
 
             ;; authorized request to /users/me should contain user's login
-            (utils/request-authorized (session app) "/users/me" access_token) => (contains (:login user))))))
+            (-> (session app)
+                (utils/request-authorized "/users/me" access_token)
+                :login) => (:login user)))))
 
 (fact "Client cannot receive token in Resource Owner Password Credentials Grant scenario for disabled user."
       (utils/with-stores :sql
@@ -329,7 +335,8 @@
             expires_in    => truthy
 
             ;; authorized request to /users/me should not reveal user's info
-            (utils/request-authorized (session app) "/users/me" access_token) => (contains "\"login\":null")))))
+            (-> (session app)
+                (utils/request-authorized "/users/me" access_token)) => (contains {:login nil})))))
 
 (fact "Active token should be rejected for disabled user."
       (utils/with-stores :sql

@@ -59,12 +59,12 @@
   (let [token (extract-csrf state)]
     (apply request state (map #(if (map? %) (assoc % "__anti-forgery-token" token) %) opts))))
 
-(defn request-authorized [session url token]
-  (slurp (-> session
-             (header "Authorization" (str "Bearer " token))
-             (request url)
-             :response
-             :body)))
+(defn request-authorized [req url token]
+  (-> req
+      (header "Authorization" (str "Bearer " token))
+      (request url)
+      :response
+      :body))
 
 (defn create-test-user
   ([password]
