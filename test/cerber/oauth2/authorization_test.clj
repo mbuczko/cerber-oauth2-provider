@@ -45,12 +45,27 @@
           (get-in state [:response :status]) => 302
           (get-in state [:response :headers "Location"]) => "http://localhost/")))
 
+(fact "Enabled user with valid password gets HTTP 200 OK with landing-url in a body when logging in with XHR request."
+      (utils/with-stores :sql
+        (let [user  (utils/create-test-user "pass")
+              state (-> (session (wrap-defaults oauth-routes api-defaults))
+                        (header "Accept" "application/json")
+                        (header "X-Requested-With" "XMLHttpRequest")
+                        (request "/login") ;; get csrf
+                        (utils/request-secured "/login"
+                                               :request-method :post
+                                               :params {:username (:login user)
+                                                        :password "pass"}))]
+
+          (get-in state [:response :status]) => 200
+          (get-in state [:response :body]) => {:landing-url "/"})))
+
 (fact "Enabled user with wrong credentials is redirected back to login page with failure info provided."
       (utils/with-stores :sql
         (let [user  (utils/create-test-user "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "text/html")
-                        (request "/login")
+                        (request "/login")  ;; get csrf
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
@@ -59,6 +74,20 @@
           (get-in state [:response :status]) => 200
           (get-in state [:response :body]) => (contains "failed"))))
 
+(fact "Enabled user with wrong credentials gets HTTP 401 Unauthorized when logging in with XHR request."
+      (utils/with-stores :sql
+        (let [user  (utils/create-test-user "pass")
+              state (-> (session (wrap-defaults oauth-routes api-defaults))
+                        (header "Accept" "application/json")
+                        (header "X-Requested-With" "XMLHttpRequest")
+                        (request "/login")  ;; get csrf
+                        (utils/request-secured "/login"
+                                               :request-method :post
+                                               :params {:username (:login user)
+                                                        :password ""}))]
+
+          (get-in state [:response :status]) => 401)))
+
 (fact "Inactive user is not able to log in."
       (utils/with-stores :sql
         (let [user  (utils/create-test-user {:login (utils/random-string 12)
@@ -66,7 +95,7 @@
                                             "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "text/html")
-                        (request "/login")
+                        (request "/login")  ;; get csrf
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
@@ -74,6 +103,22 @@
 
           (get-in state [:response :status]) => 200
           (get-in state [:response :body]) => (contains "failed"))))
+
+(fact "Inactive user is not able to log in with XHR request."
+      (utils/with-stores :sql
+        (let [user  (utils/create-test-user {:login (utils/random-string 12)
+                                             :enabled? false}
+                                            "pass")
+              state (-> (session (wrap-defaults oauth-routes api-defaults))
+                        (header "Accept" "application/json")
+                        (header "X-Requested-With" "XMLHttpRequest")
+                        (request "/login")  ;; get csrf
+                        (utils/request-secured "/login"
+                                               :request-method :post
+                                               :params {:username (:login user)
+                                                        :password "pass"}))]
+
+          (get-in state [:response :status]) => 401)))
 
 (fact "Unapproved client may receive its token in Authorization Code Grant scenario. Needs user's approval."
       (utils/with-stores :sql
@@ -119,7 +164,9 @@
             expires_in    => truthy
 
             ;; authorized request to /users/me should contain user's login
-            (utils/request-authorized (session app) "/users/me" access_token) => (contains (:login user))))))
+            (-> (session app)
+                (utils/request-authorized "/users/me" access_token)
+                :login) => (:login user)))))
 
 (fact "Approved client may receive its token in Authorization Code Grant scenario. Doesn't need user's approval."
       (utils/with-stores :sql
@@ -159,7 +206,9 @@
             expires_in    => truthy
 
             ;; authorized request to /users/me should contain user's login
-            (utils/request-authorized (session app) "/users/me" access_token) => (contains (:login user))))))
+            (-> (session app)
+                (utils/request-authorized "/users/me" access_token)
+                :login) => (:login user)))))
 
 (fact "Client is redirected with error message when tries to get an access-token with undefined scope."
       (utils/with-stores :sql
@@ -219,10 +268,10 @@
             location =not=> (contains "refresh_token")
 
             ;; authorized request to /users/me should contain user's login
-            (let [token (second (re-find #"access_token=([^\&]+)" location))
-                  login (:login user)]
-
-              (utils/request-authorized (session app) "/users/me" token) => (contains login))))))
+            (let [token (second (re-find #"access_token=([^\&]+)" location))]
+              (-> (session app)
+                  (utils/request-authorized "/users/me" token)
+                  :login) => (:login user))))))
 
 (fact "Client may receive its token in Resource Owner Password Credentials Grant scenario for enabled user."
       (utils/with-stores :sql
@@ -246,7 +295,9 @@
             expires_in    => truthy
 
             ;; authorized request to /users/me should contain user's login
-            (utils/request-authorized (session app) "/users/me" access_token) => (contains (:login user))))))
+            (-> (session app)
+                (utils/request-authorized "/users/me" access_token)
+                :login) => (:login user)))))
 
 (fact "Client cannot receive token in Resource Owner Password Credentials Grant scenario for disabled user."
       (utils/with-stores :sql
@@ -284,7 +335,8 @@
             expires_in    => truthy
 
             ;; authorized request to /users/me should not reveal user's info
-            (utils/request-authorized (session app) "/users/me" access_token) => (contains "\"login\":null")))))
+            (-> (session app)
+                (utils/request-authorized "/users/me" access_token)) => (contains {:login nil})))))
 
 (fact "Active token should be rejected for disabled user."
       (utils/with-stores :sql

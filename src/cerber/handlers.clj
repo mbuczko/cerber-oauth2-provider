@@ -12,7 +12,6 @@
               find-session
               revoke-session
               update-session]]
-            [ring.util.request :refer [request-url]]
             [ring.middleware
              [anti-forgery :refer [wrap-anti-forgery]]
              [format :refer [wrap-restful-format]]
@@ -39,12 +38,11 @@
 
 (defn wrap-errors [handler]
   (fn [req]
-    (let [response (handler req)
-          {:keys [state redirect_uri]} (:params req)]
+    (let [response (handler req)]
       (if-let [error (:error response)]
         (if (= (:code response) 302)
-          (error/error->redirect response state redirect_uri)
-          (error/error->edn response (:headers req) state (request-url req)))
+          (error/error->redirect response req)
+          (error/error->edn response req))
         response))))
 
 (defn wrap-context [handler redirect-on-error?]
@@ -67,8 +65,7 @@
   (-> handler
       (wrap-context true)
       (wrap-errors)
-      (wrap-session {:store session-store})
-      (wrap-restful-format :formats [:json-kw])))
+      (wrap-session {:store session-store})))
 
 (defn login-form-handler [req]
   (-> form/render-login-form

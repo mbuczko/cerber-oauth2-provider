@@ -2,7 +2,7 @@
 
 [![Clojars Project](https://img.shields.io/clojars/v/cerber/cerber-oauth2-provider.svg)](https://clojars.org/cerber/cerber-oauth2-provider)
 
-[Architecture][arch] | [Configuration][conf] | [Usage][use] | [API][api] | [Middlewares][middlewares] | [Development][dev]
+[Architecture][arch] | [Configuration][conf] | [Usage][use] | [API][api] | [Middlewares][middlewares] | [Development][dev] | [Changelog][log]
 
 This is a clojurey implementation of [RFC 6749 - The OAuth 2.0 Authorization Framework](https://tools.ietf.org/html/rfc6749). Currently covers all scenarios described by spec:
 
@@ -142,33 +142,34 @@ Anyway, this is how bindings would look like with compojure:
   (GET  "/logout"    [] handlers/logout-handler))
 ```
 
-Having OAuth paths set up, next step is to configure routes to restricted resources (assuming here a user's details as such a one):
+Having OAuth paths set up, next step is to configure routes to protected resources (assuming here a user's details as such a one):
 
 ``` clojure
 (require '[cerber.oauth2.context :as ctx])
 
-(defroutes restricted-routes
+(defroutes authorized-routes
   (GET "/user/info" [] (fn [req] {:status 200
                                   :body (::ctx/user req)})))
 ```
 Almost there. One missing part not mentioned yet is authorization and the way how token is validated.
 
-All the magic happens inside `wrap-authorized` middleware which scans both for Cookie (for session-based authorization info) and `Authorization` header (for a token issued by Authorization Server). Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
+All the magic happens inside `wrap-authorized` middleware which examines both request Cookie (for session identifier) and `Authorization` header (for a token issued by Authorization Server). Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
 
 ``` clojure
 (require '[org.httpkit.server :as web]
+          [cerber.handlers :refer [wrap-authorized]]
           [compojure.core :refer [routes wrap-routes]
-          [ring.middleware.defaults :refer [api-defaults wrap-defaults]]])
+          [ring.middleware.defaults :refer [api-defaults wrap-defaults]]
+          [ring.middleware.format :refer [wrap-restful-format]]])
 
 (def api-routes
   (routes oauth-routes
-          (wrap-routes restricted-routes handlers/wrap-authorized))
+          (-> authorized-routes
+              (wrap-routes wrap-restful-format :formats [:json-kw])
+              (wrap-routes wrap-authorized)))
 
-;; final handler passed to HTTP server
-(def app-handler (wrap-defaults api-routes api-defaults))
-
-;; for HTTP-Kit
-(web/run-server app-handler {:host "localhost" :port 8080}})
+;; final handler passed to HTTP server (HTTP-Kit here)
+(web/run-server (wrap-defaults api-routes api-defaults) {:host "localhost" :port 8080}})
 ```
 
 ## API
@@ -392,10 +393,14 @@ This library has also built-in [standalone testing server](./src/cerber/oauth2/s
 
 Any ideas or bugfixes? PRs nicely welcomed. Be sure that your changes pass all the tests or simply add your own test suites if none covers your code yet.
 
+## Changelog
+
+- `v1.1.0` : `wrap-authorized` handler no longer wraps response in `wrap-restful-format` middleware, so response is not returned as json now. from now on, it' up to developer what format response will be transformed to.
+
 [arch]: #architecture
 [conf]: #configuration
 [use]: #usage
 [api]: #api
 [middlewares]: #middlewares
 [dev]: #development
-
+[log]: #changelog

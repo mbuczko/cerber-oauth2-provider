@@ -1,5 +1,6 @@
 (ns cerber.form
-  (:require [cerber.oauth2
+  (:require [cerber.helpers :refer [ajax-request? cond-as->]]
+            [cerber.oauth2
              [authenticator :refer [authentication-handler]]
              [context :as ctx]
              [settings :as settings]]
@@ -32,15 +33,29 @@
                                                       :scopes scopes}))
 
 (defn handle-login-submit [req]
-  (let [result (ctx/user-password-valid? req default-authenticator)]
+  (let [result (ctx/user-password-valid? req default-authenticator)
+        ajax-request? (ajax-request? (:headers req))]
+
     (if (f/failed? result)
 
       ;; login failed. re-render login page with failure flag set on.
-      (render-login-form (assoc req :failed? true))
+      (if ajax-request?
+        {:status 401}
+        (render-login-form (assoc req :failed? true)))
 
       ;; login succeeded. redirect either to session-stored or default landing url.
-      (let [{:keys [id login]} (::ctx/user result)]
-        (-> (get-in req [:session :landing-url] (settings/landing-url))
-            (redirect)
+      (let [location (get-in req [:session :landing-url] (settings/landing-url))
+            {:keys [id login]} (::ctx/user result)]
+        (-> (redirect location)
             (assoc  :session {:id id :login login})
-            (update :session dissoc :landing-url))))))
+            (update :session dissoc :landing-url)
+
+            ;; do not send HTTP 302 if login was requested via ajax-request.
+            ;; client should do redirection by himself.
+
+            (cond-as-> response
+              ajax-request?
+              (-> response
+                  (update :headers merge {"content-type" "application/json"})
+                  (assoc  :status 200
+                          :body {:landing-url location}))))))))

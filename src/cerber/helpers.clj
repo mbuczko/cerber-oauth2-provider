@@ -82,6 +82,13 @@
   []
   (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" ""))
 
+(defn ajax-request?
+  "Returns true if X-Requested-With header was found with
+  XMLHttpRequest value, returns false otherwise."
+
+  [headers]
+  (= (headers "x-requested-with") "XMLHttpRequest"))
+
 (defn assoc-if-exists
   "Assocs k with value v to map m only if there is already k associated."
 
@@ -97,3 +104,14 @@
 (defn atomic-assoc-or-nil
   [a k v f]
   (get (swap! a f k v) k))
+
+(defmacro cond-as->
+  "A mixture of cond-> and as-> allowing more flexibility in the test and step forms.
+  Stolen from https://juxt.pro/blog/posts/condas.html."
+
+  [expr name & clauses]
+  (assert (even? (count clauses)))
+  (let [pstep (fn [[test step]] `(if ~test ~step ~name))]
+    `(let [~name ~expr
+           ~@(interleave (repeat name) (map pstep (partition 2 clauses)))]
+       ~name)))

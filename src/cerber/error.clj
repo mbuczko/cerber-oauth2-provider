@@ -1,6 +1,8 @@
 (ns cerber.error
   (:require [cerber.oauth2.settings :as settings]
-            [failjure.core :as f]))
+            [cerber.helpers :as helpers]
+            [failjure.core :as f]
+            [ring.util.request :refer [request-url]]))
 
 (defrecord HttpError [error message code])
 
@@ -51,20 +53,16 @@
 (defn bad-request [message]
   (map->HttpError {:error "bad_request" :message message :code 400}))
 
-(defn ajax-request?
-  "Returns true if X-Requested-With header was found with
-  XMLHttpRequest value, returns false otherwise."
-  [headers]
-  (= (headers "x-requested-with") "XMLHttpRequest"))
-
 (defn error->redirect
   "Tranforms error into http redirect response.
   Error info is added as query param as described in 4.1.2.1. Error Response of OAuth2 spec"
 
-  [http-error state redirect-uri]
-  (let [{:keys [code error message]} http-error]
+  [http-error req]
+  (let [{:keys [code error message]} http-error
+        {:keys [headers params]} req
+        {:keys [redirect_uri state]} params]
     {:status 302
-     :headers {"Location" (str redirect-uri
+     :headers {"Location" (str redirect_uri
                                "?error=" error
                                "&state=" state)}}))
 
@@ -74,13 +72,14 @@
   In case of 401 (unauthorized) and 403 (forbidden) error codes additional WWW-Authenticate
   header is returned as described in https://tools.ietf.org/html/rfc6750#section-3"
 
-  [http-error & [headers state landing-url]]
-  (let [{:keys [code error message]} http-error]
+  [http-error req]
+  (let [{:keys [code error message]} http-error
+        {:keys [headers params]} req]
     (if (or (= code 401) (= code 403))
-      (if (or (headers "authorization")
-              (ajax-request? headers))
+      (if (or (get headers "authorization")
+              (helpers/ajax-request? headers))
 
-        ;; oauth request
+        ;; oauth or ajax request
         {:status code
          :headers {"WWW-Authenticate" (str "Bearer realm=\"" (settings/realm)
                                            "\",error=\"" error
@@ -89,10 +88,12 @@
         ;; browser-based requested
         {:status 302
          :headers {"Location" (settings/unauthorized-url)}
-         :session {:landing-url landing-url}})
+         :session {:landing-url (request-url req)}})
 
       ;; uups, something bad happened
-      {:status (or code 500)
-       :body (-> {:error (or error "server_error")
-                  :error_description message}
-                 (cond-> state (assoc :state state)))})))
+      (let [state (:state params)]
+        {:status (or code 500)
+         :body (-> {:error (or error "server_error")
+                    :error_description message}
+                   (cond-> state
+                     (assoc :state state)))}))))
