@@ -196,7 +196,7 @@ passed in a `config` parameter whereas SQL-based one requires an initialized dat
 `(create-client [grants redirects & {:keys [info scopes enabled? approved? id secret]}])`
 
 Used to create new OAuth client, where:
-- `grants` is vector of allowed grants: "authorization\_code", "token", "password", "client\_credentials". At least one grant needs to be provided.
+- `grants` is vector of allowed grant types: "authorization\_code", "token", "password", "client\_credentials". At least one grant needs to be provided.
 - `redirects` is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri passed along with token request should match one of these entries.
 - `info` is a non-validated info string (typically client's app name or URL to client's homepage)
 - `scopes` is vector of OAuth scopes that client may request an access to
@@ -210,9 +210,9 @@ Example:
 ```clojure
 (require '[cerber.oauth2.core :as c])
 
-(c/create-client :info "http://defunkt.pl"
-                 :redirects ["http://defunkt.pl/callback"]
-                 :grants ["authorization_code" "password"]
+(c/create-client ["authorization_code" "password"]
+                 ["http://defunkt.pl/callback"]
+                 :info "http://defunkt.pl"
                  :scopes ["photo:read" "photo:list"]
                  :enabled? true
                  :approved? false)
@@ -243,6 +243,7 @@ Disables or enables client with given identifier. Disabled client is no longer a
 Creates new user with following details:
 
 - `:login` is a user's login identifier
+- `:password` is a user's password
 - `:name` is a user's description (like full name)
 - `:email` is a user's email
 - `:roles` set of optional roles
@@ -393,6 +394,7 @@ Any ideas or bugfixes? PRs nicely welcomed. Be sure that your changes pass all t
 
 ## Changelog
 
+- `v2.0.0` : internal API reworked. roles are represented by keywords now (instead of strings).
 - `v1.1.0` : `wrap-authorized` handler no longer wraps response in `wrap-restful-format` middleware, so response is not returned as json now. from now on, it' up to developer what format response will be transformed to.
 
 [arch]: #architecture

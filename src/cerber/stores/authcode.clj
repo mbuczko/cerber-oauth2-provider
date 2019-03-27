@@ -1,22 +1,22 @@
 (ns cerber.stores.authcode
   "Functions handling OAuth2 authcode storage."
-
   (:require [cerber.oauth2.settings :as settings]
             [cerber
              [db :as db]
              [error :as error]
              [helpers :as helpers]
+             [mappers :as mappers]
              [store :refer :all]]))
 
 (def authcode-store (atom :not-initialized))
 
 (defrecord AuthCode [client-id login code scope redirect-uri expires-at created-at])
 
-(defrecord SqlAuthCodeStore [normalizer cleaner]
+(defrecord SqlAuthCodeStore [expired-authcodes-cleaner]
   Store
   (fetch-one [this [code]]
     (some-> (db/find-authcode {:code code})
-            normalizer))
+            mappers/row->authcode))
   (revoke-one! [this [code]]
     (db/delete-authcode {:code code}))
   (store! [this k authcode]
@@ -24,18 +24,7 @@
   (purge! [this]
     (db/clear-authcodes))
   (close! [this]
-    (db/stop-periodic cleaner)))
-
-(defn normalize
-  [authcode]
-  (when-let [{:keys [client_id login code scope redirect_uri created_at expires_at]} authcode]
-    {:client-id client_id
-     :login login
-     :code code
-     :scope scope
-     :redirect-uri redirect_uri
-     :expires-at expires_at
-     :created-at created_at}))
+    (db/stop-periodic expired-authcodes-cleaner)))
 
 (defmulti create-authcode-store (fn [type config] type))
 
@@ -48,7 +37,7 @@
 (defmethod create-authcode-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlAuthCodeStore normalize (db/make-periodic 'cerber.db/clear-expired-authcodes 8000))))
+    (->SqlAuthCodeStore (db/make-periodic 'cerber.db/clear-expired-authcodes 8000))))
 
 (defn init-store
   "Initializes authcode store according to given type and configuration."

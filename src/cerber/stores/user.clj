@@ -1,10 +1,10 @@
 (ns cerber.stores.user
   "Functions handling OAuth2 user storage."
-
   (:require [cerber
              [db :as db]
              [error :as error]
              [helpers :as helpers]
+             [mappers :as mappers]
              [store :refer :all]]
             [clojure.string :as str]))
 
@@ -12,11 +12,11 @@
 
 (defrecord User [id login email name password enabled? created-at modified-at activated-at blocked-at])
 
-(defrecord SqlUserStore [normalizer]
+(defrecord SqlUserStore []
   Store
   (fetch-one [this [login]]
     (some-> (db/find-user {:login login})
-            normalizer))
+            mappers/row->user))
   (revoke-one! [this [login]]
     (db/delete-user {:login login}))
   (store! [this k user]
@@ -30,21 +30,6 @@
   (close! [this]
     ))
 
-(defn normalize
-  [user]
-  (when-let [{:keys [id login email name password roles created_at modified_at activated_at blocked_at enabled]} user]
-    {:id id
-     :login login
-     :email email
-     :name name
-     :password password
-     :enabled? enabled
-     :created-at created_at
-     :modified-at modified_at
-     :activated-at activated_at
-     :blocked-at blocked_at
-     :roles (helpers/str->keywords roles)}))
-
 (defmulti create-user-store (fn [type config] type))
 
 (defmethod create-user-store :in-memory [_ _]
@@ -56,7 +41,7 @@
 (defmethod create-user-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlUserStore normalize)))
+    (->SqlUserStore)))
 
 (defn init-store
   "Initializes user store according to given type and configuration."

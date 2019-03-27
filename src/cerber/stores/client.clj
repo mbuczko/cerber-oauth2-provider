@@ -1,11 +1,11 @@
 (ns cerber.stores.client
   "Functions handling OAuth2 client storage."
-
   (:require [cerber.stores.token :as token]
             [cerber
              [db :as db]
              [error :as error]
              [helpers :as helpers]
+             [mappers :as mappers]
              [store :refer :all]]
             [failjure.core :as f]))
 
@@ -13,11 +13,11 @@
 
 (defrecord Client [id secret info redirects grants scopes approved? enabled? created-at modified-at activated-at blocked-at])
 
-(defrecord SqlClientStore [normalizer]
+(defrecord SqlClientStore []
   Store
   (fetch-one [this [client-id]]
-    (-> (db/find-client {:id client-id})
-        normalizer))
+    (some-> (db/find-client {:id client-id})
+            mappers/row->client))
   (revoke-one! [this [client-id]]
     (db/delete-client {:id client-id}))
   (store! [this k client]
@@ -34,22 +34,6 @@
   (close! [this]
     ))
 
-(defn normalize
-  [client]
-  (when-let [{:keys [id secret info approved scopes grants redirects enabled created_at modified_at activated_at blocked_at]} client]
-    {:id id
-     :secret secret
-     :info info
-     :approved? approved
-     :enabled? enabled
-     :scopes (helpers/str->coll scopes)
-     :grants (helpers/str->coll grants)
-     :redirects (helpers/str->coll redirects)
-     :created-at created_at
-     :modified-at modified_at
-     :activated-at activated_at
-     :blocked-at blocked_at}))
-
 (defmulti create-client-store (fn [type config] type))
 
 (defmethod create-client-store :in-memory [_ _]
@@ -61,7 +45,7 @@
 (defmethod create-client-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlClientStore normalize)))
+    (->SqlClientStore)))
 
 (defn init-store
   "Initializes client store according to given type and configuration."
@@ -147,9 +131,8 @@
 
 (defn grant-allowed?
   [client grant]
-  (let [grants (:grants client)]
-    (or (empty? grants)
-        (.contains grants grant))))
+  (when-let [grants (:grants client)]
+    (.contains grants grant)))
 
 (defn redirect-uri-valid?
   [client redirect-uri]

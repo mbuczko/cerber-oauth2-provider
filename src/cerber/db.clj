@@ -34,4 +34,6 @@
   (when periodic
     (.cancel periodic false)))
 
+;; this is to get db functions interned initially to avoid
+;; runtime exceptions like "No such var: db/find-user"
 (bind-queries nil)

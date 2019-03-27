@@ -1,12 +1,12 @@
 (ns cerber.stores.session
   "Functions handling OAuth2 session storage."
-
   (:require [cerber.helpers :as helpers]
             [cerber.oauth2.settings :as settings]
             [cerber
              [db :as db]
-             [helpers :as helpers]
              [error :as error]
+             [helpers :as helpers]
+             [mappers :as mappers]
              [store :refer :all]]
             [taoensso.nippy :as nippy]))
 
@@ -14,11 +14,11 @@
 
 (defrecord Session [sid content created-at expires-at])
 
-(defrecord SqlSessionStore [normalizer cleaner]
+(defrecord SqlSessionStore [expired-sessions-cleaner]
   Store
   (fetch-one [this [sid]]
     (some-> (db/find-session {:sid sid})
-            normalizer))
+            mappers/row->session))
   (revoke-one! [this [sid]]
     (db/delete-session {:sid sid}))
   (store! [this k session]
@@ -34,15 +34,7 @@
   (purge! [this]
     (db/clear-sessions))
   (close! [this]
-    (db/stop-periodic cleaner)))
-
-(defn normalize
-  [session]
-  (when-let [{:keys [sid content created_at expires_at]} session]
-    {:sid sid
-     :content (nippy/thaw content)
-     :expires-at expires_at
-     :created-at created_at}))
+    (db/stop-periodic expired-sessions-cleaner)))
 
 (defmulti create-session-store (fn [type config] type))
 
@@ -55,7 +47,7 @@
 (defmethod create-session-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlSessionStore normalize (db/make-periodic 'cerber.db/clear-expired-sessions 10000))))
+    (->SqlSessionStore (db/make-periodic 'cerber.db/clear-expired-sessions 10000))))
 
 (defn init-store
   "Initializes session store according to given type and configuration."
