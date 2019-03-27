@@ -67,18 +67,23 @@
       :body))
 
 (defn create-test-user
-  ([password]
-   (create-test-user {:login (random-string 12)} password))
-  ([details password]
-   (core/create-user details password)))
+  "Creates a test user - enabled by default."
+
+  [& {:keys [login password enabled?] :or {enabled? true}}]
+  (core/create-user (or login (random-string 12))
+                    (or password (random-string 8))
+                    :enabled? enabled?))
 
 (defn create-test-client
-  "Creates test client - unapproved by default."
+  "Creates test client - enabled and unapproved by default."
 
-  ([scope redirect-uri]
-   (create-test-client scope redirect-uri false))
-  ([scope redirect-uri approved?]
-   (core/create-client "test client" [redirect-uri] ["authorization_code" "token" "password" "client_credentials"] [scope] true approved?)))
+  [redirect-uri & {:keys [scope approved?]}]
+  (core/create-client ["authorization_code" "token" "password" "client_credentials"]
+                      [redirect-uri]
+                      :info "test client"
+                      :scopes [scope]
+                      :enabled? true
+                      :approved? (boolean approved?)))
 
 (defn disable-test-user [login]
   (core/disable-user login))

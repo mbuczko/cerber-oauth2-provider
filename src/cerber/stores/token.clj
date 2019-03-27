@@ -1,13 +1,11 @@
 (ns cerber.stores.token
-    "Functions handling OAuth2 token storage."
-
-  (:require [clojure.string :refer [join split]]
-            [cerber.stores.user :as user]
-            [cerber.oauth2.settings :as settings]
+  "Functions handling OAuth2 token storage."
+  (:require [cerber.oauth2.settings :as settings]
             [cerber
              [db :as db]
              [error :as error]
              [helpers :as helpers]
+             [mappers :as mappers]
              [store :refer :all]]
             [failjure.core :as f]))
 
@@ -15,39 +13,26 @@
 
 (defrecord Token [client-id user-id login scope secret created-at expires-at])
 
-(defrecord SqlTokenStore [normalizer cleaner]
+(defrecord SqlTokenStore [expired-tokens-cleaner]
   Store
   (fetch-one [this [ttype secret client-id login]]
-    (-> (db/sql-call 'find-tokens-by-secret {:secret secret :ttype ttype})
-        first
-        normalizer))
+    (some-> (db/find-tokens-by-secret {:secret secret :ttype ttype})
+            mappers/row->token))
   (fetch-all [this [ttype secret client-id login]]
-    (map normalizer (if secret
-                      (db/sql-call 'find-tokens-by-secret {:ttype ttype :secret secret})
-                      (db/sql-call 'find-tokens-by-client {:ttype ttype :client-id client-id}))))
+    (map mappers/row->token
+         (db/find-tokens-by-client {:ttype ttype :client-id client-id})))
   (revoke-one! [this [ttype secret client-id login]]
-    (db/sql-call 'delete-token-by-secret {:secret secret}))
+    (db/delete-token-by-secret {:secret secret}))
   (revoke-all! [this [ttype secret client-id login]]
     (if login
-      (db/sql-call 'delete-tokens-by-login  {:client-id client-id :login login :ttype ttype})
-      (db/sql-call 'delete-tokens-by-client {:client-id client-id :ttype ttype})))
+      (db/delete-tokens-by-login  {:client-id client-id :login login :ttype ttype})
+      (db/delete-tokens-by-client {:client-id client-id :ttype ttype})))
   (store! [this k token]
-    (= 1 (db/sql-call 'insert-token token)))
+    (= 1 (db/insert-token token)))
   (purge! [this]
-    (db/sql-call 'clear-tokens))
+    (db/clear-tokens))
   (close! [this]
-    (db/stop-periodic cleaner)))
-
-(defn normalize
-  [token]
-  (when-let [{:keys [client_id user_id login scope secret created_at expires_at]} token]
-    {:client-id client_id
-     :user-id user_id
-     :login login
-     :scope scope
-     :secret secret
-     :created-at created_at
-     :expires-at expires_at}))
+    (db/stop-periodic expired-tokens-cleaner)))
 
 (defmulti create-token-store (fn [type config] type))
 
@@ -60,7 +45,7 @@
 (defmethod create-token-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlTokenStore normalize (db/make-periodic 'clear-expired-tokens 60000))))
+    (->SqlTokenStore (db/make-periodic 'cerber.db/clear-expired-tokens 60000))))
 
 (defn init-store
   "Initializes token store according to given type and configuration."
@@ -118,7 +103,7 @@
   "Finds refresh token issued for given client with given secret code."
 
   [client-id secret]
-  (first (find-by-pattern ["refresh" (helpers/digest secret) client-id nil])))
+  (find-by-key ["refresh" (helpers/digest secret)]))
 
 (defn purge-tokens
   "Removes token from store."

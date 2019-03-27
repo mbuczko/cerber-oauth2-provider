@@ -7,8 +7,7 @@
             [cerber.stores.client :as client]
             [cerber.stores.token :as token]
             [cerber.stores.user :as user]
-            [failjure.core :as f]
-            [clojure.string :as str])
+            [failjure.core :as f])
   (:import org.apache.commons.codec.binary.Base64))
 
 (def state-pattern #"\p{Alnum}+")
@@ -83,7 +82,7 @@
                             ;; no such a user or user disabled?
                             (error/bad-request "User disabled"))]
 
-                 (let [scopes (helpers/str->coll [] (:scope token))]
+                 (let [scopes (helpers/str->coll (:scope token))]
                    (assoc req
                           ::client {:id (:client-id token)
                                     :scopes scopes}

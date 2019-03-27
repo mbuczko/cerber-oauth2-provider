@@ -19,7 +19,7 @@
 
   [scope]
   (->> scope
-       (str->coll [])
+       (str->coll)
        (sort-by #(count (re-seq #":" %)))
        (reduce (fn [reduced scope]
                  (if-let [s (distinct-scope reduced scope)]

@@ -1,12 +1,12 @@
 (ns cerber.stores.session
   "Functions handling OAuth2 session storage."
-
   (:require [cerber.helpers :as helpers]
             [cerber.oauth2.settings :as settings]
             [cerber
              [db :as db]
-             [helpers :as helpers]
              [error :as error]
+             [helpers :as helpers]
+             [mappers :as mappers]
              [store :refer :all]]
             [taoensso.nippy :as nippy]))
 
@@ -14,36 +14,27 @@
 
 (defrecord Session [sid content created-at expires-at])
 
-(defrecord SqlSessionStore [normalizer cleaner]
+(defrecord SqlSessionStore [expired-sessions-cleaner]
   Store
   (fetch-one [this [sid]]
-    (-> (db/sql-call 'find-session {:sid sid})
-        first
-        normalizer))
+    (some-> (db/find-session {:sid sid})
+            mappers/row->session))
   (revoke-one! [this [sid]]
-    (db/sql-call 'delete-session {:sid sid}))
+    (db/delete-session {:sid sid}))
   (store! [this k session]
     (let [content (nippy/freeze (:content session))]
-      (= 1 (db/sql-call 'insert-session (assoc session :content content)))))
+      (= 1 (db/insert-session (assoc session :content content)))))
   (modify! [this k session]
-    (let [result (db/sql-call 'update-session (update session :content nippy/freeze))]
+    (let [result (db/update-session (update session :content nippy/freeze))]
       (when (= 1 result) session)))
   (touch! [this k session ttl]
     (let [extended (helpers/reset-ttl session ttl)
-          result (db/sql-call 'update-session-expiration extended)]
+          result (db/update-session-expiration extended)]
       (when (= 1 result) extended)))
   (purge! [this]
-    (db/sql-call 'clear-sessions))
+    (db/clear-sessions))
   (close! [this]
-    (db/stop-periodic cleaner)))
-
-(defn normalize
-  [session]
-  (when-let [{:keys [sid content created_at expires_at]} session]
-    {:sid sid
-     :content (nippy/thaw content)
-     :expires-at expires_at
-     :created-at created_at}))
+    (db/stop-periodic expired-sessions-cleaner)))
 
 (defmulti create-session-store (fn [type config] type))
 
@@ -56,7 +47,7 @@
 (defmethod create-session-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlSessionStore normalize (db/make-periodic 'clear-expired-sessions 10000))))
+    (->SqlSessionStore (db/make-periodic 'cerber.db/clear-expired-sessions 10000))))
 
 (defn init-store
   "Initializes session store according to given type and configuration."

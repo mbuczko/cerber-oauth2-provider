@@ -1,51 +1,34 @@
 (ns cerber.stores.user
   "Functions handling OAuth2 user storage."
-
   (:require [cerber
              [db :as db]
              [error :as error]
              [helpers :as helpers]
+             [mappers :as mappers]
              [store :refer :all]]
-            [failjure.core :as f]
             [clojure.string :as str]))
 
 (def user-store (atom :not-initialized))
 
 (defrecord User [id login email name password enabled? created-at modified-at activated-at blocked-at])
 
-(defrecord SqlUserStore [normalizer]
+(defrecord SqlUserStore []
   Store
   (fetch-one [this [login]]
-    (-> (db/sql-call 'find-user {:login login})
-        first
-        normalizer))
+    (some-> (db/find-user {:login login})
+            mappers/row->user))
   (revoke-one! [this [login]]
-    (db/sql-call 'delete-user {:login login}))
+    (db/delete-user {:login login}))
   (store! [this k user]
-    (= 1 (db/sql-call 'insert-user (update user :roles helpers/coll->str))))
+    (= 1 (db/insert-user (update user :roles helpers/keywords->str))))
   (modify! [this k user]
     (if (:enabled? user)
-      (db/sql-call 'enable-user user)
-      (db/sql-call 'disable-user user)))
+      (db/enable-user user)
+      (db/disable-user user)))
   (purge! [this]
-    (db/sql-call 'clear-users))
+    (db/clear-users))
   (close! [this]
     ))
-
-(defn normalize
-  [user]
-  (when-let [{:keys [id login email name password roles created_at modified_at activated_at blocked_at enabled]} user]
-    {:id id
-     :login login
-     :email email
-     :name name
-     :password password
-     :enabled? enabled
-     :created-at created_at
-     :modified-at modified_at
-     :activated-at activated_at
-     :blocked-at blocked_at
-     :roles (helpers/str->coll #{} roles)}))
 
 (defmulti create-user-store (fn [type config] type))
 
@@ -58,7 +41,7 @@
 (defmethod create-user-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlUserStore normalize)))
+    (->SqlUserStore)))
 
 (defn init-store
   "Initializes user store according to given type and configuration."
@@ -88,13 +71,14 @@
 (defn create-user
   "Creates and returns a new user, enabled by default."
 
-  [{:keys [login name email roles enabled?] :as details :or {enabled? true}} password]
+  [login password {:keys [name email roles enabled?] :as details}]
   (when (and login password)
     (let [user (-> details
-                   (assoc  :id (helpers/uuid)
-                           :password (helpers/bcrypt-hash password)
-                           :created-at (helpers/now)
-                           :activated-at (when enabled? (helpers/now))))]
+                   (assoc :id (helpers/uuid)
+                          :login login
+                          :password (helpers/bcrypt-hash password)
+                          :created-at (helpers/now)
+                          :activated-at (when enabled? (helpers/now))))]
 
       (if (store! @user-store [:login] user)
         (map->User user)

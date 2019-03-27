@@ -47,6 +47,9 @@
 (def server-error
   (map->HttpError {:error "server_error" :message "Invalid request" :code 500}))
 
+(def not-found
+  (map->HttpError {:error "bad_request" :message "Resource not found" :code 404}))
+
 (defn internal-error [message]
   (map->HttpError {:error "server_error" :message message :code 500}))
 

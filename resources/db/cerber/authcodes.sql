@@ -1,4 +1,4 @@
--- :name find-authcode :? :*
+-- :name find-authcode :? :1
 -- :doc Returns authcode bound with given code
 select * from authcodes where code=:code
 

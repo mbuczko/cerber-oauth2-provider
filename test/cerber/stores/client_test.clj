@@ -13,7 +13,11 @@
 (tabular
  (fact "Redirect URIs must be a valid URLs with no forbidden characters."
        (with-stores :in-memory
-         (core/create-client info ?redirects scopes grants true false) => ?expected))
+         (core/create-client grants ?redirects
+                             :info info
+                             :scopes scopes
+                             :enabled? true
+                             :approved? false) => ?expected))
 
  ?redirects                       ?expected
  ["http://foo.bar.bazz"]          truthy
@@ -28,8 +32,11 @@
        (with-stores :in-memory
 
          ;; given
-         (let [client (core/create-client info redirects scopes grants true false)]
-
+         (let [client (core/create-client grants redirects
+                                          :info info
+                                          :scopes scopes
+                                          :enabled? true
+                                          :approved? false)]
            ;; then
            client => (instance-of Client)
            client => (has-secret :secret))))
@@ -39,7 +46,11 @@
        (with-stores ?store
 
          ;; given
-         (let [created (core/create-client info redirects grants scopes true false)
+         (let [created (core/create-client grants redirects
+                                           :info info
+                                           :scopes scopes
+                                           :enabled? true
+                                           :approved? false)
                client  (core/find-client (:id created))]
 
            ;; then
@@ -60,7 +71,11 @@
        (with-stores ?store
 
          ;; given
-         (let [client (core/create-client info redirects scopes grants true false)
+         (let [client (core/create-client grants redirects
+                                          :info info
+                                          :scopes scopes
+                                          :enabled? true
+                                          :approved? false)
                client-id (:id client)]
 
            ;; when
@@ -76,7 +91,11 @@
        (with-stores ?store
 
          ;; given
-         (let [client (core/create-client info redirects scopes grants true false)
+         (let [client (core/create-client grants redirects
+                                          :info info
+                                          :scopes scopes
+                                          :enabled? true
+                                          :approved? false)
                client-id (:id client)]
 
            ;; when

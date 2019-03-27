@@ -4,10 +4,8 @@
             [cerber.oauth2.core :as core]
             [cerber.oauth2.standalone.config :refer [app-config]]
             [cerber.store :refer :all]
-            [cerber.stores.client :as client]
             [compojure.core :refer [defroutes GET POST routes wrap-routes]]
             [conman.core :as conman]
-            [failjure.core :as f]
             [mount.core :as mount :refer [defstate]]
             [org.httpkit.server :as web]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]))

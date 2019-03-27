@@ -14,7 +14,7 @@
       (with-stores :in-memory
 
         ;; given
-        (let [user (core/create-user {:login login} password)]
+        (let [user (core/create-user login password)]
 
           ;; then
           user => (instance-of User)
@@ -34,8 +34,8 @@
        (with-stores ?store
 
          ;; given
-         (let [created1 (core/create-user {:login login :email email :name uname} password)
-               created2 (core/create-user {:login "bazz" :enabled? false} password)]
+         (let [created1 (core/create-user login password :email email :name uname)
+               created2 (core/create-user "bazz" password :enabled? false)]
 
            ;; when
            (let [user1 (core/find-user (:login created1))
@@ -57,7 +57,7 @@
        (with-stores ?store
 
          ;; given
-         (let [user (core/create-user {:login login} password)]
+         (let [user (core/create-user login password)]
            (core/find-user login) => (instance-of User)
 
            ;; when

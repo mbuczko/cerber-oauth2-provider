@@ -59,28 +59,36 @@
 
 (defn create-client
   "Creates new OAuth client.
-
-    `info`      : a non-validated info string (typically client's app name or URL to client's homepage)
+    `grants`    : an optional vector of allowed grants: authorization_code, token, password, client_credentials.
+                  at least one grant needs to be provided.
     `redirects` : a validated vector of approved redirect-uris.
-                  redirect-uri provided with token request should match one of these entries.
-    `grants`    : an optional vector of allowed grants: authorization_code, token, password or client_credentials; all grants allowed if set to nil
-    `scopes`    : an optional vector of OAuth scopes that client may request an access to
-    `enabled?`  : should client be automatically enabled?
-    `approved?` : should client be auto-approved?
+                  redirect-uri passed along with token request should match one of these entries.
+    `info`      : optional non-validated info string (typically client's app name or URL to client's homepage)
+    `scopes`    : optional vector of OAuth scopes that client may request an access to
+    `enabled?`  : optional (false by default). should client be automatically enabled?
+    `approved?` : optional (false by default). should client be auto-approved?
+    `id`        : optional client ID (must be unique), auto-generated if none provided
+    `secret`    : optional client secret (must be hard to guess), auto-generated if none provided
 
   Example:
 
-      (c/create-client \"http://defunkt.pl\"
+      (c/create-client [\"authorization_code\" \"password\"]
                        [\"http://defunkt.pl/callback\"]
-                       [\"authorization_code\" \"password\"]
-                       [\"photo:read\" \"photo:list\"]
-                       true
-                       false)"
+                       :info \"http://defunkt.pl\"
+                       :scopes [\"photo:read\" \"photo:list\"]
+                       :enabled? true
+                       :approved? true)"
 
-  ([info redirects grants scopes enabled? approved?]
-   (create-client info redirects grants scopes enabled? approved? nil nil))
-  ([info redirects grants scopes enabled? approved? id secret]
-   (client/create-client info redirects grants scopes enabled? approved? id secret)))
+  [grants redirects & {:keys [info scopes enabled? approved? id secret]}]
+  {:pre [(seq grants)
+         (seq redirects)]}
+  (client/create-client grants redirects
+                        {:id id
+                         :secret secret
+                         :info info
+                         :scopes scopes
+                         :enabled? enabled?
+                         :approved? approved?}))
 
 (defn delete-client
   "Removes client from store along with all its access- and refresh-tokens."
@@ -118,24 +126,25 @@
   (user/find-user login))
 
 (defn create-user
-  "Creates new user with all the details like login, descriptive name, email and user's password.
+  "Creates new user with `login` and `password` and optional details
+  like descriptive name, email and roles.
 
   Example:
 
-      (c/create-user {:login \"foobar\"
-                      :name  \"Foo Bar\"
-                      :email \"foo@bar.bazz\"
-                      :roles #{\"user/admin\"}
-                      :enabled? true}
-                     \"secret\")"
+      (c/create-user \"foobar\" \"secret\"
+                     :name  \"Foo Bar\"
+                     :email \"foo@bar.bazz\"
+                     :roles #{\"user/admin\"}
+                     :enabled? true)"
 
-  [{:keys [login name email roles enabled?] :or {enabled? true}} password]
-  (user/create-user {:login login
-                     :name  name
+  [login password & {:keys [name email roles enabled?]}]
+  {:pre [(not (nil? login))
+         (not (nil? password))]}
+  (user/create-user login password
+                    {:name  name
                      :email email
                      :roles roles
-                     :enabled? enabled?}
-                    password))
+                     :enabled? enabled?}))
 
 (defn delete-user
   "Removes user from store."
@@ -147,8 +156,8 @@
 (defn disable-user
   "Disables user.
 
-  Disabled user is no longer able to authenticate and all access tokens created
-  based on his grants become immediately invalid."
+  Disabled user is no longer able to authenticate and all access
+  tokens created based on his grants become immediately invalid."
 
   [login]
   (when-let [user (find-user login)]
@@ -171,21 +180,24 @@
 
   [users]
   (doseq [{:keys [login email name roles enabled? password]} users]
-    (create-user {:login login
-                  :email email
-                  :name name
-                  :roles roles
-                  :enabled? enabled?}
-                 password)))
+    (create-user login password
+                 :email email
+                 :name name
+                 :roles roles
+                 :enabled? enabled?)))
 
 (defn init-clients
   "Initializes client-store with predefined collection of clients."
 
   [clients]
   (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
-    (create-client info redirects grants scopes true approved? id secret)))
-
-
+    (create-client grants redirects
+                   :id id
+                   :secret secret
+                   :info info
+                   :scopes scopes
+                   :enabled? true
+                   :approved? approved?)))
 
 ;; tokens
 
@@ -202,7 +214,8 @@
   (token/revoke-access-token secret))
 
 (defn find-refresh-tokens
-  "Returns list of refresh tokens generated for given client (and optional user)."
+  "Returns list of refresh tokens generated for `client-id` and
+  optionally - for a `login` user."
 
   ([client-id]
    (find-refresh-tokens client-id nil))
@@ -210,7 +223,9 @@
    (token/find-by-pattern ["refresh" nil client-id login])))
 
 (defn revoke-client-tokens
-  "Revokes all access- and refresh-tokens bound with given client (and optional user)."
+  "Revokes all access- and refresh-tokens bound with `client-id`,
+  optionally narrowing revoked tokens to given `login` only."
+
   ([client-id]
    (revoke-client-tokens client-id nil))
   ([client-id login]
@@ -218,17 +233,17 @@
      (token/revoke-client-tokens client {:login login}))))
 
 (defn regenerate-tokens
-  "Generates both access- and refresh-tokens for given client-user pair.
-  Revokes and overrides existing tokens, if any exist."
+  "Generates both access- and refresh-tokens for `client-id` enabling
+  access to `login`'s resources defined by `scope`. Revokes and overrides
+  existing tokens issued for client for `login` user if any exist."
 
   [client-id login scope]
   (let [client (find-client client-id)
         user   (find-user login)]
-
     (when (and client user)
       (token/generate-access-token client user scope true))))
 
-;; settings
+;; global settings
 
 (defn set-realm!
   "Sets up a global OAuth2 realm. Returns newly set value."
