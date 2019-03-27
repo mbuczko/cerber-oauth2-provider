@@ -31,7 +31,7 @@
     (get @store (ns-key namespace k)))
   (fetch-all [this k]
     (let [matcher (re-pattern (ns-key namespace k ".*"))]
-      (vals (filter (fn [[s v]] (re-matches matcher s)) @store))))
+      (vals (filter (fn [[s _]] (re-matches matcher s)) @store))))
   (revoke-one! [this k]
     (swap! store dissoc (ns-key namespace k)))
   (revoke-all! [this k]

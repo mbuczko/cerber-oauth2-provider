@@ -1,4 +1,4 @@
--- :name find-session :? :*
+-- :name find-session :? :1
 -- :doc Returns session for given session id
 select * from sessions where sid=:sid
 

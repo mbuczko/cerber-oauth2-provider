@@ -59,28 +59,36 @@
 
 (defn create-client
   "Creates new OAuth client.
-
-    `info`      : a non-validated info string (typically client's app name or URL to client's homepage)
+    `grants`    : an optional vector of allowed grants: authorization_code, token, password, client_credentials.
+                  at least one grant needs to be provided.
     `redirects` : a validated vector of approved redirect-uris.
-                  redirect-uri provided with token request should match one of these entries.
-    `grants`    : an optional vector of allowed grants: authorization_code, token, password or client_credentials; all grants allowed if set to nil
-    `scopes`    : an optional vector of OAuth scopes that client may request an access to
-    `enabled?`  : should client be automatically enabled?
-    `approved?` : should client be auto-approved?
+                  redirect-uri passed along with token request should match one of these entries.
+    `info`      : optional non-validated info string (typically client's app name or URL to client's homepage)
+    `scopes`    : optional vector of OAuth scopes that client may request an access to
+    `enabled?`  : optional (false by default). should client be automatically enabled?
+    `approved?` : optional (false by default). should client be auto-approved?
+    `id`        : optional client ID (must be unique), auto-generated if none provided
+    `secret`    : optional client secret (must be hard to guess), auto-generated if none provided
 
   Example:
 
-      (c/create-client \"http://defunkt.pl\"
+      (c/create-client [\"authorization_code\" \"password\"]
                        [\"http://defunkt.pl/callback\"]
-                       [\"authorization_code\" \"password\"]
-                       [\"photo:read\" \"photo:list\"]
-                       true
-                       false)"
+                       :info \"http://defunkt.pl\"
+                       :scopes [\"photo:read\" \"photo:list\"]
+                       :enabled? true
+                       :approved? true)"
 
-  ([info redirects grants scopes enabled? approved?]
-   (create-client info redirects grants scopes enabled? approved? nil nil))
-  ([info redirects grants scopes enabled? approved? id secret]
-   (client/create-client info redirects grants scopes enabled? approved? id secret)))
+  [grants redirects & {:keys [info scopes enabled? approved? id secret]}]
+  {:pre [(seq grants)
+         (seq redirects)]}
+  (client/create-client grants redirects
+                        {:id id
+                         :secret secret
+                         :info info
+                         :scopes scopes
+                         :enabled? enabled?
+                         :approved? approved?}))
 
 (defn delete-client
   "Removes client from store along with all its access- and refresh-tokens."
@@ -119,23 +127,22 @@
 
 (defn create-user
   "Creates new user with all the details like login, descriptive name, email and user's password.
-
   Example:
 
-      (c/create-user {:login \"foobar\"
-                      :name  \"Foo Bar\"
-                      :email \"foo@bar.bazz\"
-                      :roles #{\"user/admin\"}
-                      :enabled? true}
-                     \"secret\")"
+      (c/create-user \"foobar\" \"secret\"
+                     :name  \"Foo Bar\"
+                     :email \"foo@bar.bazz\"
+                     :roles #{\"user/admin\"}
+                     :enabled? true)"
 
-  [{:keys [login name email roles enabled?] :or {enabled? true}} password]
-  (user/create-user {:login login
-                     :name  name
+  [login password & {:keys [name email roles enabled?]}]
+  {:pre [(not (nil? login))
+         (not (nil? password))]}
+  (user/create-user login password
+                    {:name  name
                      :email email
                      :roles roles
-                     :enabled? enabled?}
-                    password))
+                     :enabled? enabled?}))
 
 (defn delete-user
   "Removes user from store."
@@ -171,21 +178,24 @@
 
   [users]
   (doseq [{:keys [login email name roles enabled? password]} users]
-    (create-user {:login login
-                  :email email
-                  :name name
-                  :roles roles
-                  :enabled? enabled?}
-                 password)))
+    (create-user login password
+                 :email email
+                 :name name
+                 :roles roles
+                 :enabled? enabled?)))
 
 (defn init-clients
   "Initializes client-store with predefined collection of clients."
 
   [clients]
   (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
-    (create-client info redirects grants scopes true approved? id secret)))
-
-
+    (create-client grants redirects
+                   :id id
+                   :secret secret
+                   :info info
+                   :scopes scopes
+                   :enabled? true
+                   :approved? approved?)))
 
 ;; tokens
 

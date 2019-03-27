@@ -6,7 +6,6 @@
              [error :as error]
              [helpers :as helpers]
              [store :refer :all]]
-            [failjure.core :as f]
             [clojure.string :as str]))
 
 (def user-store (atom :not-initialized))
@@ -16,13 +15,12 @@
 (defrecord SqlUserStore [normalizer]
   Store
   (fetch-one [this [login]]
-    (-> (db/sql-call 'find-user {:login login})
-        first
-        normalizer))
+    (some-> (db/sql-call 'find-user {:login login})
+            normalizer))
   (revoke-one! [this [login]]
     (db/sql-call 'delete-user {:login login}))
   (store! [this k user]
-    (= 1 (db/sql-call 'insert-user (update user :roles helpers/coll->str))))
+    (= 1 (db/sql-call 'insert-user (update user :roles helpers/keywords->str))))
   (modify! [this k user]
     (if (:enabled? user)
       (db/sql-call 'enable-user user)
@@ -45,7 +43,7 @@
      :modified-at modified_at
      :activated-at activated_at
      :blocked-at blocked_at
-     :roles (helpers/str->coll #{} roles)}))
+     :roles (helpers/str->keywords roles)}))
 
 (defmulti create-user-store (fn [type config] type))
 
@@ -88,13 +86,14 @@
 (defn create-user
   "Creates and returns a new user, enabled by default."
 
-  [{:keys [login name email roles enabled?] :as details :or {enabled? true}} password]
+  [login password {:keys [name email roles enabled?] :as details}]
   (when (and login password)
     (let [user (-> details
-                   (assoc  :id (helpers/uuid)
-                           :password (helpers/bcrypt-hash password)
-                           :created-at (helpers/now)
-                           :activated-at (when enabled? (helpers/now))))]
+                   (assoc :id (helpers/uuid)
+                          :login login
+                          :password (helpers/bcrypt-hash password)
+                          :created-at (helpers/now)
+                          :activated-at (when enabled? (helpers/now))))]
 
       (if (store! @user-store [:login] user)
         (map->User user)

@@ -1,15 +1,12 @@
 (ns cerber.stores.authcode
   "Functions handling OAuth2 authcode storage."
 
-  (:require [clojure.string :refer [join split]]
-            [cerber.stores.user :as user]
-            [cerber.oauth2.settings :as settings]
+  (:require [cerber.oauth2.settings :as settings]
             [cerber
              [db :as db]
              [error :as error]
              [helpers :as helpers]
-             [store :refer :all]]
-            [failjure.core :as f]))
+             [store :refer :all]]))
 
 (def authcode-store (atom :not-initialized))
 
@@ -18,9 +15,8 @@
 (defrecord SqlAuthCodeStore [normalizer cleaner]
   Store
   (fetch-one [this [code]]
-    (-> (db/sql-call 'find-authcode {:code code})
-        first
-        normalizer))
+    (some-> (db/sql-call 'find-authcode {:code code})
+            normalizer))
   (revoke-one! [this [code]]
     (db/sql-call 'delete-authcode {:code code}))
   (store! [this k authcode]

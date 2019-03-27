@@ -193,31 +193,29 @@ passed in a `config` parameter whereas SQL-based one requires an initialized dat
 
 ### clients
 
-`(create-client [info redirects grants scopes enabled? approved?])`
-
-`(create-client [info redirects grants scopes enabled? approved? id secret])`
+`(create-client [grants redirects & {:keys [info scopes enabled? approved? id secret]}])`
 
 Used to create new OAuth client, where:
+- `grants` is vector of allowed grants: "authorization\_code", "token", "password", "client\_credentials". At least one grant needs to be provided.
+- `redirects` is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri passed along with token request should match one of these entries.
 - `info` is a non-validated info string (typically client's app name or URL to client's homepage)
-- `redirects` is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri provided with token request should match one of these entries.
-- `grants` is vector of allowed grants: "authorization\_code", "token", "password" or "client\_credentials". if nil - all grants are allowed.
 - `scopes` is vector of OAuth scopes that client may request an access to
-- `enabled?` decides whether client should be auto-enabled or not. It's false by default which means client is not able to request for tokens.
-- `approved?` decides whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource.
-- `id` - optional client-id, auto-generated if none provided.
-- `secret` - optional client-secret, auto-generated if none provided.
+- `enabled?` decides whether client should be auto-enabled or not. It's false by default which means client is not able to request for tokens
+- `approved?` decides whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource
+- `id` - optional client-id (must be unique), auto-generated if none provided
+- `secret` - optional client-secret (must be hard to guess), auto-generated if none provided
 
 Example:
 
 ```clojure
 (require '[cerber.oauth2.core :as c])
 
-(c/create-client "http://defunkt.pl"
-                 ["http://defunkt.pl/callback"]
-                 ["authorization_code" "password"]
-                 ["photo:read" "photo:list"]
-                 true
-                 false)
+(c/create-client :info "http://defunkt.pl"
+                 :redirects ["http://defunkt.pl/callback"]
+                 :grants ["authorization_code" "password"]
+                 :scopes ["photo:read" "photo:list"]
+                 :enabled? true
+                 :approved? false)
 ```
 
 Each generated client has its own random client-id and a secret which both are used in OAuth flow.
@@ -240,9 +238,9 @@ Disables or enables client with given identifier. Disabled client is no longer a
 
 ### users
 
-`(create-user [details password])`
+`(create-user [login password & {:keys [name email roles enabled?]}])`
 
-Creates new user with given map of details:
+Creates new user with following details:
 
 - `:login` is a user's login identifier
 - `:name` is a user's description (like full name)
@@ -277,13 +275,13 @@ Initializes users- and clients-store with predefined collection of users/clients
                 :name "Admin"
                 :enabled? true
                 :password "secret"
-                :roles #{"user/admin"}}
+                :roles #{:user/admin}}
                {:login "foo"
                 :email "foo@bar.com"
                 :name "Foo Bar"
                 :enabled? true
                 :password "pass"
-                :roles #{"user/all"}}])
+                :roles #{:user/all}}])
 ```
 
 

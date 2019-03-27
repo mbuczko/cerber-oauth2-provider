@@ -1,6 +1,7 @@
 (ns cerber.helpers
   (:require [crypto.random :as random]
             [clojure.string :as str]
+            [failjure.core :as f]
             [digest])
   (:import  [org.mindrot.jbcrypt BCrypt]))
 
@@ -34,20 +35,34 @@
   (assoc item :expires-at (now-plus-seconds ttl)))
 
 (defn str->coll
-  "Decomposes string into collection of space-separated substrings.
-  Returns input collection if string was either null or empty."
+  "Return a vector of `str` substrings split by space."
 
-  [coll ^String str]
-  (or (and str
-           (> (.length str) 0)
-           (into coll (str/split str #" ")))
-      coll))
+  [^String str]
+  (into []
+        (when (and str (> (.length str) 0))
+          (str/split str #" "))))
 
 (defn coll->str
-  "Serializes collection of strings into single (space-separated) string."
+  "Serializes collection of strings into single
+  (space-separated) string."
 
   [coll]
   (str/join " " coll))
+
+(defn str->keywords
+  [str]
+  (into #{} (map keyword) (str->coll str)))
+
+(defn keywords->str
+  [keywords]
+  (coll->str (map #(subs (str %) 1) keywords)))
+
+(defn str->int
+  "Safely transforms stringified number into an Integer.
+  Returns a Failure in case of any exception."
+
+  [^String str]
+  (f/try* (Integer/parseInt str)))
 
 (defn expires->ttl
   "Returns number of seconds between now and expires-at."
@@ -96,7 +111,7 @@
   (when (m k) (assoc m k v)))
 
 (defn assoc-if-not-exists
-  "Assocs k to store with value v only if no k was associated before."
+  "Assocs k with value v to map m only if no k was associated before."
 
   [m k v]
   (when-not (m k) (assoc m k v)))

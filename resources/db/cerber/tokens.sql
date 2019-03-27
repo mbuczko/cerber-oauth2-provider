@@ -1,4 +1,4 @@
--- :name find-tokens-by-secret :? :*
+-- :name find-tokens-by-secret :? :1
 -- :doc Returns tokens found by secret
 select * from tokens where secret=:secret and ttype=:ttype
 

@@ -1,9 +1,7 @@
 (ns cerber.stores.token
-    "Functions handling OAuth2 token storage."
+  "Functions handling OAuth2 token storage."
 
-  (:require [clojure.string :refer [join split]]
-            [cerber.stores.user :as user]
-            [cerber.oauth2.settings :as settings]
+  (:require [cerber.oauth2.settings :as settings]
             [cerber
              [db :as db]
              [error :as error]
@@ -18,9 +16,8 @@
 (defrecord SqlTokenStore [normalizer cleaner]
   Store
   (fetch-one [this [ttype secret client-id login]]
-    (-> (db/sql-call 'find-tokens-by-secret {:secret secret :ttype ttype})
-        first
-        normalizer))
+    (some-> (db/sql-call 'find-tokens-by-secret {:secret secret :ttype ttype})
+            normalizer))
   (fetch-all [this [ttype secret client-id login]]
     (map normalizer (if secret
                       (db/sql-call 'find-tokens-by-secret {:ttype ttype :secret secret})

@@ -17,9 +17,8 @@
 (defrecord SqlSessionStore [normalizer cleaner]
   Store
   (fetch-one [this [sid]]
-    (-> (db/sql-call 'find-session {:sid sid})
-        first
-        normalizer))
+    (some-> (db/sql-call 'find-session {:sid sid})
+            normalizer))
   (revoke-one! [this [sid]]
     (db/sql-call 'delete-session {:sid sid}))
   (store! [this k session]

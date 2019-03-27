@@ -8,14 +8,16 @@
       (with-stores :in-memory
 
         ;; given
-        (let [user   (core/create-user {:login "foo"} "secret")
-              client (core/create-client "test-client"
+        (let [user (core/create-user "foo" "secret")
+              client (core/create-client ["authorization_code"]
                                          ["http://localhost"]
-                                         ["authorization_code"]
-                                         ["photo"]
-                                         true
-                                         true)
+                                         :info "test-client"
+                                         :scopes ["photo"]
+                                         :enabled? true
+                                         :approved? true)
               req {:request-method :get
+                   :uri "/users/me"
+                   :scheme "http"
                    :params  {:response_type "code"
                              :redirect_uri "http://localhost"
                              :client_id (:id client)

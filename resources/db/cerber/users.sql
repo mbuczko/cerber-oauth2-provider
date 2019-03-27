@@ -1,4 +1,4 @@
--- :name find-user :? :*
+-- :name find-user :? :1
 -- :doc Returns user with given login
 select * from users where login=:login
 

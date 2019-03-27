@@ -1,4 +1,4 @@
--- :name find-client :? :*
+-- :name find-client :? :1
 -- :doc Returns client with given client identifier
 select * from clients where id=:id
 

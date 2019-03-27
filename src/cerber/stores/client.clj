@@ -1,8 +1,7 @@
 (ns cerber.stores.client
   "Functions handling OAuth2 client storage."
 
-  (:require [clojure.string :as str]
-            [cerber.stores.token :as token]
+  (:require [cerber.stores.token :as token]
             [cerber
              [db :as db]
              [error :as error]
@@ -18,7 +17,6 @@
   Store
   (fetch-one [this [client-id]]
     (-> (db/sql-call 'find-client {:id client-id})
-        first
         normalizer))
   (revoke-one! [this [client-id]]
     (db/sql-call 'delete-client {:id client-id}))
@@ -44,9 +42,9 @@
      :info info
      :approved? approved
      :enabled? enabled
-     :scopes (helpers/str->coll [] scopes)
-     :grants (helpers/str->coll [] grants)
-     :redirects (helpers/str->coll [] redirects)
+     :scopes (helpers/str->coll scopes)
+     :grants (helpers/str->coll grants)
+     :redirects (helpers/str->coll redirects)
      :created-at created_at
      :modified-at modified_at
      :activated-at activated_at
@@ -128,7 +126,7 @@
 (defn create-client
   "Creates and returns a new client."
 
-  [info redirects grants scopes enabled? approved? & [id secret]]
+  [grants redirects {:keys [info scopes enabled? approved? id secret]}]
   (let [result (validate-redirects redirects)
         client {:id (or id (helpers/generate-secret))
                 :secret (or secret (helpers/generate-secret))

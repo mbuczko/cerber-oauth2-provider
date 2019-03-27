@@ -11,8 +11,8 @@
       (with-stores :in-memory
 
         ;; given
-        (let [user     (create-test-user "")
-              client   (create-test-client scope redirect-uri)
+        (let [user     (create-test-user)
+              client   (create-test-client redirect-uri :scope scope)
               authcode (create-authcode client user scope redirect-uri)]
 
           ;; then
@@ -24,8 +24,8 @@
        (with-stores ?store
 
          ;; given
-         (let [user    (create-test-user "")
-               client  (create-test-client scope redirect-uri)
+         (let [user    (create-test-user)
+               client  (create-test-client redirect-uri :scope scope)
                created (create-authcode client user scope redirect-uri)]
 
            ;; then
@@ -47,8 +47,8 @@
        (with-stores ?store
 
          ;; given
-         (let [user     (create-test-user "")
-               client   (create-test-client scope redirect-uri)
+         (let [user     (create-test-user)
+               client   (create-test-client redirect-uri :scope scope)
                authcode (create-authcode client user scope redirect-uri)]
 
            ;; then
@@ -63,8 +63,8 @@
        (with-stores ?store
 
          ;; given
-         (let [user     (create-test-user "")
-               client   (create-test-client scope redirect-uri)
+         (let [user     (create-test-user)
+               client   (create-test-client redirect-uri :scope scope)
                authcode (create-authcode client user scope redirect-uri -1)]
 
            ;; then

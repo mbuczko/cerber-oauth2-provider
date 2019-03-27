@@ -16,8 +16,8 @@
        (with-stores ?store
 
          ;; given
-         (let [user    (create-test-user "")
-               client  (create-test-client scope redirect-uri)
+         (let [user    (create-test-user)
+               client  (create-test-client redirect-uri :scope scope)
                token   (generate-access-token client user scope true)]
 
            ;; then
@@ -33,8 +33,8 @@
        (with-stores ?store
 
          ;; given
-         (let [user    (create-test-user "")
-               client  (create-test-client scope redirect-uri)
+         (let [user    (create-test-user)
+               client  (create-test-client redirect-uri :scope scope)
                token   (generate-access-token client user scope true)
                refresh (first (core/find-refresh-tokens (:id client)))]
 
@@ -48,8 +48,8 @@
        (with-stores ?store
 
          ;; given
-         (let [user    (create-test-user "")
-               client  (create-test-client scope redirect-uri)
+         (let [user    (create-test-user)
+               client  (create-test-client redirect-uri :scope scope)
                token   (generate-access-token client user scope true)
                access  (core/find-access-token (:access_token token))
                refresh (first (core/find-refresh-tokens (:id client)))]
@@ -79,8 +79,8 @@
        (with-stores ?store
 
          ;; given
-         (let [user   (create-test-user "")
-               client (create-test-client scope redirect-uri)
+         (let [user   (create-test-user)
+               client (create-test-client redirect-uri :scope scope)
                token  (generate-access-token client user scope true)
                secret (:access_token token)]
 
@@ -98,8 +98,8 @@
        (with-stores ?store
 
          ;; given
-         (let [user   (create-test-user "")
-               client (create-test-client scope redirect-uri)
+         (let [user   (create-test-user)
+               client (create-test-client redirect-uri :scope scope)
                token  (generate-access-token client user scope true)
                secret (:access_token token)]
 
@@ -120,9 +120,9 @@
        (with-stores ?store
 
          ;; given
-         (let [user1  (create-test-user "")
-               user2  (create-test-user "")
-               client (create-test-client scope redirect-uri)
+         (let [user1  (create-test-user)
+               user2  (create-test-user)
+               client (create-test-client redirect-uri :scope scope)
                token1 (generate-access-token client user1 scope true)
                token2 (generate-access-token client user2 scope true)]
 
@@ -144,8 +144,8 @@
        (with-stores ?store
 
          ;; given
-         (let [user   (create-test-user "")
-               client (create-test-client scope redirect-uri)
+         (let [user   (create-test-user)
+               client (create-test-client redirect-uri :scope scope)
                access-token  (generate-access-token client user scope true)
                refresh-token (first (core/find-refresh-tokens (:id client)))]
 
@@ -166,8 +166,8 @@
        (with-stores :in-memory
 
          ;; given
-         (let [user   (create-test-user "")
-               client (create-test-client scope redirect-uri)]
+         (let [user   (create-test-user)
+               client (create-test-client redirect-uri :scope scope)]
 
            ;; and
            (core/disable-client (:id client))
@@ -185,8 +185,8 @@
       (with-stores :in-memory
 
         ;; given
-        (let [user   (create-test-user "")
-              client (create-test-client scope redirect-uri)]
+        (let [user   (create-test-user)
+              client (create-test-client redirect-uri :scope scope)]
 
           ;; when
           (helpers/expired?
