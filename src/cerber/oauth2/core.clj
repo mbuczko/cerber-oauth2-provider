@@ -126,7 +126,9 @@
   (user/find-user login))
 
 (defn create-user
-  "Creates new user with all the details like login, descriptive name, email and user's password.
+  "Creates new user with `login` and `password` and optional details
+  like descriptive name, email and roles.
+
   Example:
 
       (c/create-user \"foobar\" \"secret\"
@@ -154,8 +156,8 @@
 (defn disable-user
   "Disables user.
 
-  Disabled user is no longer able to authenticate and all access tokens created
-  based on his grants become immediately invalid."
+  Disabled user is no longer able to authenticate and all access
+  tokens created based on his grants become immediately invalid."
 
   [login]
   (when-let [user (find-user login)]
@@ -212,7 +214,8 @@
   (token/revoke-access-token secret))
 
 (defn find-refresh-tokens
-  "Returns list of refresh tokens generated for given client (and optional user)."
+  "Returns list of refresh tokens generated for `client-id` and
+  optionally - for a `login` user."
 
   ([client-id]
    (find-refresh-tokens client-id nil))
@@ -220,7 +223,9 @@
    (token/find-by-pattern ["refresh" nil client-id login])))
 
 (defn revoke-client-tokens
-  "Revokes all access- and refresh-tokens bound with given client (and optional user)."
+  "Revokes all access- and refresh-tokens bound with `client-id`,
+  optionally narrowing revoked tokens to given `login` only."
+
   ([client-id]
    (revoke-client-tokens client-id nil))
   ([client-id login]
@@ -228,17 +233,17 @@
      (token/revoke-client-tokens client {:login login}))))
 
 (defn regenerate-tokens
-  "Generates both access- and refresh-tokens for given client-user pair.
-  Revokes and overrides existing tokens, if any exist."
+  "Generates both access- and refresh-tokens for `client-id` enabling
+  access to `login`'s resources defined by `scope`. Revokes and overrides
+  existing tokens issued for client for `login` user if any exist."
 
   [client-id login scope]
   (let [client (find-client client-id)
         user   (find-user login)]
-
     (when (and client user)
       (token/generate-access-token client user scope true))))
 
-;; settings
+;; global settings
 
 (defn set-realm!
   "Sets up a global OAuth2 realm. Returns newly set value."

@@ -17,22 +17,22 @@
 (defrecord SqlSessionStore [normalizer cleaner]
   Store
   (fetch-one [this [sid]]
-    (some-> (db/sql-call 'find-session {:sid sid})
+    (some-> (db/find-session {:sid sid})
             normalizer))
   (revoke-one! [this [sid]]
-    (db/sql-call 'delete-session {:sid sid}))
+    (db/delete-session {:sid sid}))
   (store! [this k session]
     (let [content (nippy/freeze (:content session))]
-      (= 1 (db/sql-call 'insert-session (assoc session :content content)))))
+      (= 1 (db/insert-session (assoc session :content content)))))
   (modify! [this k session]
-    (let [result (db/sql-call 'update-session (update session :content nippy/freeze))]
+    (let [result (db/update-session (update session :content nippy/freeze))]
       (when (= 1 result) session)))
   (touch! [this k session ttl]
     (let [extended (helpers/reset-ttl session ttl)
-          result (db/sql-call 'update-session-expiration extended)]
+          result (db/update-session-expiration extended)]
       (when (= 1 result) extended)))
   (purge! [this]
-    (db/sql-call 'clear-sessions))
+    (db/clear-sessions))
   (close! [this]
     (db/stop-periodic cleaner)))
 
@@ -55,7 +55,7 @@
 (defmethod create-session-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlSessionStore normalize (db/make-periodic 'clear-expired-sessions 10000))))
+    (->SqlSessionStore normalize (db/make-periodic 'cerber.db/clear-expired-sessions 10000))))
 
 (defn init-store
   "Initializes session store according to given type and configuration."

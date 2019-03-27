@@ -16,21 +16,21 @@
 (defrecord SqlClientStore [normalizer]
   Store
   (fetch-one [this [client-id]]
-    (-> (db/sql-call 'find-client {:id client-id})
+    (-> (db/find-client {:id client-id})
         normalizer))
   (revoke-one! [this [client-id]]
-    (db/sql-call 'delete-client {:id client-id}))
+    (db/delete-client {:id client-id}))
   (store! [this k client]
-    (= 1 (db/sql-call 'insert-client (-> client
-                                         (update :scopes helpers/coll->str)
-                                         (update :grants helpers/coll->str)
-                                         (update :redirects helpers/coll->str)))))
+    (= 1 (db/insert-client (-> client
+                               (update :scopes helpers/coll->str)
+                               (update :grants helpers/coll->str)
+                               (update :redirects helpers/coll->str)))))
   (modify! [this k client]
     (if (:enabled? client)
-      (db/sql-call 'enable-client client)
-      (db/sql-call 'disable-client client)))
+      (db/enable-client client)
+      (db/disable-client client)))
   (purge! [this]
-    (db/sql-call 'clear-clients))
+    (db/clear-clients))
   (close! [this]
     ))
 

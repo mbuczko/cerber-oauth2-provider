@@ -16,22 +16,22 @@
 (defrecord SqlTokenStore [normalizer cleaner]
   Store
   (fetch-one [this [ttype secret client-id login]]
-    (some-> (db/sql-call 'find-tokens-by-secret {:secret secret :ttype ttype})
+    (some-> (db/find-tokens-by-secret {:secret secret :ttype ttype})
             normalizer))
   (fetch-all [this [ttype secret client-id login]]
     (map normalizer (if secret
-                      (db/sql-call 'find-tokens-by-secret {:ttype ttype :secret secret})
-                      (db/sql-call 'find-tokens-by-client {:ttype ttype :client-id client-id}))))
+                      (db/find-tokens-by-secret {:ttype ttype :secret secret})
+                      (db/find-tokens-by-client {:ttype ttype :client-id client-id}))))
   (revoke-one! [this [ttype secret client-id login]]
-    (db/sql-call 'delete-token-by-secret {:secret secret}))
+    (db/delete-token-by-secret {:secret secret}))
   (revoke-all! [this [ttype secret client-id login]]
     (if login
-      (db/sql-call 'delete-tokens-by-login  {:client-id client-id :login login :ttype ttype})
-      (db/sql-call 'delete-tokens-by-client {:client-id client-id :ttype ttype})))
+      (db/delete-tokens-by-login  {:client-id client-id :login login :ttype ttype})
+      (db/delete-tokens-by-client {:client-id client-id :ttype ttype})))
   (store! [this k token]
-    (= 1 (db/sql-call 'insert-token token)))
+    (= 1 (db/insert-token token)))
   (purge! [this]
-    (db/sql-call 'clear-tokens))
+    (db/clear-tokens))
   (close! [this]
     (db/stop-periodic cleaner)))
 
@@ -57,7 +57,7 @@
 (defmethod create-token-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlTokenStore normalize (db/make-periodic 'clear-expired-tokens 60000))))
+    (->SqlTokenStore normalize (db/make-periodic 'cerber.db/clear-expired-tokens 60000))))
 
 (defn init-store
   "Initializes token store according to given type and configuration."

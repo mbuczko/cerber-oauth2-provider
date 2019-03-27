@@ -15,14 +15,14 @@
 (defrecord SqlAuthCodeStore [normalizer cleaner]
   Store
   (fetch-one [this [code]]
-    (some-> (db/sql-call 'find-authcode {:code code})
+    (some-> (db/find-authcode {:code code})
             normalizer))
   (revoke-one! [this [code]]
-    (db/sql-call 'delete-authcode {:code code}))
+    (db/delete-authcode {:code code}))
   (store! [this k authcode]
-    (= 1 (db/sql-call 'insert-authcode authcode)))
+    (= 1 (db/insert-authcode authcode)))
   (purge! [this]
-    (db/sql-call 'clear-authcodes))
+    (db/clear-authcodes))
   (close! [this]
     (db/stop-periodic cleaner)))
 
@@ -48,7 +48,7 @@
 (defmethod create-authcode-store :sql [_ db-conn]
   (when db-conn
     (db/bind-queries db-conn)
-    (->SqlAuthCodeStore normalize (db/make-periodic 'clear-expired-authcodes 8000))))
+    (->SqlAuthCodeStore normalize (db/make-periodic 'cerber.db/clear-expired-authcodes 8000))))
 
 (defn init-store
   "Initializes authcode store according to given type and configuration."

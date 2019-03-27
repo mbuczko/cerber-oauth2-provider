@@ -15,18 +15,18 @@
 (defrecord SqlUserStore [normalizer]
   Store
   (fetch-one [this [login]]
-    (some-> (db/sql-call 'find-user {:login login})
+    (some-> (db/find-user {:login login})
             normalizer))
   (revoke-one! [this [login]]
-    (db/sql-call 'delete-user {:login login}))
+    (db/delete-user {:login login}))
   (store! [this k user]
-    (= 1 (db/sql-call 'insert-user (update user :roles helpers/keywords->str))))
+    (= 1 (db/insert-user (update user :roles helpers/keywords->str))))
   (modify! [this k user]
     (if (:enabled? user)
-      (db/sql-call 'enable-user user)
-      (db/sql-call 'disable-user user)))
+      (db/enable-user user)
+      (db/disable-user user)))
   (purge! [this]
-    (db/sql-call 'clear-users))
+    (db/clear-users))
   (close! [this]
     ))
 
