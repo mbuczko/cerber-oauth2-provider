@@ -51,7 +51,7 @@ When speaking of configuration...
 `cerber.oauth2.core` namespace is a central place which exposes all the functions required to initialize stores, users, clients and tinker with global options like realm or token/authcode/session life-times. Stores might seem to be a bit tricky to configure as they depend on underlaying storage and thus may expect additional parameters. To configure session store as redis based one, following expression should make it happen:
 
 ``` clojure
-(require '[cerber.core :as core])
+(require '[cerber.oauth2.core :as core])
 (core/create-session-store :redis {:spec {:host "localhost"
                                           :port 6380}})
 ```
@@ -59,7 +59,7 @@ When speaking of configuration...
 and this is how to configure SQL-based store which requires database connection passed in as a parameter:
 
 ``` clojure
-(require '[cerber.core :as core])
+(require '[cerber.oauth2.core :as core])
 (require '[conman.core :as conman])
 
 (defonce db-conn
