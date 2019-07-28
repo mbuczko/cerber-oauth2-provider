@@ -17,6 +17,11 @@ create table tokens (
   UNIQUE KEY tokens_unique (secret)
 );
 
+create index tokens_ttype_idx on tokens (ttype);
+create index tokens_client_id_idx on tokens (client_id);
+create index tokens_user_id_idx on tokens (user_id);
+create index tokens_login_idx on tokens (login);
+
 create table users (
   id varchar(32) primary key,
   login varchar(32) not null,
@@ -31,6 +36,8 @@ create table users (
   blocked_at datetime,
   UNIQUE KEY users_login_unique (login)
 );
+
+create index users_login_idx on users (login);
 
 create table sessions (
   sid varchar(36) primary key,
@@ -51,6 +58,10 @@ create table authcodes (
   UNIQUE KEY authcodes_unique (code, redirect_uri)
 );
 
+create index authcodes_client_id_idx on authcodes (client_id);
+create index authcodes_login_idx on authcodes (login);
+create index authcodes_code_idx on authcodes (code);
+
 create table clients (
   id varchar(32) primary key,
   secret varchar(32) not null,
@@ -64,5 +75,6 @@ create table clients (
   modified_at datetime,
   activated_at datetime,
   blocked_at datetime
-
 );
+
+create index clients_secret_idx on clients (secret);
