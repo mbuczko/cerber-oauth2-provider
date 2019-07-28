@@ -1,7 +1,7 @@
 (ns cerber.stores.authcode-test
-  (:require [cerber.stores.authcode :refer :all]
+  (:require [cerber.stores.authcode :as a]
             [cerber.test-utils :refer [instance-of has-secret create-test-user create-test-client with-stores]]
-            [midje.sweet :refer :all])
+            [midje.sweet :refer [fact tabular => =not=> contains just truthy]])
   (:import cerber.stores.authcode.AuthCode))
 
 (def redirect-uri "http://localhost")
@@ -13,7 +13,7 @@
         ;; given
         (let [user     (create-test-user)
               client   (create-test-client redirect-uri :scope scope)
-              authcode (create-authcode client user scope redirect-uri)]
+              authcode (a/create-authcode client user scope redirect-uri)]
 
           ;; then
           authcode => (instance-of AuthCode)
@@ -26,10 +26,10 @@
          ;; given
          (let [user    (create-test-user)
                client  (create-test-client redirect-uri :scope scope)
-               created (create-authcode client user scope redirect-uri)]
+               created (a/create-authcode client user scope redirect-uri)]
 
            ;; then
-           (let [authcode (find-authcode (:code created))]
+           (let [authcode (a/find-authcode (:code created))]
 
              authcode => (instance-of AuthCode)
              authcode => (has-secret :code)
@@ -49,12 +49,12 @@
          ;; given
          (let [user     (create-test-user)
                client   (create-test-client redirect-uri :scope scope)
-               authcode (create-authcode client user scope redirect-uri)]
+               authcode (a/create-authcode client user scope redirect-uri)]
 
            ;; then
-           (find-authcode (:code authcode)) => (instance-of AuthCode)
-           (revoke-authcode authcode)
-           (find-authcode (:code authcode)) => nil)))
+           (a/find-authcode (:code authcode)) => (instance-of AuthCode)
+           (a/revoke-authcode authcode)
+           (a/find-authcode (:code authcode)) => nil)))
 
  ?store :in-memory :sql :redis)
 
@@ -65,9 +65,9 @@
          ;; given
          (let [user     (create-test-user)
                client   (create-test-client redirect-uri :scope scope)
-               authcode (create-authcode client user scope redirect-uri -1)]
+               authcode (a/create-authcode client user scope redirect-uri -1)]
 
            ;; then
-           (find-authcode (:code authcode))) => nil))
+           (a/find-authcode (:code authcode))) => nil))
 
  ?store :in-memory :sql :redis)

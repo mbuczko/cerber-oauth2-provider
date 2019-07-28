@@ -1,10 +1,10 @@
 (ns cerber.stores.token-test
   (:require [cerber.helpers :as helpers]
             [cerber.oauth2.core :as core]
+            [cerber.oauth2.settings :as settings]
             [cerber.stores.token :refer [create-token generate-access-token]]
             [cerber.test-utils :refer [has-secret instance-of create-test-user create-test-client with-stores]]
-            [midje.sweet :refer :all]
-            [cerber.oauth2.settings :as settings])
+            [midje.sweet :refer [fact tabular => =not=> contains just]])
   (:import cerber.stores.token.Token
            cerber.error.HttpError))
 

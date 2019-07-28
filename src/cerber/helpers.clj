@@ -91,11 +91,19 @@
   [password hashed]
   (BCrypt/checkpw password hashed))
 
-(defn uuid
-  "Generates uuid"
+(defn cerber-uuid
+  "Generates UUID tranformed to contain no separating dashes."
 
   []
   (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" ""))
+
+(defn cerber-uuid?
+  "Returns true if `id` is a cerber-generated UUID, or false otherwise."
+
+  [id]
+  (boolean
+   (and (string? id)
+        (re-matches #"[a-f0-9]{32}" id))))
 
 (defn ajax-request?
   "Returns true if X-Requested-With header was found with

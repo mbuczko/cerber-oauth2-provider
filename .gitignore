@@ -6,6 +6,7 @@
 .ctagsignore
 .tags
 .tags_sorted_by_file
+.rebel_readline_history
 .cpcache
 .DS_Store
 TAGS

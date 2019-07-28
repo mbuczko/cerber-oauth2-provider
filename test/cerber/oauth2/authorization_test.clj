@@ -4,11 +4,11 @@
              [test-utils :as utils]
              [handlers :as handlers]]
             [cerber.oauth2.context :as ctx]
+            [cheshire.core :as json]
             [compojure.core :refer [defroutes routes wrap-routes GET POST]]
-            [midje.sweet :refer :all]
-            [peridot.core :refer :all]
+            [peridot.core :refer [request header session follow-redirect]]
             [ring.middleware.defaults :refer [api-defaults wrap-defaults]]
-            [cheshire.core :as json]))
+            [midje.sweet :refer [fact tabular => =not=> contains just truthy falsey]]))
 
 (def redirect-uri "http://localhost")
 (def scope "photo:read")

@@ -3,7 +3,7 @@
             [cerber.oauth2.context :as ctx]
             [cerber.oauth2.core :as core]
             [cerber.oauth2.standalone.config :refer [app-config]]
-            [cerber.store :refer :all]
+            [cerber.store :refer [close! purge!]]
             [compojure.core :refer [defroutes GET POST routes wrap-routes]]
             [conman.core :as conman]
             [mount.core :as mount :refer [defstate]]
@@ -53,8 +53,8 @@
                                 :max-idle   4
                                 :max-active 32
                                 :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/cerber_schema.sql'"
-                                        ;:driver-class "org.postgresql.Driver"
-                                        ;:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres"
+                                ;:driver-class "org.postgresql.Driver"
+                                ;:jdbc-url "jdbc:postgresql://localhost:5432/template1?user=postgres"
                                 }))
   :stop (conman/disconnect! db-conn))
 

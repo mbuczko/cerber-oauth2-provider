@@ -6,7 +6,7 @@
              [error :as error]
              [helpers :as helpers]
              [mappers :as mappers]
-             [store :refer :all]]
+             [store :refer [Store ->MemoryStore ->RedisStore fetch-all fetch-one revoke-one! revoke-all! purge! store!]]]
             [failjure.core :as f]))
 
 (def token-store (atom :not-initialized))

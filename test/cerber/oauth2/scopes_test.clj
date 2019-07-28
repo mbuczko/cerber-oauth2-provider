@@ -3,7 +3,7 @@
             [cerber.oauth2.scopes :refer [normalize-scope]]
             [cerber.stores.client :refer [scopes-valid?]]
             [cerber.test-utils :refer [with-stores]]
-            [midje.sweet :refer :all]))
+            [midje.sweet :refer [fact tabular => =not=> contains just truthy]]))
 
 (tabular
  (fact "Normalizes scope string by removing duplicates and overlaps"

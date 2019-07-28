@@ -1,8 +1,7 @@
 (ns cerber.stores.session-test
   (:require [cerber.test-utils :refer [instance-of has-secret with-stores]]
-            [cerber.stores.session :refer :all]
-            [midje.sweet :refer :all]
-            [cerber.oauth2.settings :as settings])
+            [cerber.stores.session :as s]
+            [midje.sweet :refer [fact tabular => =not=> contains just truthy]])
   (:import cerber.stores.session.Session))
 
 (def session-content {:sample "value"})
@@ -11,7 +10,7 @@
       (with-stores :in-memory
 
         ;; given
-        (let [session (create-session session-content)]
+        (let [session (s/create-session session-content)]
 
           ;; then
           session => (instance-of Session)
@@ -22,8 +21,8 @@
        (with-stores ?store
 
          ;; given
-         (let [created (create-session session-content)
-               session (find-session (:sid created))]
+         (let [created (s/create-session session-content)
+               session (s/find-session (:sid created))]
 
            ;; then
            session => (instance-of Session)
@@ -39,10 +38,10 @@
        (with-stores ?store
 
          ;; given
-         (let [session (create-session session-content -1)]
+         (let [session (s/create-session session-content -1)]
 
            ;; then
-           (find-session (:sid session)) => nil)))
+           (s/find-session (:sid session)) => nil)))
 
  ?store :in-memory :sql :redis)
 
@@ -51,11 +50,11 @@
        (with-stores ?store
 
          ;; given
-         (let [created (create-session session-content 1)
+         (let [created (s/create-session session-content 1)
                expires (:expires-at created)
 
                ;; when
-               session (find-session (:sid (extend-session created)))]
+               session (s/find-session (:sid (s/extend-session created)))]
 
            ;; then
            (compare (:expires-at session) expires) => 1)))
@@ -67,11 +66,11 @@
        (with-stores ?store
 
          ;; given
-         (let [created (create-session session-content)
+         (let [created (s/create-session session-content)
 
                ;; when
-               updated (update-session (assoc created :content {:sample "updated"}))
-               session (find-session (:sid updated))]
+               updated (s/update-session (assoc created :content {:sample "updated"}))
+               session (s/find-session (:sid updated))]
 
            ;; then
            (-> updated :content :sample) => "updated"
@@ -85,6 +84,6 @@
 (tabular
  (fact "Non-existent sessions cannot be updated."
        (with-stores ?store
-         (update-session (map->Session {:sid "123" :content session-content})) => nil))
+         (s/update-session (s/map->Session {:sid "123" :content session-content})) => nil))
 
  ?store :in-memory :sql :redis)

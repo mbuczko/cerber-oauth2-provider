@@ -5,7 +5,7 @@
              [error :as error]
              [helpers :as helpers]
              [mappers :as mappers]
-             [store :refer :all]]
+             [store :refer [Store ->MemoryStore ->RedisStore fetch-one revoke-one! purge! store! modify!]]]
             [clojure.string :as str]))
 
 (def user-store (atom :not-initialized))
@@ -74,7 +74,7 @@
   [login password {:keys [name email roles enabled?] :as details}]
   (when (and login password)
     (let [user (-> details
-                   (assoc :id (helpers/uuid)
+                   (assoc :id (helpers/cerber-uuid)
                           :login login
                           :password (helpers/bcrypt-hash password)
                           :created-at (helpers/now)

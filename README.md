@@ -387,7 +387,6 @@ This library has also built-in [standalone dev server](./src/cerber/oauth2/stand
 (system/reset) ;; restart server
 ```
 
-One note about tests. Most of them need database connection to run correctly. This is why `cerber.test-utils/init-databases` should be called before to set up H2 and local Redis instance.
 Tests may be also called straight from CLI:
 
 ``` clojure

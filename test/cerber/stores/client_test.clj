@@ -1,7 +1,7 @@
 (ns cerber.stores.client-test
-  (:require [cerber.test-utils :refer [instance-of has-secret with-stores]]
-            [cerber.oauth2.core :as core]
-            [midje.sweet :refer :all])
+  (:require [cerber.oauth2.core :as core]
+            [cerber.test-utils :refer [instance-of has-secret with-stores]]
+            [midje.sweet :refer [fact tabular => =not=> contains just truthy]])
   (:import cerber.error.HttpError
            cerber.stores.client.Client))
 

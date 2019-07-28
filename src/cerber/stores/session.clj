@@ -7,7 +7,7 @@
              [error :as error]
              [helpers :as helpers]
              [mappers :as mappers]
-             [store :refer :all]]
+             [store :refer [Store ->MemoryStore ->RedisStore fetch-one revoke-one! purge! store! modify! touch!]]]
             [taoensso.nippy :as nippy]))
 
 (def session-store (atom :not-initialized))
@@ -77,7 +77,7 @@
 
   [content & [ttl]]
   (let [session (helpers/reset-ttl
-                 {:sid (helpers/uuid)
+                 {:sid (helpers/cerber-uuid)
                   :content content
                   :created-at (helpers/now)}
                  (or ttl (settings/session-valid-for)))]

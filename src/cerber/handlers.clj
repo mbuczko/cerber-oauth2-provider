@@ -5,13 +5,7 @@
             [cerber.oauth2
              [authorization :as auth]
              [context :as ctx]]
-            [cerber.stores.session
-             :refer
-             [create-session
-              extend-session
-              find-session
-              revoke-session
-              update-session]]
+            [cerber.stores.session :refer [create-session extend-session find-session revoke-session update-session]]
             [ring.middleware
              [anti-forgery :refer [wrap-anti-forgery]]
              [format :refer [wrap-restful-format]]
@@ -39,7 +33,7 @@
 (defn wrap-errors [handler]
   (fn [req]
     (let [response (handler req)]
-      (if-let [error (:error response)]
+      (if (:error response)
         (if (= (:code response) 302)
           (error/error->redirect response req)
           (error/error->edn response req))

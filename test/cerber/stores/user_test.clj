@@ -1,8 +1,8 @@
 (ns cerber.stores.user-test
-  (:require [cerber.test-utils :refer [has-secret instance-of with-stores]]
+  (:require [cerber.oauth2.core :as core]
             [cerber.stores.user :refer [valid-password?]]
-            [cerber.oauth2.core :as core]
-            [midje.sweet :refer :all])
+            [cerber.test-utils :refer [has-secret instance-of with-stores]]
+            [midje.sweet :refer [fact tabular => =not=> contains just truthy]])
   (:import cerber.stores.user.User))
 
 (def login "foo")

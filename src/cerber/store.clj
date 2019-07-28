@@ -1,7 +1,7 @@
 (ns cerber.store
-  (:require [taoensso.carmine :as car]
-            [clojure.string :as str]
-            [cerber.helpers :as helpers]))
+  (:require [clojure.string :as str]
+            [cerber.helpers :as helpers]
+            [taoensso.carmine :as car]))
 
 (def ^:private select-values
   (comp vals select-keys))
@@ -36,7 +36,7 @@
     (swap! store dissoc (ns-key namespace k)))
   (revoke-all! [this k]
     (let [matcher (re-pattern (ns-key namespace k ".*"))]
-      (doseq [[s v] @store]
+      (doseq [[s _] @store]
         (when (re-matches matcher s) (swap! store dissoc s)))))
   (store! [this k item]
     (let [nskey (ns-key namespace (select-values item k))]

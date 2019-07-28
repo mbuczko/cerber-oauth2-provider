@@ -9,13 +9,13 @@
             [cerber.stores
              [authcode :as authcode]
              [client :as client]
-             [token :as token]]
+             [token :as token]
+             [user :as user]]
             [failjure.core :as f]
             [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
             [ring.util
-             [request :refer [request-url]]
-             [response :as response]]
-            [cerber.stores.user :as user]))
+             [request :as request]
+             [response :as response]]))
 
 
 (defn redirect-to
@@ -28,7 +28,7 @@
   (-> (redirect-to url)
       (assoc :session session)))
 
-(defn redirect-with-code [{:keys [params ::ctx/user ::ctx/client ::ctx/scopes ::ctx/state ::ctx/redirect-uri]}]
+(defn redirect-with-code [{:keys [::ctx/user ::ctx/client ::ctx/scopes ::ctx/state ::ctx/redirect-uri]}]
   (f/attempt-all [access-scope (helpers/coll->str scopes)
                   authcode     (or (authcode/create-authcode client user access-scope redirect-uri) error/server-error)
                   redirect     (str redirect-uri
@@ -36,7 +36,7 @@
                                     (when state (str "&state=" state)))]
                  (redirect-to redirect)))
 
-(defn redirect-with-token [{:keys [params ::ctx/user ::ctx/client ::ctx/scopes ::ctx/state ::ctx/redirect-uri]}]
+(defn redirect-with-token [{:keys [::ctx/user ::ctx/client ::ctx/scopes ::ctx/state ::ctx/redirect-uri]}]
   (f/attempt-all [access-scope (helpers/coll->str scopes)
                   access-token (token/generate-access-token client user access-scope)
                   redirect (str redirect-uri
@@ -80,4 +80,4 @@
 
 (defn authentication-form-response [req]
   (redirect-with-session (settings/authentication-url)
-                         {:landing-url (request-url req)}))
+                         {:landing-url (request/request-url req)}))
