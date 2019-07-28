@@ -6,6 +6,7 @@
 .ctagsignore
 .tags
 .tags_sorted_by_file
+.cpcache
 .DS_Store
 TAGS
 target/
@@ -15,5 +16,3 @@ dist/
 *.pid
 *.paw
 *-local.edn
-gpg.edn
-boot.properties

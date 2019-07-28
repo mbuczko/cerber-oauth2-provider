@@ -1,0 +1,17 @@
+{:revolt.task/info  {:name "cerber-oauth2-provider"
+                     :package cerber
+                     :version "2.1.0-SNAPSHOT"
+                     :description "OAuth2 provider"}
+ :revolt.task/clean {:extra-paths ["dist"]}
+ :revolt.task/jar   {:exclude-paths ["config" "test"]}
+ :revolt.task/codox {:source-paths ["src/clj"]
+                     :source-uri "http://github.com/mbuczko/cerber-oauth2-provider/blob/{version}/{filepath}#L{line}"}
+
+ :revolt.migrations.task/flyway {:jdbc-url "jdbc:postgresql://localhost:5432/template1"
+                                 :locations ["db/migrations/postgres"]
+                                 :user "postgres"
+                                 :action :info}
+
+ :revolt.plugin/nrepl {:port 5600}
+
+ :revolt.plugin/rebel {:init-ns "cerber.oauth2.core"}}

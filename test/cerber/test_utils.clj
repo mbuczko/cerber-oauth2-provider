@@ -1,9 +1,8 @@
 (ns cerber.test-utils
-  (:require [cerber.db :as db]
-            [cerber.store :refer :all]
-            [cerber.oauth2.core :as core]
+  (:require [clojure.data.codec.base64 :as b64]
             [conman.core :as conman]
-            [clojure.data.codec.base64 :as b64]
+            [cerber.oauth2.core :as core]
+            [cerber.store :refer [purge! close!]]
             [peridot.core :refer [request header]])
   (:import redis.embedded.RedisServer))
 
@@ -12,19 +11,17 @@
 
 (def jdbc-spec  {:init-size  1
                  :min-idle   1
-                 :max-idle   4
-                 :max-active 32
+                 :max-idle   1
+                 :max-active 1
                  :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/cerber_schema.sql'"})
 
-;; connection to testing H2 instance
-(defonce db-conn
-  (and (Class/forName "org.h2.Driver")
-       (conman/connect! jdbc-spec)))
+(defonce db-conn  (and (Class/forName "org.h2.Driver")
+                       (conman/connect! jdbc-spec)))
 
-;; connection to testing redis instance
-(defonce redis-instance
-  (when-let [redis (RedisServer. (Integer. (-> redis-spec :spec :port)))]
-    (.start redis)))
+(defonce redis (try (doto (RedisServer. (Integer. (-> redis-spec :spec :port)))
+                      (.start))
+                    (catch Exception ex
+                      (println "Redis already running"))))
 
 ;; some additional midje checkers
 
@@ -98,19 +95,24 @@
   "Initializes all the OAuth2 stores of given type and
   purges data kept by underlaying databases (H2 and redis)."
 
-  [type store-params]
-  [(core/create-user-store type store-params)
-   (core/create-client-store type store-params)
-   (core/create-authcode-store type store-params)
-   (core/create-session-store type store-params)
-   (core/create-token-store type store-params)])
+  [type]
+  (let [store-params (case type
+                       :sql db-conn
+                       :redis redis-spec
+                       nil)]
+    [(core/create-user-store type store-params)
+     (core/create-client-store type store-params)
+     (core/create-authcode-store type store-params)
+     (core/create-session-store type store-params)
+     (core/create-token-store type store-params)]))
 
 (defn purge-stores
   "Clears all the database-related stuff as one connection
   to redis & H2 is used across all the tests."
 
   [stores]
-  (doseq [store stores] (purge! store)))
+  (doseq [store stores]
+    (when store (purge! store))))
 
 (defn close-stores
   "Closes all the stores provided in a collection."
@@ -120,10 +122,7 @@
 
 (defmacro with-stores
   [type & body]
-  `(let [stores# (init-stores ~type (condp = ~type
-                                      :sql db-conn
-                                      :redis redis-spec
-                                      nil))]
+  `(let [stores# (init-stores ~type)]
      (purge-stores stores#)
      ~@body
      (close-stores stores#)))

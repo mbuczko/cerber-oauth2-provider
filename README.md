@@ -369,31 +369,37 @@ Same as `wrap-authorized` but does no redirection or `HTTP 401 Unauthorized` res
 
 ## Development
 
-Underlaying [midje](https://github.com/marick/Midje) testing framework has been configured to watch for changes and run corresponding tests after each change:
+Cerber development bases on [deps](https://clojure.org/guides/deps_and_cli) and [revolt](https://github.com/mbuczko/revolt) to set up environment in most flexible way:
 
-``` shell
-$ boot tests
+``` clojure
+clj -A:dev:repl -p nrepl,rebel -t clean
 ```
 
-This library has also built-in [standalone testing server](./src/cerber/oauth2/standalone/server.clj) available in `cerber.oauth2.standalone.server` namespace. All it needs to start up is initialized with mount-based restartable system:
+That's it. Connect now to the nREPL with editor of your choice.
+
+This library has also built-in [standalone dev server](./src/cerber/oauth2/standalone/server.clj) available in `cerber.oauth2.standalone.server` namespace. All it needs to start up is initialized with mount-based restartable system:
 
 ``` clojure
 (require '[cerber.oauth2.standalone.system :as system])
 
-;; start server
-(system/go)
-
-;; stops server
-(system/stop)
-
-;; restart server
-(system/reset)
+(system/go)    ;; start server
+(system/stop)  ;; stops server
+(system/reset) ;; restart server
 ```
+
+One note about tests. Most of them need database connection to run correctly. This is why `cerber.test-utils/init-databases` should be called before to set up H2 and local Redis instance.
+Tests may be also called straight from CLI:
+
+``` clojure
+clj -A:dev:test-once
+```
+
 
 Any ideas or bugfixes? PRs nicely welcomed. Be sure that your changes pass all the tests or simply add your own test suites if none covers your code yet.
 
 ## Changelog
 
+- `v2.1.0` : migrated from boot to deps and revolt, missing indexes on SQL schemas added
 - `v2.0.0` : internal API reworked. roles are represented by keywords now (instead of strings).
 - `v1.1.0` : `wrap-authorized` handler no longer wraps response in `wrap-restful-format` middleware, so response is not returned as json now. from now on, it' up to developer what format response will be transformed to.
 

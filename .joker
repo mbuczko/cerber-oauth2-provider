@@ -1,0 +1,4 @@
+{:known-macros [failjure.core/attempt-all
+                failjure.core/when-failed
+                compojure.core/defroutes
+                mount.core/defstate]}
