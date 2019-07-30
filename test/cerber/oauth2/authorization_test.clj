@@ -36,7 +36,7 @@
         (let [user  (utils/create-test-user :password "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "text/html")
-                        (request "/login") ;; get csrf
+                        (request "/login") ;; get anit-csrf token
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
@@ -51,7 +51,7 @@
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "application/json")
                         (header "X-Requested-With" "XMLHttpRequest")
-                        (request "/login") ;; get csrf
+                        (request "/login") ;; get anti-csrf token
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
@@ -65,7 +65,7 @@
         (let [user  (utils/create-test-user :password "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "text/html")
-                        (request "/login")  ;; get csrf
+                        (request "/login")  ;; get anti-csrf token
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
@@ -80,7 +80,7 @@
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "application/json")
                         (header "X-Requested-With" "XMLHttpRequest")
-                        (request "/login")  ;; get csrf
+                        (request "/login")  ;; get anti-csrf token
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
@@ -94,7 +94,7 @@
                                             :password "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "text/html")
-                        (request "/login")  ;; get csrf
+                        (request "/login")  ;; get anti-csrf token
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
@@ -110,7 +110,7 @@
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "application/json")
                         (header "X-Requested-With" "XMLHttpRequest")
-                        (request "/login")  ;; get csrf
+                        (request "/login")  ;; get anti-csrf token
                         (utils/request-secured "/login"
                                                :request-method :post
                                                :params {:username (:login user)
