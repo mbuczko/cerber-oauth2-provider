@@ -1,6 +1,6 @@
 (ns cerber.stores.authcode-test
   (:require [cerber.stores.authcode :as a]
-            [cerber.test-utils :refer [instance-of has-secret create-test-user create-test-client with-stores]]
+            [cerber.test-utils :refer [instance-of has-secret create-test-user create-test-client with-storage]]
             [midje.sweet :refer [fact tabular => =not=> contains just truthy]])
   (:import cerber.stores.authcode.AuthCode))
 
@@ -8,7 +8,7 @@
 (def scope "photo:read")
 
 (fact "Created authcode has a secret code."
-      (with-stores :in-memory
+      (with-storage :in-memory
 
         ;; given
         (let [user     (create-test-user)
@@ -21,7 +21,7 @@
 
 (tabular
  (fact "Authcodes are stored in a correct model."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user    (create-test-user)
@@ -40,11 +40,11 @@
 
              (:expires-at authcode)) =not=> nil)))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)
 
 (tabular
  (fact "Revoked authcode is not returned from store."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user     (create-test-user)
@@ -56,11 +56,11 @@
            (a/revoke-authcode authcode)
            (a/find-authcode (:code authcode)) => nil)))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)
 
 (tabular
  (fact "Expired authcodes are removed from store."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user     (create-test-user)
@@ -70,4 +70,4 @@
            ;; then
            (a/find-authcode (:code authcode))) => nil))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)

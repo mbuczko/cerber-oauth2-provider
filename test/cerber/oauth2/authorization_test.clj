@@ -32,7 +32,7 @@
              (wrap-defaults api-defaults)))
 
 (fact "Enabled user with valid password is redirected to landing page when successfully logged in."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [user  (utils/create-test-user :password "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "text/html")
@@ -46,7 +46,7 @@
           (get-in state [:response :headers "Location"]) => "http://localhost/")))
 
 (fact "Enabled user with valid password gets HTTP 200 OK with landing-url in a body when logging in with XHR request."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [user  (utils/create-test-user :password "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "application/json")
@@ -61,7 +61,7 @@
           (get-in state [:response :body]) => {:landing-url "/"})))
 
 (fact "Enabled user with wrong credentials is redirected back to login page with failure info provided."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [user  (utils/create-test-user :password "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "text/html")
@@ -75,7 +75,7 @@
           (get-in state [:response :body]) => (contains "failed"))))
 
 (fact "Enabled user with wrong credentials gets HTTP 401 Unauthorized when logging in with XHR request."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [user  (utils/create-test-user :password "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
                         (header "Accept" "application/json")
@@ -89,7 +89,7 @@
           (get-in state [:response :status]) => 401)))
 
 (fact "Inactive user is not able to log in."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [user  (utils/create-test-user :enabled? false
                                             :password "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -104,7 +104,7 @@
           (get-in state [:response :body]) => (contains "failed"))))
 
 (fact "Inactive user is not able to log in with XHR request."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [user  (utils/create-test-user :enabled? false
                                             :password "pass")
               state (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -119,7 +119,7 @@
           (get-in state [:response :status]) => 401)))
 
 (fact "Unapproved client may receive its token in Authorization Code Grant scenario. Needs user's approval."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope scope)
               user   (utils/create-test-user :password "pass")
               state  (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -167,7 +167,7 @@
                 :login) => (:login user)))))
 
 (fact "Approved client may receive its token in Authorization Code Grant scenario. Doesn't need user's approval."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope scope :approved? true)
               user   (utils/create-test-user :password "pass")
               state  (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -209,7 +209,7 @@
                 :login) => (:login user)))))
 
 (fact "Client is redirected with error message when tries to get an access-token with undefined scope."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope scope)
               state  (-> (session (wrap-defaults oauth-routes api-defaults))
                          (header "Accept" "text/html")
@@ -224,7 +224,7 @@
             location => (contains "error=invalid_scope")))))
 
 (fact "Client may provide no scope at all (scope is optional)."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope "")
               state  (-> (session (wrap-defaults oauth-routes api-defaults))
                          (header "Accept" "text/html")
@@ -238,7 +238,7 @@
             location =not=> (contains "error=invalid_scope")))))
 
 (fact "Client may receive its token in Implict Grant scenario."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope scope)
               user   (utils/create-test-user :password "pass")
               state  (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -272,7 +272,7 @@
                   :login) => (:login user))))))
 
 (fact "Client may receive its token in Resource Owner Password Credentials Grant scenario for enabled user."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope scope)
               user   (utils/create-test-user :password "pass")
               state  (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -298,7 +298,7 @@
                 :login) => (:login user)))))
 
 (fact "Client cannot receive token in Resource Owner Password Credentials Grant scenario for disabled user."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope scope)
               user   (utils/create-test-user :enabled? false
                                              :password "pass")
@@ -314,7 +314,7 @@
           (get-in state [:response :status]) => 401)))
 
 (fact "Client may receive its token in Client Credentials Grant."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope scope)
               state  (-> (session (wrap-defaults oauth-routes api-defaults))
                          (header "Accept" "application/json")
@@ -336,7 +336,7 @@
                 (utils/request-authorized "/users/me" access_token)) => (contains {:login nil})))))
 
 (fact "Active token should be rejected for disabled user."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope scope)
               user   (utils/create-test-user :password "pass")
               state  (-> (session (wrap-defaults oauth-routes api-defaults))
@@ -365,7 +365,7 @@
                 :status) => 400))))
 
 (fact "Active token should be rejected for disabled client."
-      (utils/with-stores :sql
+      (utils/with-storage :sql
         (let [client (utils/create-test-client redirect-uri :scope scope)
               user   (utils/create-test-user :password "pass")
               state  (-> (session (wrap-defaults oauth-routes api-defaults))

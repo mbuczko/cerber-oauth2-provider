@@ -1,7 +1,7 @@
 (ns cerber.stores.user-test
   (:require [cerber.oauth2.core :as core]
             [cerber.stores.user :refer [valid-password?]]
-            [cerber.test-utils :refer [has-secret instance-of with-stores]]
+            [cerber.test-utils :refer [has-secret instance-of with-storage]]
             [midje.sweet :refer [fact tabular => =not=> contains just truthy]])
   (:import cerber.stores.user.User))
 
@@ -11,7 +11,7 @@
 (def password "pass")
 
 (fact "Created user has auto-generated id and crypted password filled in."
-      (with-stores :in-memory
+      (with-storage :in-memory
 
         ;; given
         (let [user (core/create-user login password)]
@@ -31,7 +31,7 @@
 
 (tabular
  (fact "Users are stored in a correct model, enabled by default if no :enabled? property was set."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [created1 (core/create-user login password :email email :name uname)
@@ -50,11 +50,11 @@
 
              (:enabled? user2)) => false)))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)
 
 (tabular
  (fact "Revoked user is not returned from store."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user (core/create-user login password)]
@@ -66,4 +66,4 @@
            ;; then
            (core/find-user login) => nil)))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)

@@ -1,5 +1,5 @@
 (ns cerber.stores.session-test
-  (:require [cerber.test-utils :refer [instance-of has-secret with-stores]]
+  (:require [cerber.test-utils :refer [instance-of has-secret with-storage]]
             [cerber.stores.session :as s]
             [midje.sweet :refer [fact tabular => =not=> contains just truthy]])
   (:import cerber.stores.session.Session))
@@ -7,7 +7,7 @@
 (def session-content {:sample "value"})
 
 (fact "Created session has a session content."
-      (with-stores :in-memory
+      (with-storage :in-memory
 
         ;; given
         (let [session (s/create-session session-content)]
@@ -18,7 +18,7 @@
 
 (tabular
  (fact "Sessions are stored in a correct model."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [created (s/create-session session-content)
@@ -31,11 +31,11 @@
 
            (:expires-at session) =not=> nil)))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)
 
 (tabular
  (fact "Expired sessions are removed from store."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [session (s/create-session session-content -1)]
@@ -43,11 +43,11 @@
            ;; then
            (s/find-session (:sid session)) => nil)))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)
 
 (tabular
  (fact "Extended session has expires-at updated."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [created (s/create-session session-content 1)
@@ -59,11 +59,11 @@
            ;; then
            (compare (:expires-at session) expires) => 1)))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)
 
 (tabular
  (fact "Existing sessions can be updated with new content."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [created (s/create-session session-content)
@@ -79,11 +79,11 @@
            (= (:sid updated) (:sid session)) => true
            (= (:sid created) (:sid session)) => true)))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)
 
 (tabular
  (fact "Non-existent sessions cannot be updated."
-       (with-stores ?store
+       (with-storage ?storage
          (s/update-session (s/map->Session {:sid "123" :content session-content})) => nil))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)

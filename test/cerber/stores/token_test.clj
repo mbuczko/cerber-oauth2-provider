@@ -3,7 +3,7 @@
             [cerber.oauth2.core :as core]
             [cerber.oauth2.settings :as settings]
             [cerber.stores.token :refer [create-token generate-access-token]]
-            [cerber.test-utils :refer [has-secret instance-of create-test-user create-test-client with-stores]]
+            [cerber.test-utils :refer [has-secret instance-of create-test-user create-test-client with-storage]]
             [midje.sweet :refer [fact tabular => =not=> contains just]])
   (:import cerber.stores.token.Token
            cerber.error.HttpError))
@@ -13,7 +13,7 @@
 
 (tabular
  (fact "Generated access-token contains required fields."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user    (create-test-user)
@@ -26,11 +26,11 @@
                                :token_type "Bearer"
                                :expires_in (settings/token-valid-for)}))))
 
- ?store :in-memory :redis :sql)
+ ?storage :in-memory :redis :sql)
 
 (tabular
  (fact "Access-token points to matching refresh-token."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user    (create-test-user)
@@ -41,11 +41,11 @@
            ;; then
            (helpers/digest (:refresh_token token)) => (:secret refresh))))
 
- ?store :in-memory :redis :sql)
+ ?storage :in-memory :redis :sql)
 
 (tabular
  (fact "Access- and refresh-tokens are stored in a correct model."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user    (create-test-user)
@@ -72,11 +72,11 @@
            (:expires-at access) =not=> nil
            (:expires-at refresh) => nil)))
 
- ?store :in-memory :redis :sql)
+ ?storage :in-memory :redis :sql)
 
 (tabular
  (fact "Revoked access-token is not returned from store."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user   (create-test-user)
@@ -91,11 +91,11 @@
            ;; then
            (core/find-access-token secret) => nil)))
 
- ?store :in-memory :redis :sql)
+ ?storage :in-memory :redis :sql)
 
 (tabular
  (fact "Revoked client tokens are not returned from store."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user   (create-test-user)
@@ -113,11 +113,11 @@
            (core/find-access-token secret) => nil
            (core/find-refresh-tokens (:id client)) => (just '()))))
 
- ?store :in-memory :redis :sql)
+ ?storage :in-memory :redis :sql)
 
 (tabular
  (fact "Revoked client tokens for given user are not returned from store."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user1  (create-test-user)
@@ -137,11 +137,11 @@
            (core/find-access-token (:access_token token2)) =not=> nil
            (count (core/find-refresh-tokens (:id client))) => 1)))
 
- ?store :in-memory :redis :sql)
+ ?storage :in-memory :redis :sql)
 
 (tabular
  (fact "Regenerated tokens override and revoke old ones."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [user   (create-test-user)
@@ -160,10 +160,10 @@
              (core/find-access-token (:access_token access-token)) => nil
              (count (core/find-refresh-tokens (:id client))) => 1))))
 
- ?store :in-memory :redis :sql)
+ ?storage :in-memory :redis :sql)
 
 (fact "Tokens cannot be generated for disabled user or client."
-       (with-stores :in-memory
+       (with-storage :in-memory
 
          ;; given
          (let [user   (create-test-user)
@@ -182,7 +182,7 @@
              (first (core/find-refresh-tokens (:id client))) => nil))))
 
 (fact "Tokens with expires-at date in the past are considered as expired ones."
-      (with-stores :in-memory
+      (with-storage :in-memory
 
         ;; given
         (let [user   (create-test-user)

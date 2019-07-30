@@ -120,7 +120,7 @@
   [stores]
   (doseq [store stores] (close! store)))
 
-(defmacro with-stores
+(defmacro with-storage
   [type & body]
   `(let [stores# (init-stores ~type)]
      (purge-stores stores#)

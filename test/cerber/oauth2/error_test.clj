@@ -1,11 +1,11 @@
 (ns cerber.oauth2.error-test
-  (:require [cerber.test-utils :refer [with-stores]]
+  (:require [cerber.test-utils :refer [with-storage]]
             [cerber.oauth2.authorization :refer [authorize!]]
             [cerber.oauth2.core :as core]
             [midje.sweet :refer [fact tabular => =not=> contains just truthy falsey]]))
 
 (fact "Authorization fails with meaningful error message when requested by unknown client, scope or mismatched redirect_uri."
-      (with-stores :in-memory
+      (with-storage :in-memory
 
         ;; given
         (let [user (core/create-user "foo" "secret")

@@ -226,7 +226,7 @@ client instance and it might be harmful to let attacker know what's your client'
 
 Looks up for client with given identifier.
 
-`(delete-client [client])`
+`(delete-client [client-id])`
 
 Removes client from store. Note that together with client all its access- and refresh-tokens are revoked as well.
 

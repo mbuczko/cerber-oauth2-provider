@@ -1,6 +1,6 @@
 (ns cerber.stores.client-test
   (:require [cerber.oauth2.core :as core]
-            [cerber.test-utils :refer [instance-of has-secret with-stores]]
+            [cerber.test-utils :refer [instance-of has-secret with-storage]]
             [midje.sweet :refer [fact tabular => =not=> contains just truthy]])
   (:import cerber.error.HttpError
            cerber.stores.client.Client))
@@ -12,7 +12,7 @@
 
 (tabular
  (fact "Redirect URIs must be a valid URLs with no forbidden characters."
-       (with-stores :in-memory
+       (with-storage :in-memory
          (core/create-client grants ?redirects
                              :info info
                              :scopes scopes
@@ -29,7 +29,7 @@
  ["http://some\tvery.nasty.hack"] (instance-of HttpError))
 
 (fact "Created client has a secret code."
-       (with-stores :in-memory
+       (with-storage :in-memory
 
          ;; given
          (let [client (core/create-client grants redirects
@@ -43,7 +43,7 @@
 
 (tabular
  (fact "Clients are stored in a correct model."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [created (core/create-client grants redirects
@@ -64,11 +64,11 @@
                                 :enabled? true
                                 :approved? false}))))
 
- ?store :in-memory :redis :sql)
+ ?storage :in-memory :redis :sql)
 
 (tabular
  (fact "Revoked client is not returned from store."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [client (core/create-client grants redirects
@@ -84,11 +84,11 @@
            ;; then
            (core/find-client client-id) => nil)))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)
 
 (tabular
  (fact "Revoked client has all its tokens revoked as well."
-       (with-stores ?store
+       (with-storage ?storage
 
          ;; given
          (let [client (core/create-client grants redirects
@@ -104,4 +104,4 @@
            ;; then
            (core/find-refresh-tokens client-id) => (just '()))))
 
- ?store :in-memory :sql :redis)
+ ?storage :in-memory :sql :redis)

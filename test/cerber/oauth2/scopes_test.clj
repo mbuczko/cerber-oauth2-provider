@@ -2,7 +2,7 @@
   (:require [cerber.oauth2.core :as core]
             [cerber.oauth2.scopes :refer [normalize-scope]]
             [cerber.stores.client :refer [scopes-valid?]]
-            [cerber.test-utils :refer [with-stores]]
+            [cerber.test-utils :refer [with-storage]]
             [midje.sweet :refer [fact tabular => =not=> contains just truthy]]))
 
 (tabular
@@ -18,7 +18,7 @@
 
 (tabular
  (fact "Valid scopes should be included in client definition."
-       (with-stores :in-memory
+       (with-storage :in-memory
          (let [client (core/create-client ["authorization_code"] ["http://localhost"]
                                           :info "dummy"
                                           :scopes ["photos:read" "photos:write"]
