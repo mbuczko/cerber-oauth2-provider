@@ -13,7 +13,6 @@
                                          ["http://localhost"]
                                          :info "test-client"
                                          :scopes ["photo"]
-                                         :enabled? true
                                          :approved? true)
               req {:request-method :get
                    :uri "/users/me"

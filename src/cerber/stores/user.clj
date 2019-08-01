@@ -10,7 +10,7 @@
 
 (def user-store (atom :not-initialized))
 
-(defrecord User [id login email name password enabled? created-at modified-at activated-at blocked-at])
+(defrecord User [id login email name password enabled? created-at modified-at blocked-at])
 
 (defrecord SqlUserStore []
   Store
@@ -22,9 +22,9 @@
   (store! [this k user]
     (= 1 (db/insert-user (update user :roles helpers/keywords->str))))
   (modify! [this k user]
-    (if (:enabled? user)
-      (db/enable-user user)
-      (db/disable-user user)))
+    (if (:blocked-at user)
+      (db/disable-user user)
+      (db/enable-user user)))
   (purge! [this]
     (db/clear-users))
   (close! [this]
@@ -54,7 +54,8 @@
 
   [login]
   (when-let [user (and login (fetch-one @user-store [login]))]
-    (map->User user)))
+    (let [enabled? (nil? (:blocked-at user))]
+      (map->User (assoc user :enabled? enabled?)))))
 
 (defn revoke-user
   "Removes user from store"
@@ -71,14 +72,14 @@
 (defn create-user
   "Creates and returns a new user, enabled by default."
 
-  [login password {:keys [name email roles enabled?] :as details}]
+  [login password details]
   (when (and login password)
     (let [user (-> details
                    (assoc :id (helpers/cerber-uuid)
                           :login login
                           :password (helpers/bcrypt-hash password)
-                          :created-at (helpers/now)
-                          :activated-at (when enabled? (helpers/now))))]
+                          :enabled? true
+                          :created-at (helpers/now)))]
 
       (if (store! @user-store [:login] user)
         (map->User user)
@@ -88,13 +89,13 @@
   "Enables user. Returns true if user has been enabled successfully or false otherwise."
 
   [user]
-  (= 1 (modify! @user-store [:login] (assoc user :enabled? true :activated-at (helpers/now)))))
+  (= 1 (modify! @user-store [:login] (assoc user :blocked-at nil))))
 
 (defn disable-user
   "Disables user. Returns true if user has been disabled successfully or false otherwise."
 
   [user]
-  (= 1 (modify! @user-store [:login] (assoc user :enabled? false :blocked-at (helpers/now)))))
+  (= 1 (modify! @user-store [:login] (assoc user :blocked-at (helpers/now)))))
 
 (defn valid-password?
   "Verifies that given password matches the hashed one."

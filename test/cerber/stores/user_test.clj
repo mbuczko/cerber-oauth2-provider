@@ -35,7 +35,8 @@
 
          ;; given
          (let [created1 (core/create-user login password :email email :name uname)
-               created2 (core/create-user "bazz" password :enabled? false)]
+               created2 (core/create-user "bazz" password)
+               _ (core/disable-user (:login created2))]
 
            ;; when
            (let [user1 (core/find-user (:login created1))

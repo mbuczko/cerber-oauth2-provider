@@ -193,14 +193,13 @@ passed in a `config` parameter whereas SQL-based one requires an initialized dat
 
 ### clients
 
-`(create-client [grants redirects & {:keys [info scopes enabled? approved? id secret]}])`
+`(create-client [grants redirects & {:keys [info scopes approved? id secret]}])`
 
 Used to create new OAuth client, where:
 - `grants` is vector of allowed grant types: "authorization\_code", "token", "password", "client\_credentials". At least one grant needs to be provided.
 - `redirects` is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri passed along with token request should match one of these entries.
 - `info` is a non-validated info string (typically client's app name or URL to client's homepage)
 - `scopes` is vector of OAuth scopes that client may request an access to
-- `enabled?` decides whether client should be auto-enabled or not. It's false by default which means client is not able to request for tokens
 - `approved?` decides whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource
 - `id` - optional client-id (must be unique), auto-generated if none provided
 - `secret` - optional client-secret (must be hard to guess), auto-generated if none provided
@@ -214,7 +213,6 @@ Example:
                  ["http://defunkt.pl/callback"]
                  :info "http://defunkt.pl"
                  :scopes ["photo:read" "photo:list"]
-                 :enabled? true
                  :approved? false)
 ```
 
@@ -238,7 +236,7 @@ Disables or enables client with given identifier. Disabled client is no longer a
 
 ### users
 
-`(create-user [login password & {:keys [name email roles enabled?]}])`
+`(create-user [login password & {:keys [name email roles]}])`
 
 Creates new user with following details:
 
@@ -247,7 +245,6 @@ Creates new user with following details:
 - `:name` is a user's description (like full name)
 - `:email` is a user's email
 - `:roles` set of optional roles
-- `:enabled?` indicates whether user should be enabled. User is enabled by default unless `enabled?` states otherwise.
 
 `(find-user [login])`
 
@@ -274,13 +271,11 @@ Initializes users- and clients-store with predefined collection of users/clients
 (c/init-users [{:login "admin"
                 :email "admin@bar.com"
                 :name "Admin"
-                :enabled? true
                 :password "secret"
                 :roles #{:user/admin}}
                {:login "foo"
                 :email "foo@bar.com"
                 :name "Foo Bar"
-                :enabled? true
                 :password "pass"
                 :roles #{:user/all}}])
 ```

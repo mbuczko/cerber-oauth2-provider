@@ -67,9 +67,11 @@
   "Creates a test user - enabled by default."
 
   [& {:keys [login password enabled?] :or {enabled? true}}]
-  (core/create-user (or login (random-string 12))
-                    (or password (random-string 8))
-                    :enabled? enabled?))
+  (let [user (core/create-user (or login (random-string 12))
+                               (or password (random-string 8)))]
+
+    (when-not enabled? (core/disable-user (:login user)))
+    user))
 
 (defn create-test-client
   "Creates test client - enabled and unapproved by default."
@@ -79,7 +81,6 @@
                       [redirect-uri]
                       :info "test client"
                       :scopes [scope]
-                      :enabled? true
                       :approved? (boolean approved?)))
 
 (defn disable-test-user [login]

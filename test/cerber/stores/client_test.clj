@@ -16,7 +16,6 @@
          (core/create-client grants ?redirects
                              :info info
                              :scopes scopes
-                             :enabled? true
                              :approved? false) => ?expected))
 
  ?redirects                       ?expected
@@ -35,7 +34,6 @@
          (let [client (core/create-client grants redirects
                                           :info info
                                           :scopes scopes
-                                          :enabled? true
                                           :approved? false)]
            ;; then
            client => (instance-of Client)
@@ -49,7 +47,6 @@
          (let [created (core/create-client grants redirects
                                            :info info
                                            :scopes scopes
-                                           :enabled? true
                                            :approved? false)
                client  (core/find-client (:id created))]
 
@@ -61,7 +58,6 @@
                                 :redirects redirects
                                 :grants grants
                                 :scopes scopes
-                                :enabled? true
                                 :approved? false}))))
 
  ?storage :in-memory :redis :sql)
@@ -74,7 +70,6 @@
          (let [client (core/create-client grants redirects
                                           :info info
                                           :scopes scopes
-                                          :enabled? true
                                           :approved? false)
                client-id (:id client)]
 
@@ -94,7 +89,6 @@
          (let [client (core/create-client grants redirects
                                           :info info
                                           :scopes scopes
-                                          :enabled? true
                                           :approved? false)
                client-id (:id client)]
 

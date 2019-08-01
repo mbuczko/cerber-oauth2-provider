@@ -65,7 +65,6 @@
                   redirect-uri passed along with token request should match one of these entries.
     `info`      : optional non-validated info string (typically client's app name or URL to client's homepage)
     `scopes`    : optional vector of OAuth scopes that client may request an access to
-    `enabled?`  : optional (false by default). should client be automatically enabled?
     `approved?` : optional (false by default). should client be auto-approved?
     `id`        : optional client ID (must be unique), auto-generated if none provided
     `secret`    : optional client secret (must be hard to guess), auto-generated if none provided
@@ -76,10 +75,9 @@
                        [\"http://defunkt.pl/callback\"]
                        :info \"http://defunkt.pl\"
                        :scopes [\"photo:read\" \"photo:list\"]
-                       :enabled? true
                        :approved? true)"
 
-  [grants redirects & {:keys [info scopes enabled? approved? id secret]}]
+  [grants redirects & {:keys [info scopes approved? id secret]}]
   {:pre [(seq grants)
          (seq redirects)]}
   (client/create-client grants redirects
@@ -87,7 +85,6 @@
                          :secret secret
                          :info info
                          :scopes scopes
-                         :enabled? enabled?
                          :approved? approved?}))
 
 (defn delete-client
@@ -134,17 +131,15 @@
       (c/create-user \"foobar\" \"secret\"
                      :name  \"Foo Bar\"
                      :email \"foo@bar.bazz\"
-                     :roles #{\"user/admin\"}
-                     :enabled? true)"
+                     :roles #{\"user/admin\"})"
 
-  [login password & {:keys [name email roles enabled?]}]
+  [login password & {:keys [name email roles]}]
   {:pre [(not (nil? login))
          (not (nil? password))]}
   (user/create-user login password
                     {:name  name
                      :email email
-                     :roles roles
-                     :enabled? enabled?}))
+                     :roles roles}))
 
 (defn delete-user
   "Removes user from store."
@@ -179,12 +174,11 @@
   "Initializes users-store with predefined collection of users."
 
   [users]
-  (doseq [{:keys [login email name roles enabled? password]} users]
+  (doseq [{:keys [login email name roles password]} users]
     (create-user login password
                  :email email
                  :name name
-                 :roles roles
-                 :enabled? enabled?)))
+                 :roles roles)))
 
 (defn init-clients
   "Initializes client-store with predefined collection of clients."
@@ -196,7 +190,6 @@
                    :secret secret
                    :info info
                    :scopes scopes
-                   :enabled? true
                    :approved? approved?)))
 
 ;; tokens

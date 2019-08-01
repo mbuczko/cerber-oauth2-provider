@@ -13,12 +13,10 @@
  :users   [{:login "admin"
             :email "admin@bar.com"
             :name "Admin Bar"
-            :enabled? true
             :password "secret"
             :roles #{"user/admin"}}
            {:login "foo"
             :email "foo@bar.com"
             :name "Foo Bar"
-            :enabled? true
             :password "pass"
             :roles #{"user/all"}}]}

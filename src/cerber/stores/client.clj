@@ -11,7 +11,7 @@
 
 (def client-store (atom :not-initialized))
 
-(defrecord Client [id secret info redirects grants scopes approved? enabled? created-at modified-at activated-at blocked-at])
+(defrecord Client [id secret info redirects grants scopes approved? enabled? created-at modified-at blocked-at])
 
 (defrecord SqlClientStore []
   Store
@@ -26,9 +26,9 @@
                                (update :grants helpers/coll->str)
                                (update :redirects helpers/coll->str)))))
   (modify! [this k client]
-    (if (:enabled? client)
-      (db/enable-client client)
-      (db/disable-client client)))
+    (if (:blocked-at client)
+      (db/disable-client client)
+      (db/enable-client client)))
   (purge! [this]
     (db/clear-clients))
   (close! [this]
@@ -77,8 +77,9 @@
   "Returns a client with given id if any found or nil otherwise."
 
   [client-id]
-  (when-let [found (and client-id (fetch-one @client-store [client-id]))]
-    (map->Client found)))
+  (when-let [client (and client-id (fetch-one @client-store [client-id]))]
+    (let [enabled? (nil? (:blocked-at client))]
+      (map->Client (assoc client :enabled? enabled?)))))
 
 (defn revoke-client
   "Revokes previously generated client and all tokens generated to this client so far."
@@ -98,29 +99,28 @@
   "Enables client. Returns true if client has been enabled successfully or false otherwise."
 
   [client]
-  (= 1 (modify! @client-store [:id] (assoc client :enabled? true :activated-at (helpers/now)))))
+  (= 1 (modify! @client-store [:id] (assoc client :blocked-at nil))))
 
 (defn disable-client
   "Disables client. Returns true if client has been disabled successfully or false otherwise."
 
   [client]
   (token/revoke-client-tokens client)
-  (= 1 (modify! @client-store [:id] (assoc client :enabled? false :blocked-at (helpers/now)))))
+  (= 1 (modify! @client-store [:id] (assoc client :blocked-at (helpers/now)))))
 
 (defn create-client
   "Creates and returns a new client."
 
-  [grants redirects {:keys [info scopes enabled? approved? id secret]}]
+  [grants redirects {:keys [info scopes approved? id secret]}]
   (let [result (validate-redirects redirects)
         client {:id (or id (helpers/generate-secret))
                 :secret (or secret (helpers/generate-secret))
                 :info info
                 :approved? (boolean approved?)
-                :enabled? (boolean enabled?)
+                :enabled? true
                 :scopes scopes
                 :grants grants
                 :redirects redirects
-                :activated-at (helpers/now)
                 :created-at (helpers/now)}]
 
     (if (seq result)

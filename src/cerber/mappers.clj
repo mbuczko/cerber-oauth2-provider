@@ -15,18 +15,17 @@
 
 (defn row->user
   [row]
-  (when-let [{:keys [id login email name password roles created_at modified_at activated_at blocked_at enabled]} row]
-    {:id id
-     :login login
-     :email email
-     :name name
-     :password password
-     :enabled? enabled
-     :created-at created_at
-     :modified-at modified_at
-     :activated-at activated_at
-     :blocked-at blocked_at
-     :roles (helpers/str->keywords roles)}))
+  (when-let [{:keys [id login email name password roles created_at modified_at blocked_at]} row]
+    (-> {:id id
+         :login login
+         :email email
+         :name name
+         :password password
+         :created-at created_at
+         :modified-at modified_at
+         :roles (helpers/str->keywords roles)}
+        (cond-> blocked_at
+          (assoc :blocked-at blocked_at)))))
 
 (defn row->session
   [row]
@@ -38,19 +37,19 @@
 
 (defn row->client
   [row]
-  (when-let [{:keys [id secret info approved scopes grants redirects enabled created_at modified_at activated_at blocked_at]} row]
-    {:id id
-     :secret secret
-     :info info
-     :approved? approved
-     :enabled? enabled
-     :scopes (helpers/str->coll scopes)
-     :grants (helpers/str->coll grants)
-     :redirects (helpers/str->coll redirects)
-     :created-at created_at
-     :modified-at modified_at
-     :activated-at activated_at
-     :blocked-at blocked_at}))
+  (when-let [{:keys [id secret info approved scopes grants redirects created_at modified_at blocked_at]} row]
+    (-> {:id id
+         :secret secret
+         :info info
+         :approved? approved
+         :scopes (helpers/str->coll scopes)
+         :grants (helpers/str->coll grants)
+         :redirects (helpers/str->coll redirects)
+         :created-at created_at
+         :modified-at modified_at
+         :blocked-at blocked_at}
+        (cond-> blocked_at
+          (assoc :blocked-at blocked_at)))))
 
 (defn row->authcode
   [row]

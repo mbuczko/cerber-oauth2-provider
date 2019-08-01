@@ -22,7 +22,6 @@
          (let [client (core/create-client ["authorization_code"] ["http://localhost"]
                                           :info "dummy"
                                           :scopes ["photos:read" "photos:write"]
-                                          :enabled? true
                                           :approved? false)]
            (scopes-valid? client ?scopes) => ?expected)))
 
