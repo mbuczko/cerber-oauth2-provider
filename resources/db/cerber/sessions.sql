@@ -18,12 +18,12 @@ delete from sessions
 -- :name update-session :! :1
 -- :doc Updates session entry
 update sessions set content = :content, expires_at = :expires-at
-where sid = :sid
+ where sid = :sid
 
 -- :name update-session-expiration :! :1
 -- :doc Updates expiration date only
 update sessions set expires_at = :expires-at
-where sid = :sid
+ where sid = :sid
 
 -- :name clear-expired-sessions :! :1
 -- :doc Purges tokens table from expired token

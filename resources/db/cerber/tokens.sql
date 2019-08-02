@@ -1,10 +1,14 @@
 -- :name find-tokens-by-secret :? :1
 -- :doc Returns tokens found by secret
-select * from tokens where secret = :secret and ttype = :ttype
+select id, ttype, client_id, user_id, secret, scope, login, expires_at, created_at
+  from tokens
+ where secret = :secret and ttype = :ttype
 
 -- :name find-tokens-by-client :? :*
 -- :doc Returns tokens found by client id
-select * from tokens where client_id = :client-id and ttype = :ttype
+select id, ttype, client_id, user_id, secret, scope, login, expires_at, created_at
+  from tokens
+ where client_id = :client-id and ttype = :ttype
 
 -- :name insert-token :! :1
 -- :doc Inserts new token
@@ -18,12 +22,12 @@ delete from tokens where secret = :secret
 -- :name delete-tokens-by-login :! :1
 -- :doc Deletes access token
 delete from tokens
-where client_id = :client-id and login = :login and ttype = :ttype
+ where client_id = :client-id and login = :login and ttype = :ttype
 
 -- :name delete-tokens-by-client :! :1
 -- :doc Deletes access token
 delete from tokens
-where client_id = :client-id and ttype = :ttype
+ where client_id = :client-id and ttype = :ttype
 
 -- :name clear-tokens :! :1
 -- :doc Purges tokens table

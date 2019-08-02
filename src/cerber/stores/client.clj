@@ -26,9 +26,13 @@
                                (update :grants helpers/coll->str)
                                (update :redirects helpers/coll->str)))))
   (modify! [this k client]
-    (if (:blocked-at client)
-      (db/disable-client client)
-      (db/enable-client client)))
+    (when-let [existing (db/find-client client)]
+      (db/update-client (-> existing
+                            (merge client)
+                            (update :scopes helpers/coll->str)
+                            (update :grants helpers/coll->str)
+                            (update :redirects helpers/coll->str)
+                            (assoc  :updated-at (helpers/now))))))
   (purge! [this]
     (db/clear-clients))
   (close! [this]
@@ -89,6 +93,12 @@
     (revoke-one! @client-store [id])
     (token/revoke-client-tokens client)))
 
+(defn update-client
+  "Updates client. Returns true if client has been updated or false otherwise."
+
+  [client]
+  (= 1 (modify! @client-store [:id] client)))
+
 (defn purge-clients
   "Removes clients from store."
 
@@ -99,14 +109,14 @@
   "Enables client. Returns true if client has been enabled successfully or false otherwise."
 
   [client]
-  (= 1 (modify! @client-store [:id] (assoc client :blocked-at nil))))
+  (update-client (assoc client :blocked-at nil)))
 
 (defn disable-client
   "Disables client. Returns true if client has been disabled successfully or false otherwise."
 
   [client]
   (token/revoke-client-tokens client)
-  (= 1 (modify! @client-store [:id] (assoc client :blocked-at (helpers/now)))))
+  (update-client (assoc client :blocked-at (helpers/now))))
 
 (defn create-client
   "Creates and returns a new client."

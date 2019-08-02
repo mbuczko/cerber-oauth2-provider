@@ -22,9 +22,11 @@
   (store! [this k user]
     (= 1 (db/insert-user (update user :roles helpers/keywords->str))))
   (modify! [this k user]
-    (if (:blocked-at user)
-      (db/disable-user user)
-      (db/enable-user user)))
+    (when-let [existing (db/find-user user)]
+      (db/update-user (-> existing
+                          (merge user)
+                          (update user :roles helpers/keywords->str)
+                          (assoc :updated-at (helpers/now))))))
   (purge! [this]
     (db/clear-users))
   (close! [this]
@@ -57,6 +59,12 @@
     (let [enabled? (nil? (:blocked-at user))]
       (map->User (assoc user :enabled? enabled?)))))
 
+(defn update-user
+  "Updates user. Returns true if user has been updated or false otherwise."
+
+  [user]
+  (= 1 (modify! @user-store [:login] user)))
+
 (defn revoke-user
   "Removes user from store"
 
@@ -76,8 +84,8 @@
   (when (and login password)
     (let [user (-> details
                    (assoc :id (helpers/cerber-uuid)
-                          :login login
                           :password (helpers/bcrypt-hash password)
+                          :login login
                           :enabled? true
                           :created-at (helpers/now)))]
 
@@ -89,13 +97,13 @@
   "Enables user. Returns true if user has been enabled successfully or false otherwise."
 
   [user]
-  (= 1 (modify! @user-store [:login] (assoc user :blocked-at nil))))
+  (update-user (assoc user :blocked-at nil)))
 
 (defn disable-user
   "Disables user. Returns true if user has been disabled successfully or false otherwise."
 
   [user]
-  (= 1 (modify! @user-store [:login] (assoc user :blocked-at (helpers/now)))))
+  (update-user (assoc user :blocked-at (helpers/now))))
 
 (defn valid-password?
   "Verifies that given password matches the hashed one."

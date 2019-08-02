@@ -1,8 +1,8 @@
 -- :name find-authcode :? :1
 -- :doc Returns authcode bound with given code
 select id, client_id, login, code, scope, redirect_uri, expires_at, created_at
-from authcodes
-where code = :code
+  from authcodes
+ where code = :code
 
 -- :name insert-authcode :! :1
 -- :doc Inserts new authcode
