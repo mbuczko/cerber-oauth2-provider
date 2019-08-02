@@ -1,8 +1,8 @@
 (ns cerber.test-utils
   (:require [clojure.data.codec.base64 :as b64]
-            [conman.core :as conman]
             [cerber.oauth2.core :as core]
             [cerber.store :refer [purge! close!]]
+            [conman.core :as conman]
             [peridot.core :refer [request header]])
   (:import redis.embedded.RedisServer))
 
@@ -21,7 +21,7 @@
 (defonce redis (try (doto (RedisServer. (Integer. (-> redis-spec :spec :port)))
                       (.start))
                     (catch Exception ex
-                      (println "Redis already running"))))
+                      (println "Embedded Redis server already running"))))
 
 ;; some additional midje checkers
 

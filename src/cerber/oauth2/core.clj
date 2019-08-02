@@ -131,7 +131,7 @@
       (c/create-user \"foobar\" \"secret\"
                      :name  \"Foo Bar\"
                      :email \"foo@bar.bazz\"
-                     :roles #{\"user/admin\"})"
+                     :roles #{:user/admin})"
 
   [login password & {:keys [name email roles]}]
   {:pre [(not (nil? login))
@@ -140,6 +140,18 @@
                     {:name  name
                      :email email
                      :roles roles}))
+
+(defn update-user
+  "Updates user data (name, email, password, roles, blocked-at)
+
+  Example:
+
+      (c/update-user user {:email \"foo@goo.boo\"
+                           :password \"supersecret\"})"
+
+  [login m]
+  (when-let [user (find-user login)]
+    (= 1 (user/update-user (merge user m)))))
 
 (defn delete-user
   "Removes user from store."

@@ -31,8 +31,7 @@
                             (merge client)
                             (update :scopes helpers/coll->str)
                             (update :grants helpers/coll->str)
-                            (update :redirects helpers/coll->str)
-                            (assoc  :updated-at (helpers/now))))))
+                            (update :redirects helpers/coll->str)))))
   (purge! [this]
     (db/clear-clients))
   (close! [this]
@@ -97,7 +96,8 @@
   "Updates client. Returns true if client has been updated or false otherwise."
 
   [client]
-  (= 1 (modify! @client-store [:id] client)))
+  (= 1 (modify! @client-store [:id] (-> client
+                                        (assoc :modified-at (helpers/now))))))
 
 (defn purge-clients
   "Removes clients from store."

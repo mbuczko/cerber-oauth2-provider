@@ -12,7 +12,7 @@ values (:id, :login, :email, :name, :password, :roles, :created-at)
 -- :name update-user :! :1
 -- :doc Updates user data
 update users
-  set login = :login, email = :email, name = :name, password = :password, modified_at = :modified-at, blocked_at = :blocked-at
+   set email = :email, name = :name, password = :password, roles = :roles, modified_at = :modified-at, blocked_at = :blocked-at
 where login = :login
 
 -- :name delete-user :! :1

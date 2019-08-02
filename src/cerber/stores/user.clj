@@ -25,8 +25,7 @@
     (when-let [existing (db/find-user user)]
       (db/update-user (-> existing
                           (merge user)
-                          (update user :roles helpers/keywords->str)
-                          (assoc :updated-at (helpers/now))))))
+                          (update :roles helpers/keywords->str)))))
   (purge! [this]
     (db/clear-users))
   (close! [this]
@@ -63,7 +62,9 @@
   "Updates user. Returns true if user has been updated or false otherwise."
 
   [user]
-  (= 1 (modify! @user-store [:login] user)))
+  (= 1 (modify! @user-store [:login] (-> user
+                                         (update :password helpers/bcrypt-hash)
+                                         (assoc  :modified-at (helpers/now))))))
 
 (defn revoke-user
   "Removes user from store"

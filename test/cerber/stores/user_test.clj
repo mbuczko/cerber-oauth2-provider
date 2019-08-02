@@ -2,7 +2,8 @@
   (:require [cerber.oauth2.core :as core]
             [cerber.stores.user :refer [valid-password?]]
             [cerber.test-utils :refer [has-secret instance-of with-storage]]
-            [midje.sweet :refer [fact tabular => =not=> contains just truthy]])
+            [midje.sweet :refer [fact tabular => =not=> contains just truthy]]
+            [cerber.helpers :as helpers])
   (:import cerber.stores.user.User))
 
 (def login "foo")
@@ -26,11 +27,41 @@
           ;; password must be encrypted!
           (= password (:password user)) => false
 
-          ;; hashed passwords should be the same
+          ;; password hashed correctly?
           (valid-password? password (:password user)) => true)))
 
 (tabular
- (fact "Users are stored in a correct model, enabled by default if no :enabled? property was set."
+ (fact "User's data updated according to given map."
+       (with-storage ?storage
+
+         ;; given
+         (let [user (core/create-user login password :email email :name uname)
+               pass "mooboo"
+               data {:name "goo"
+                     :email "boo@goo.com"
+                     :roles #{:world/dictator}
+                     :blocked-at (helpers/now)}]
+
+           ;; when
+           (core/update-user login (assoc data :password pass))
+
+           ;; then
+           (let [user (core/find-user login)]
+             (select-keys user [:name :email :roles :blocked-at]) => data
+
+             ;; password must be encrypted!
+             (= password (:password user)) => false
+
+             ;; password hashed correctly?
+             (valid-password? pass (:password user)) => true
+
+             ;; user is disabled when blocked-at is set
+             (:enabled? user) => false))))
+
+ ?storage :in-memory :sql :redis)
+
+(tabular
+ (fact "Users are stored in a correct model, enabled by default."
        (with-storage ?storage
 
          ;; given

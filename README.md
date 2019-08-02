@@ -250,6 +250,10 @@ Creates new user with following details:
 
 Looks up for a user with given login.
 
+`(update-user [login m])`
+
+Updates user according to given map, which may contain following keys: `:name`, `:email`, `:password` (cleartext value), `:roles` (set of roles) and `blocked-at` (datetime).
+
 `(delete-user [login])`
 
 Removes from store user with given login.
@@ -367,7 +371,7 @@ Same as `wrap-authorized` but does no redirection or `HTTP 401 Unauthorized` res
 Cerber development bases on [deps](https://clojure.org/guides/deps_and_cli) and [revolt](https://github.com/mbuczko/revolt) to set up environment in most flexible way:
 
 ``` clojure
-clj -A:dev:repl -p nrepl,rebel -t clean
+clj -A:dev:repl -p nrepl -t clean
 ```
 
 That's it. Connect now to the nREPL with editor of your choice.
