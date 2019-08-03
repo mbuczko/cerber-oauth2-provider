@@ -39,15 +39,18 @@
                pass "mooboo"
                data {:name "goo"
                      :email "boo@goo.com"
-                     :roles #{:world/dictator}
-                     :blocked-at (helpers/now)}]
+                     :roles #{:world/dictator}}]
 
            ;; when
-           (core/update-user login (assoc data :password pass))
+           (core/update-user login
+                             :name  (:name data)
+                             :email (:email data)
+                             :roles (:roles data)
+                             :password pass)
 
            ;; then
            (let [user (core/find-user login)]
-             (select-keys user [:name :email :roles :blocked-at]) => data
+             (select-keys user [:name :email :roles]) => data
 
              ;; password must be encrypted!
              (= password (:password user)) => false
@@ -55,10 +58,32 @@
              ;; password hashed correctly?
              (valid-password? pass (:password user)) => true
 
-             ;; user is disabled when blocked-at is set
-             (:enabled? user) => false))))
+             ;; user is still enabled
+             (:enabled? user) => true))))
 
  ?storage :in-memory :sql :redis)
+
+(tabular
+  (fact "User is enabled and disabled correctly."
+        (with-storage ?storage
+
+          ;; given
+          (let [user (core/create-user login password :email email :name uname)]
+            (:enabled? user) => true
+
+            ;; when
+            (core/disable-user login)
+
+            ;; then
+            (:enabled? (core/find-user login)) => false
+
+            ;; when
+            (core/enable-user login)
+
+            ;; then
+            (:enabled? (core/find-user login)) => true)))
+
+  ?storage :in-memory :sql :redis)
 
 (tabular
  (fact "Users are stored in a correct model, enabled by default."

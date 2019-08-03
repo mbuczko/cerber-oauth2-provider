@@ -22,10 +22,7 @@
   (store! [this k user]
     (= 1 (db/insert-user (update user :roles helpers/keywords->str))))
   (modify! [this k user]
-    (when-let [existing (db/find-user user)]
-      (db/update-user (-> existing
-                          (merge user)
-                          (update :roles helpers/keywords->str)))))
+    (= 1 (db/update-user (update user :roles helpers/keywords->str))))
   (purge! [this]
     (db/clear-users))
   (close! [this]
@@ -62,9 +59,7 @@
   "Updates user. Returns true if user has been updated or false otherwise."
 
   [user]
-  (= 1 (modify! @user-store [:login] (-> user
-                                         (update :password helpers/bcrypt-hash)
-                                         (assoc  :modified-at (helpers/now))))))
+  (modify! @user-store [:login] (assoc user :modified-at (helpers/now))))
 
 (defn revoke-user
   "Removes user from store"
@@ -93,18 +88,6 @@
       (if (store! @user-store [:login] user)
         (map->User user)
         (error/internal-error "Cannot store user")))))
-
-(defn enable-user
-  "Enables user. Returns true if user has been enabled successfully or false otherwise."
-
-  [user]
-  (update-user (assoc user :blocked-at nil)))
-
-(defn disable-user
-  "Disables user. Returns true if user has been disabled successfully or false otherwise."
-
-  [user]
-  (update-user (assoc user :blocked-at (helpers/now))))
 
 (defn valid-password?
   "Verifies that given password matches the hashed one."

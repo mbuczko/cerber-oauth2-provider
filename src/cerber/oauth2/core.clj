@@ -5,6 +5,7 @@
              [client :as client]
              [session :as session]
              [authcode :as authcode]]
+            [cerber.helpers :as helpers]
             [cerber.oauth2.settings :as settings]))
 
 ;; stores
@@ -141,18 +142,6 @@
                      :email email
                      :roles roles}))
 
-(defn update-user
-  "Updates user data (name, email, password, roles, blocked-at)
-
-  Example:
-
-      (c/update-user user {:email \"foo@goo.boo\"
-                           :password \"supersecret\"})"
-
-  [login m]
-  (when-let [user (find-user login)]
-    (= 1 (user/update-user (merge user m)))))
-
 (defn delete-user
   "Removes user from store."
 
@@ -168,7 +157,7 @@
 
   [login]
   (when-let [user (find-user login)]
-    (and (user/disable-user user) user)))
+    (user/update-user (assoc user :blocked-at (helpers/now)))))
 
 (defn enable-user
   "Enables user.
@@ -178,7 +167,22 @@
 
   [login]
   (when-let [user (find-user login)]
-    (and (user/enable-user user) user)))
+    (user/update-user (assoc user :blocked-at nil))))
+
+(defn update-user
+  "Updates user's name, email, password or roles."
+
+  [login & {:keys [name email password roles]}]
+  (when-let [user (find-user login)]
+    (user/update-user (-> user
+                          (cond-> password
+                            (assoc :password (helpers/bcrypt-hash password)))
+                          (cond-> email
+                            (assoc :email email))
+                          (cond-> name
+                            (assoc :name name))
+                          (cond-> roles
+                            (assoc :roles roles))))))
 
 ;; users/clients helpers
 

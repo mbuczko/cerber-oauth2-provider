@@ -250,9 +250,9 @@ Creates new user with following details:
 
 Looks up for a user with given login.
 
-`(update-user [login m])`
+`(update-user [login {:keys [name email password roles]}])`
 
-Updates user according to given map, which may contain following keys: `:name`, `:email`, `:password` (cleartext value), `:roles` (set of roles) and `blocked-at` (datetime).
+Updates user's name, email, password or roles.
 
 `(delete-user [login])`
 
