@@ -24,6 +24,11 @@
       <version>1.12.12</version>
     </dependency>
     <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure</artifactId>
+      <version>1.10.1</version>
+    </dependency>
+    <dependency>
       <groupId>ring</groupId>
       <artifactId>ring-defaults</artifactId>
       <version>0.3.2</version>

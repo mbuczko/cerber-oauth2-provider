@@ -10,8 +10,10 @@
         failjure {:mvn/version "1.5.0"}
         digest {:mvn/version "1.4.9"}}
 
- :aliases {:dev {:extra-paths ["test"]
-                 :extra-deps {defunkt/revolt {:mvn/version "1.3.1"}
+ :aliases {:test-once {:main-opts ["-m" "cerber.test-runner"]}
+
+           :dev {:extra-paths ["test"]
+                 :extra-deps {defunkt/revolt {:mvn/version "1.3.4"}
                               defunkt/revolt-catapulte-task {:mvn/version "0.1.3"}
                               defunkt/revolt-flyway-task {:mvn/version "0.2.0"}
 
@@ -28,12 +30,10 @@
                               com.h2database/h2 {:mvn/version "1.4.197"}
                               mysql/mysql-connector-java {:mvn/version "8.0.11"}
                               org.postgresql/postgresql {:mvn/version "42.2.4"}
-                              com.github.kstyrc/embedded-redis {:mvn/version "0.6"}}}
+                              com.github.kstyrc/embedded-redis {:mvn/version "0.6"}}
+                 :main-opts  ["-m" "revolt.bootstrap"
+                               "-c" "revolt.edn"]}
 
            ;; dependencies for nrepl
            :repl {:extra-deps {cider/cider-nrepl {:mvn/version "0.22.0-beta8"}
-                               refactor-nrepl {:mvn/version "2.4.0"}}
-                  :main-opts  ["-m" "revolt.bootstrap"
-                               "-c" "revolt.edn"]}
-
-           :test-once {:main-opts ["-m" "cerber.test-runner"]}}}
+                               refactor-nrepl {:mvn/version "2.4.0"}}}}}
