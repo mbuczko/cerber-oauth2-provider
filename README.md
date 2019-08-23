@@ -56,7 +56,7 @@ When speaking of configuration...
                                           :port 6380}})
 ```
 
-and this is how to configure SQL-based store which requires database connection passed in as a parameter:
+and this is how to configure SQL-based store which requires database connection passed in as additional parameter:
 
 ``` clojure
 (require '[cerber.core :as core])
@@ -376,22 +376,13 @@ clj -A:dev:repl -p nrepl -t clean
 
 That's it. Connect now to the nREPL with editor of your choice.
 
-This library has also built-in [standalone dev server](./src/cerber/oauth2/standalone/server.clj) available in `cerber.oauth2.standalone.server` namespace. All it needs to start up is initialized with mount-based restartable system:
+## Testing
 
-``` clojure
-(require '[cerber.oauth2.standalone.system :as system])
-
-(system/go)    ;; start server
-(system/stop)  ;; stops server
-(system/reset) ;; restart server
-```
-
-Tests may be also called straight from CLI:
+Tests may be called straight from CLI:
 
 ``` clojure
 clj -A:dev:test-once
 ```
-
 
 Any ideas or bugfixes? PRs nicely welcomed. Be sure that your changes pass all the tests or simply add your own test suites if none covers your code yet.
 

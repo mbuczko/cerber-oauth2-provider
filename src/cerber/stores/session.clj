@@ -36,18 +36,17 @@
   (close! [this]
     (db/stop-periodic expired-sessions-cleaner)))
 
-(defmulti create-session-store (fn [type config] type))
+(defmulti create-session-store (fn [type opts] type))
 
 (defmethod create-session-store :in-memory [_ _]
   (->MemoryStore "sessions" (atom {})))
 
+(defmethod create-session-store :sql [_ db-conn]
+  (db/bind-connection db-conn "sessions")
+  (->SqlSessionStore (db/make-periodic 'cerber.db/clear-expired-sessions 10000)))
+
 (defmethod create-session-store :redis [_ redis-spec]
   (->RedisStore "sessions" redis-spec))
-
-(defmethod create-session-store :sql [_ db-conn]
-  (when db-conn
-    (db/bind-queries db-conn)
-    (->SqlSessionStore (db/make-periodic 'cerber.db/clear-expired-sessions 10000))))
 
 (defn init-store
   "Initializes session store according to given type and configuration."

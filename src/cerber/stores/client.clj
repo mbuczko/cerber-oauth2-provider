@@ -37,18 +37,17 @@
   (close! [this]
     ))
 
-(defmulti create-client-store (fn [type config] type))
+(defmulti create-client-store (fn [type opts] type))
 
 (defmethod create-client-store :in-memory [_ _]
   (->MemoryStore "clients" (atom {})))
 
+(defmethod create-client-store :sql [_ db-conn]
+  (db/bind-connection db-conn "clients")
+  (->SqlClientStore))
+
 (defmethod create-client-store :redis [_ redis-spec]
   (->RedisStore "clients" redis-spec))
-
-(defmethod create-client-store :sql [_ db-conn]
-  (when db-conn
-    (db/bind-queries db-conn)
-    (->SqlClientStore)))
 
 (defn init-store
   "Initializes client store according to given type and configuration."

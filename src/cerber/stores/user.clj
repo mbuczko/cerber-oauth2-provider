@@ -28,18 +28,17 @@
   (close! [this]
     ))
 
-(defmulti create-user-store (fn [type config] type))
+(defmulti create-user-store (fn [type opts] type))
 
 (defmethod create-user-store :in-memory [_ _]
   (->MemoryStore "users" (atom {})))
 
+(defmethod create-user-store :sql [_ db-conn]
+  (db/bind-connection db-conn "users")
+  (->SqlUserStore))
+
 (defmethod create-user-store :redis [_ redis-spec]
   (->RedisStore "users" redis-spec))
-
-(defmethod create-user-store :sql [_ db-conn]
-  (when db-conn
-    (db/bind-queries db-conn)
-    (->SqlUserStore)))
 
 (defn init-store
   "Initializes user store according to given type and configuration."

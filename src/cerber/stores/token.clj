@@ -34,18 +34,17 @@
   (close! [this]
     (db/stop-periodic expired-tokens-cleaner)))
 
-(defmulti create-token-store (fn [type config] type))
+(defmulti create-token-store (fn [type opts] type))
 
 (defmethod create-token-store :in-memory [_ _]
   (->MemoryStore "tokens" (atom {})))
 
+(defmethod create-token-store :sql [_ db-conn]
+  (db/bind-connection db-conn "tokens")
+  (->SqlTokenStore (db/make-periodic 'cerber.db/clear-expired-tokens 60000)))
+
 (defmethod create-token-store :redis [_ redis-spec]
   (->RedisStore "tokens" redis-spec))
-
-(defmethod create-token-store :sql [_ db-conn]
-  (when db-conn
-    (db/bind-queries db-conn)
-    (->SqlTokenStore (db/make-periodic 'cerber.db/clear-expired-tokens 60000))))
 
 (defn init-store
   "Initializes token store according to given type and configuration."

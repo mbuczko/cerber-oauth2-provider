@@ -2,15 +2,12 @@
   (:require [cerber.helpers :as helpers]
             [conman.core :as conman]))
 
-(defn bind-queries
-  [db-conn]
-  (binding [*ns* (the-ns 'cerber.db)]
-    (conman/bind-connection db-conn
-                            "db/cerber/tokens.sql"
-                            "db/cerber/clients.sql"
-                            "db/cerber/authcodes.sql"
-                            "db/cerber/users.sql"
-                            "db/cerber/sessions.sql")))
+(defmacro bind-connection
+  [db-conn & files]
+  `(binding [*ns* (the-ns 'cerber.db)]
+     (conman/bind-connection ~db-conn
+                             ~@(mapv #(str "db/cerber/" % ".sql")
+                                     (or files ["tokens" "clients" "authcodes" "users" "sessions"])))))
 
 ;; helper functions to manage with SQL queries called periodically
 
@@ -36,4 +33,5 @@
 
 ;; this is to get db functions interned initially to avoid
 ;; runtime exceptions like "No such var: db/find-user"
-(bind-queries nil)
+
+(bind-connection nil)

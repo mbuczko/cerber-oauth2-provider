@@ -15,8 +15,8 @@
                  :max-active 1
                  :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/cerber_schema.sql'"})
 
-(defonce db-conn  (and (Class/forName "org.h2.Driver")
-                       (conman/connect! jdbc-spec)))
+(defonce db-conn (and (Class/forName "org.h2.Driver")
+                      (conman/connect! jdbc-spec)))
 
 (defonce redis (try (doto (RedisServer. (Integer. (-> redis-spec :spec :port)))
                       (.start))

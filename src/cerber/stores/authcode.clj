@@ -26,18 +26,17 @@
   (close! [this]
     (db/stop-periodic expired-authcodes-cleaner)))
 
-(defmulti create-authcode-store (fn [type config] type))
+(defmulti create-authcode-store (fn [type ops] type))
 
 (defmethod create-authcode-store :in-memory [_ _]
   (->MemoryStore "authcodes" (atom {})))
 
+(defmethod create-authcode-store :sql [_ db-conn]
+  (db/bind-connection db-conn "authcodes")
+  (->SqlAuthCodeStore (db/make-periodic 'cerber.db/clear-expired-authcodes 8000)))
+
 (defmethod create-authcode-store :redis [_ redis-spec]
   (->RedisStore "authcodes" redis-spec))
-
-(defmethod create-authcode-store :sql [_ db-conn]
-  (when db-conn
-    (db/bind-queries db-conn)
-    (->SqlAuthCodeStore (db/make-periodic 'cerber.db/clear-expired-authcodes 8000))))
 
 (defn init-store
   "Initializes authcode store according to given type and configuration."
