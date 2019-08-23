@@ -14,36 +14,36 @@
   "Initializes empty session store of given type - :in-memory, :sql or :redis one.
   SQL and Redis stores require additional argument describing connection details."
 
-  [type & opts]
-  (session/init-store type (first opts)))
+  [type & config]
+  (session/init-store type (first config)))
 
 (defn create-authcode-store
   "Initializes empty authcode store of given type - :in-memory, :sql or :redis one.
   SQL and Redis stores require additional argument describing connection details."
 
-  [type & opts]
-  (authcode/init-store type (first opts)))
+  [type & config]
+  (authcode/init-store type (first config)))
 
 (defn create-token-store
   "Initializes empty token store of given type - :in-memory, :sql or :redis one.
   SQL and Redis stores require additional argument describing connection details."
 
-  [type & opts]
-  (token/init-store type (first opts)))
+  [type & config]
+  (token/init-store type (first config)))
 
 (defn create-user-store
   "Initializes empty user store of given type - :in-memory, :sql or :redis one.
   SQL and Redis stores require additional argument describing connection details."
 
-  [type & opts]
-  (user/init-store type (first opts)))
+  [type & config]
+  (user/init-store type (first config)))
 
 (defn create-client-store
   "Initializes empty client store of given type - :in-memory, :sql or :redis one.
   SQL and Redis stores require additional argument describing connection details."
 
-  [type & opts]
-  (client/init-store type (first opts)))
+  [type & config]
+  (client/init-store type (first config)))
 
 ;; clients
 
