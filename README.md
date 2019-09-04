@@ -196,13 +196,13 @@ passed in a `config` parameter whereas SQL-based one requires an initialized dat
 `(create-client [grants redirects & {:keys [info scopes approved? id secret]}])`
 
 Used to create new OAuth client, where:
-- `grants` is vector of allowed grant types: "authorization\_code", "token", "password", "client\_credentials". At least one grant needs to be provided.
-- `redirects` is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri passed along with token request should match one of these entries.
-- `info` is a non-validated info string (typically client's app name or URL to client's homepage)
-- `scopes` is vector of OAuth scopes that client may request an access to
-- `approved?` decides whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource
-- `id` - optional client-id (must be unique), auto-generated if none provided
-- `secret` - optional client-secret (must be hard to guess), auto-generated if none provided
+- `:grants` is vector of allowed grant types: "authorization\_code", "token", "password", "client\_credentials". At least one grant needs to be provided.
+- `:redirects` is a validated vector of approved redirect-uris. Note that for security reasons redirect-uri passed along with token request should match one of these entries.
+- `:info` is a non-validated info string (typically client's app name or URL to client's homepage)
+- `:scopes` is vector of OAuth scopes that client may request an access to
+- `:approved?` decides whether client should be auto-approved or not. It's false by default which means that client needs user's approval when requesting access to protected resource
+- `:id` - optional client-id (must be unique), auto-generated if none provided
+- `:secret` - optional client-secret (must be hard to guess), auto-generated if none provided
 
 Example:
 
@@ -327,7 +327,7 @@ Sets up a session time-to-live (TTL) which essentially says how long sessions ar
 
 `(set-landing-url! url)`
 
-Sets up a location that browser should redirect to in order to authenticate a user.
+Sets up an URL where browser should redirect user to after successul authentication.
 
 `(set-realm! realm)`
 
@@ -335,7 +335,7 @@ Sets up a realm presented in WWW-Authenticate header in case of 401/403 http err
 
 `(set-authentication-url! url)`
 
-Sets up an OAuth2 authentication URL ("/login" by default).
+Sets up an URL where browser should redirect to in order to authenticate a user.
 
 `(set-unauthorized-url! url)`
 

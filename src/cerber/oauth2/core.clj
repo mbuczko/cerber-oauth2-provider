@@ -185,7 +185,7 @@
   "Initializes users-store with predefined collection of users."
 
   [users]
-  (doseq [{:keys [login email name roles password]} users]
+  (for [{:keys [login email name roles password]} users]
     (create-user login password
                  :email email
                  :name name
@@ -195,7 +195,7 @@
   "Initializes client-store with predefined collection of clients."
 
   [clients]
-  (doseq [{:keys [id secret info redirects grants scopes approved?]} clients]
+  (for [{:keys [id secret info redirects grants scopes approved?]} clients]
     (create-client grants redirects
                    :id id
                    :secret secret
