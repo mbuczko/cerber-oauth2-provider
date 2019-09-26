@@ -16,4 +16,3 @@ dist/
 *.paw
 *-local.edn
 gpg.edn
-boot.properties
