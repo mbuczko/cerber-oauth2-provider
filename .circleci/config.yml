@@ -1,0 +1,25 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/deps
+    docker:
+      - image: circleci/clojure:openjdk-11-boot-2.8.2
+    environment:
+      BOOT_JVM_OPTIONS: -Xmx3200m
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-deps-checksum-{{ checksum "build.boot" }}
+      - run: boot midje
+      - save_cache:
+          paths:
+            - ~/.m2
+            - ~/.boot/cache/bin
+            - ~/.boot/cache/lib
+          key: v1-deps-checksum-{{ checksum "build.boot" }}
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - build
