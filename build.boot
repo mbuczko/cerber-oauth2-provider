@@ -13,7 +13,7 @@
                  [com.github.kstyrc/embedded-redis "0.6" :scope "test"]
                  [ring/ring-defaults "0.3.2"]
                  [ring/ring-anti-forgery "1.3.0"]
-                 [midje "1.9.2" :scope "test"]
+                 [midje "1.9.9" :scope "test"]
                  [peridot "0.5.1" :scope "test"]
                  [compojure "1.6.1" :scope "test"]
                  [http-kit "2.3.0" :scope "test"]
@@ -23,7 +23,7 @@
                  [crypto-random "1.2.0"]
                  [selmer "1.11.8"]
                  [failjure "1.3.0"]
-                 [ring-middleware-format "0.7.2"]
+                 [ring-middleware-format "0.7.4"]
                  [digest "1.4.8"]])
 
 (def +version+ "2.0.0")
