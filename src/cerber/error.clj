@@ -45,7 +45,7 @@
   (map->HttpError {:error "unsupported_grant_type" :message "Unsupported grant type" :code 400}))
 
 (def server-error
-  (map->HttpError {:error "server_error" :message "Invalid request" :code 500}))
+  (map->HttpError {:error "server_error" :message "Server error" :code 500}))
 
 (def not-found
   (map->HttpError {:error "bad_request" :message "Resource not found" :code 404}))
