@@ -3,6 +3,8 @@
             [cerber.oauth2.core :as core]
             [cerber.store :refer [purge! close!]]
             [conman.core :as conman]
+            [hugsql.adapter.clojure-java-jdbc :as adp]
+            [hugsql.core]
             [peridot.core :refer [request header]])
   (:import redis.embedded.RedisServer))
 
@@ -16,6 +18,9 @@
                  :jdbc-url "jdbc:h2:mem:testdb;MODE=MySQL;INIT=RUNSCRIPT FROM 'classpath:/db/migrations/h2/cerber_schema.sql'"})
 
 (defonce db-conn (and (Class/forName "org.h2.Driver")
+                      ;; prevent adapter race condition
+                      ;; https://github.com/layerware/hugsql/issues/46
+                      (hugsql.core/set-adapter! (adp/hugsql-adapter-clojure-java-jdbc))
                       (conman/connect! jdbc-spec)))
 
 (defonce redis (try (doto (RedisServer. (Integer. (-> redis-spec :spec :port)))
