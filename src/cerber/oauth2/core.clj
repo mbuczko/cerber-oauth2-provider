@@ -113,10 +113,11 @@
 ;; users
 
 (defn find-user
-  "Looks up for a user with given login."
+  "Looks up for a user with given login. For security reasons, does not return a hashed
+  password in result."
 
   [login]
-  (user/find-user login))
+  (dissoc (user/find-user login) :password))
 
 (defn create-user
   "Creates new user with `login` and `password` and optional details
