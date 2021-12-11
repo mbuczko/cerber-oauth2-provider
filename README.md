@@ -157,7 +157,7 @@ All the magic happens inside `wrap-authorized` middleware which examines both re
 
 ``` clojure
 (require '[org.httpkit.server :as web]
-          [cerber.handlers :refer [wrap-authorized]]
+          [cerber.handlers :as handlers]
           [compojure.core :refer [routes wrap-routes]
           [ring.middleware.defaults :refer [api-defaults wrap-defaults]]
           [ring.middleware.format :refer [wrap-restful-format]]])
