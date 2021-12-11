@@ -151,7 +151,7 @@ Having OAuth paths set up, next step is to configure routes to protected resourc
   (GET "/user/info" [] (fn [req] {:status 200
                                   :body (::ctx/user req)})))
 ```
-Almost there. One missing part not mentioned yet is authorization and the way how token is validated.
+Almost there. One missing part not mentioned yet is authorization and how the token is validated.
 
 All the magic happens inside `wrap-authorized` middleware which examines both request Cookie (for session identifier) and `Authorization` header (for a token issued by Authorization Server). Once token is found, requestor receives set of privileges it was asking for and request is delegated down into handlers stack. Otherwise 401 Unauthorized is returned.
 
@@ -166,10 +166,10 @@ All the magic happens inside `wrap-authorized` middleware which examines both re
   (routes oauth-routes
           (-> authorized-routes
               (wrap-routes wrap-restful-format :formats [:json-kw])
-              (wrap-routes wrap-authorized)))
+              (wrap-routes handlers/wrap-authorized))))
 
 ;; final handler passed to HTTP server (HTTP-Kit here)
-(web/run-server (wrap-defaults api-routes api-defaults) {:host "localhost" :port 8080}})
+(web/run-server (wrap-defaults api-routes api-defaults) {:host "localhost" :port 8080})
 ```
 
 ## API
